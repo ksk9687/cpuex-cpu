@@ -8,7 +8,7 @@ use ieee.std_logic_1164.all;
 
 entity cpu_top is 
 port (
-    clk			: in	  std_logic
+    --clk			: in	  std_logic
     
     
     ); 
