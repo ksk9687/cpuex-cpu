@@ -12,12 +12,11 @@ port (
     
     
     ); 
-     
 end cpu_top;     
         
 
 architecture synth of cpu_top is
-               
+           
 begin  
 
 end synth;
