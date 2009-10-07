@@ -30,6 +30,7 @@ begin  -- STRUCTURE
        SHR(A, B) when op = "000011" else
        SHL(A, B) when op = "000100" else
        cmp       when op = "001100" else
+       B         when op = "001010" else
        "11111111111111111111111111111111";  -- BAD OP
   
 end STRUCTURE;
