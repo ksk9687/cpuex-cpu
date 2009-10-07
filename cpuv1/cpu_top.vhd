@@ -127,30 +127,30 @@ architecture synth of cpu_top is
    
    signal clk : std_logic;
    
-   signal inst : std_logic_vector(31 downto 0);
-   signal pc : std_logic_vector(31 downto 0);
+   signal inst : std_logic_vector(31 downto 0) := (others => '0');
+   signal pc : std_logic_vector(31 downto 0) := (others => '0');
   
-   signal alu_op : std_logic_vector(5 downto 0);
-   signal fpu_op : std_logic_vector(5 downto 0);
-   signal lsu_op : std_logic_vector(1 downto 0);
-   signal iou_op : std_logic_vector(1 downto 0);
-   signal pc_op : std_logic_vector(2 downto 0);
+   signal alu_op : std_logic_vector(5 downto 0) := (others => '0');
+   signal fpu_op : std_logic_vector(5 downto 0) := (others => '0');
+   signal lsu_op : std_logic_vector(1 downto 0) := (others => '0');
+   signal iou_op : std_logic_vector(1 downto 0) := (others => '0');
+   signal pc_op : std_logic_vector(2 downto 0) := (others => '0');
    
-   signal im : std_logic_vector(15 downto 0);
-   signal ex_im : std_logic_vector(31 downto 0);
+   signal im : std_logic_vector(15 downto 0) := (others => '0');
+   signal ex_im : std_logic_vector(31 downto 0) := (others => '0');
    
-   signal reg_d,reg_s1,reg_s2 : std_logic_vector(4 downto 0);
+   signal reg_d,reg_s1,reg_s2 : std_logic_vector(4 downto 0) := (others => '0');
    
-   signal data_d,data_s1,data_s2,alu_s2 : std_logic_vector(31 downto 0);
+   signal data_d,data_s1,data_s2,alu_s2 : std_logic_vector(31 downto 0) := (others => '0');
    
-   signal alu_out,lsu_out,io_out : std_logic_vector(31 downto 0);
-   signal s2select : std_logic;
-   signal regwrite : std_logic;
-   signal reg_write_select : std_logic_vector(2 downto 0);
+   signal alu_out,lsu_out,io_out : std_logic_vector(31 downto 0) := (others => '0');
+   signal s2select : std_logic := '0';
+   signal regwrite : std_logic := '0';
+   signal reg_write_select : std_logic_vector(2 downto 0) := (others => '0');
    
    
-   signal ls_f : std_logic;--0:ロード・1:ストア
-   signal ls_address : std_logic_vector(31 downto 0);
+   signal ls_f : std_logic := '0';--0:ロード・1:ストア
+   signal ls_address : std_logic_vector(31 downto 0) := (others => '0');
 begin
     ibufg01 : IBUFG PORT MAP (I=>CLKIN, O=>CLK);
 	
@@ -242,7 +242,6 @@ begin
 				pc <= data_s1;
 			else--halt
 				pc <= pc;
-				--wait;
 			end if;
 		end if;
 	end process PC1;

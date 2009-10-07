@@ -34,21 +34,21 @@ end mem;
 architecture synth of mem is
     type ram_type is array (0 to 15) of std_logic_vector (31 downto 0); 
 	signal RAM : ram_type :=
-	(
+	(--fib10
 	op_li & "00000" & "00000" & x"0000",
 	op_li & "00000" & "00001" & x"0000",
 	op_li & "00000" & "00010" & x"0001",
-	op_li & "00000" & "00011" & x"000A",
+	op_li & "00000" & "00011" & x"000A",--10‚ðR3‚É“ü‚ê‚é
 	
-	op_li & "00000" & "00100" & x"0000",
+	op_li & "00000" & "00100" & x"0001",
 	op_add & "00001" & "00010" & "00000" & "00000000000",
-	op_addi & "00001" & "00010" & x"0000",
-	op_addi & "00000" & "00001" & x"0000",
+	op_addi & "00010" & "00001" & x"0000",
+	op_addi & "00000" & "00010" & x"0000",
 	
-	op_addi & "00011" & "00011" & x"8001",
+	op_addi & "00011" & "00011" & x"FFFF",
 	op_cmp & "00011" & "00100" & "00101" & "00000000000",
-	op_jmp & "00101" & "00100" & x"8004",
-	op_write & "00011" & "00000" & x"0000",
+	op_jmp & "00101" & "00100" & x"FFFB",-- -5
+	op_write & "00000" & "00000" & x"0000",
 	
 	op_halt & "00000" & "00000" & x"0000",
 	op_halt & "00000" & "00000" & x"0000",
@@ -66,14 +66,14 @@ begin
 	begin
 	    if rising_edge(clk) then
 	        if load_store = '1' then
-	            RAM(conv_integer(ls_address)) <= write_data;
+	            RAM(conv_integer(ls_address(3 downto 0))) <= write_data;
 	        end if;
 	    end if;
 	end process;
-	read_data <= RAM(conv_integer(ls_address));
+	read_data <= RAM(conv_integer(ls_address(3 downto 0)));
 	
 	-- –½—ß
-	read_inst <= RAM(conv_integer(pc(4 downto 0)));
+	read_inst <= RAM(conv_integer(pc(3 downto 0)));
 
 
 end synth;

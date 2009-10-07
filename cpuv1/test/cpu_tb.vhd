@@ -66,6 +66,7 @@ component cpu_top is
 	signal LEDOUT   : std_logic_vector(7 downto 0) := (others => '0');
 	signal CLK : STD_LOGIC := '0';
 begin
+
 	process 
 	begin
 		CLK <= not CLK;

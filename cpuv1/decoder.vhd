@@ -42,6 +42,8 @@ begin
 	alu <= op;
 	fpu <= op;
 	
+	im <= inst(15 downto 0);
+	
 	--Load Store
 	lsdec : with op select
 	 ls <= "10" when op_load,
