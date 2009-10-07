@@ -3,6 +3,9 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
+library work;
+use work.instruction.all;
+
 entity ALU is
 
   port (

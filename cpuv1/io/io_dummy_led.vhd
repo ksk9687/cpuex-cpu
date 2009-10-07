@@ -59,7 +59,7 @@ begin
 		end if;
 	end process;
 		
-	data <= not buf;
+	data <= not buf(7 downto 0);
 
 end arch;
 
