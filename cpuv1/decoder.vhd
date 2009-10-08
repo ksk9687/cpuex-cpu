@@ -1,4 +1,4 @@
-
+-- ÉfÉRÅ[É_ÇÃé¿ëï
 
 -- @module : decoder
 -- @author : ksk
@@ -8,67 +8,93 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
+library work;
+use work.instruction.all;
+
 entity decoder is 
 port (
     --clk			: in	  std_logic;
-    inst : in std_logic_vector(5 downto 0)
+    inst : in std_logic_vector(31 downto 0)
     
     ;alu : out std_logic_vector(5 downto 0)
 	;fpu : out std_logic_vector(5 downto 0)
     
-    ;regd : out std_logic_vector(4 downto 0)
-    ;regs1 : out std_logic_vector(4 downto 0)
-    ;regs2 : out std_logic_vector(4 downto 0)
+    ;regd,regs1,regs2 : out std_logic_vector(4 downto 0)
+    ;reg_write : out std_logic
+    ;reg_write_select : out std_logic_vector(2 downto 0)-- ALU,FPU,LS,IO,PC
     
-	;loadstore : out std_logic_vector(1 downto 0)
+    ;s2select : out std_logic
+    ;im : out std_logic_vector(15 downto 0)
+	
+	;ls : out std_logic_vector(1 downto 0)
 	;io : out std_logic_vector(1 downto 0)
-	;pc : out std_logic_vector(0 downto 0)
+	;pc : out std_logic_vector(2 downto 0)
     );
-     
 end decoder;     
         
 
 architecture synth of decoder is
-	signal op:std_logic_vector(5 downto 0):= "000000";
+	--OPCODE
+	alias op : std_logic_vector(5 downto 0) is inst(31 downto 26);
+	
 begin
-	--ÊºîÁÆóÂõûË∑Ø„ÄÄ„Åù„ÅÆ„Åæ„Åæ„Çè„Åü„Åô
+
 	alu <= op;
 	fpu <= op;
 	
-	--„Ç™„Éö„Ç≥„Éº„Éâ
-	op <= inst(31 downto 26);
-
+	im <= inst(15 downto 0);
 	
+	--Load Store
 	lsdec : with op select
-	 loadstore <= expression_1 when "00",
-	 expression_2 when choise_2,
-	 expression_n when choise_n;
-	 
-	--LoadStore
-	lsdec : with op select
-	 loadstore <= "10" when "001001", -- Load
-	 "11" when "001011",-- 	store
+	 ls <= "10" when op_load,
+	 "11" when op_store,
 	 "00" when others;
-
-	--ReadWrite
+	
+	--IO
 	iodec : with op select
-	 loadstore <= "10" when "010000", -- read
-	 "11" when "010001",-- 	write
+	 io <= "10" when op_read,
+	 "11" when op_write,
 	 "00" when others;
-	
+	 
 	--PC
 	pcdec : with op select
-	 loadstore <= "1" when "001101" | "001110" | "001111" ,--jmp jal jr
-	 "0" when others;--+1
+	pc <= "001" when op_jmp,
+	"010" when op_jal,
+	"011" when op_jr,
+	"111" when op_halt,
+	"000" when others;
 	
+	--èëÇ´çûÇ›ÉåÉWÉXÉ^ÇÃéwíË
+	with op select
+	regd <= inst(20 downto 16) when op_addi | op_srl | op_sll | op_load | op_li | op_read,
+	inst(15 downto 11) when others;
+	
+	-- ÉåÉWÉXÉ^Ç…èëÇ´çûÇﬁÇ©Ç«Ç§Ç©
+	with op select
+	 reg_write <=  '0' when op_store | op_jmp | op_jal | op_jr | op_write | op_nop | op_halt,--èëÇ´Ç±Ç‹Ç»Ç¢
+	 '1' when others;
+	 
+	--ÉåÉWÉXÉ^Ç…âΩÇèëÇ´çûÇﬁÇ©
+	with op select
+	 reg_write_select <= "001" when op_fadd | op_fsub | op_fmul | op_finv,
+	 "010" when op_load | op_store,
+	 "011" when op_read | op_write,
+	 "000" when others;
 
-	regd <= inst(25 downto 21);
-	regd <= inst(25 downto 21);
-	regd <= inst(25 downto 21);
-			
+	--Rs
+	with op select
+	 regs1 <= "11111" when op_jr,
+	 inst(25 downto 21) when others;
+	
+	--Rt
+	regs2 <= inst(20 downto 16);
+
+	--ALUÇÃìÒî‘ñ⁄ÇÃì¸óÕ
+	s2dec : with op select
+	 s2select <= '1' when op_addi | op_srl | op_sll | op_li,--srl sll
+	 '0' when others;--
 	
 			
-
 
 end synth;
 
