@@ -43,7 +43,7 @@ begin  -- STRUCTURE
   fp_inv_inst : FP_INV port map (O => O_INV, A => A);
 
   B_ADD <= B when op = "000101" else       -- add
-           (B(31) xor 1) & B(30 downto 0)  -- sub -> negate
+           (B(31) xor '1') & B(30 downto 0);  -- sub -> negate
 
   O <= O_ADD when op = "000101" else
        O_ADD when op = "000110" else
