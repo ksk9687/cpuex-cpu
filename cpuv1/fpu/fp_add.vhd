@@ -1,9 +1,9 @@
--- TODO 多分バグってるバージョンのコード
+-- TODO こいつだけ std_logic_signed
 
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
-use IEEE.std_logic_unsigned.all;
+use IEEE.std_logic_signed.all;
 
 entity FP_ADD is
   
@@ -17,21 +17,23 @@ end FP_ADD;
 architecture STRUCTURE of FP_ADD is
   
   signal AS, BS, OS : std_logic;
-  signal AE, BE, OE1, OE2 : std_logic_vector(7 downto 0);
+  signal AE, BE, OE1, OE2 : std_logic_vector(8 downto 0);
 
-  signal AM1, BM1 : std_logic_vector(22 downto 0);
+  signal AM1, BM1 : std_logic_vector(25 downto 0);
   signal AM2, BM2 : std_logic_vector(25 downto 0);
   signal AM3, BM3 : std_logic_vector(25 downto 0);
 
   signal OM1 : std_logic_vector(25 downto 0);
-  signal OM2 : std_logic_vector(24 downto 0);
-  signal OM3 : std_logic_vector(22 downto 0);
+  signal OM2 : std_logic_vector(25 downto 0);
+  signal OM3 : std_logic_vector(25 downto 0);
 
   signal O1 : std_logic_vector(31 downto 0);
 
 begin  -- STRUCTURE
-  AS <= A(31); AE <= A(30 downto 23); AM1 <= A(22 downto 0);
-  BS <= B(31); BE <= B(30 downto 23); BM1 <= B(22 downto 0);
+  
+  -- 負数とされないために指数部の頭に0
+  AS <= A(31); AE <= '0' & A(30 downto 23); AM1 <= "001" & A(22 downto 0);
+  BS <= B(31); BE <= '0' & B(30 downto 23); BM1 <= "001" & B(22 downto 0);
 
   -- 片方or両方が0の場合を例外処理
   O <= A when B = 0 else
@@ -40,8 +42,8 @@ begin  -- STRUCTURE
   
   -- 指数を大きいほうへ揃える
   OE1 <= AE when AE >= BE else BE;
-  AM2 <= SHR("001" & AM1, OE1 - AE);
-  BM2 <= SHR("001" & BM1, OE1 - BE);
+  AM2 <= SHR(AM1, OE1 - AE);
+  BM2 <= SHR(BM1, OE1 - BE);
 
   -- 符号を仮数部に適用
   AM3 <= AM2 when AS = '0' else -AM2;
@@ -52,7 +54,7 @@ begin  -- STRUCTURE
 
   -- 符号を仮数部から取り出す
   OS <= '0' when OM1 >= 0 else '1';
-  OM2 <= OM1(24 downto 0) when OS = '0' else -OM1(24 downto 0);
+  OM2 <= OM1 when OS = '0' else -OM1;
 
   -- 指数を決定
   OE2 <= OE1 +  1 when OM2(24) = '1' else
@@ -80,14 +82,15 @@ begin  -- STRUCTURE
          OE1 - 21 when OM2( 2) = '1' else
          OE1 - 22 when OM2( 1) = '1' else
          OE1 - 23 when OM2( 0) = '1' else
-         "00000000";
+         "000000000";
 
   -- 指数部にあわせてシフト (マイナスを指定できるのかが非常に気になる)
-  OM3 <= SHR(OM1, OE2 - OE1)(22 downto 0);
+  OM3 <= SHR(OM2, OE2 - OE1) when OM2(24) = '1' or OM2(23) = '1' else
+         SHL(OM2, OE1 - OE2);
 
   -- 出力
   O1(31) <= OS;
-  O1(30 downto 23) <= OE2;
-  O1(22 downto 0) <= OM3;
+  O1(30 downto 23) <= OE2(7 downto 0);
+  O1(22 downto 0) <= OM3(22 downto 0);
   
 end STRUCTURE;
