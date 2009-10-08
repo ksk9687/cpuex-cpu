@@ -59,8 +59,8 @@ end mem;
 
 architecture synth of mem is
 	type mem_state is (init,
-	inst,inst_w1,inst_w2,inst_w3,
-	data,data_w1,data_w2,data_w3
+	inst,inst_w1,inst_w2,inst_w3,inst_w4,
+	data,data_w1,data_w2,data_w3,data_w4,write_end
 	);
 	signal state : mem_state := init;
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
@@ -145,80 +145,58 @@ begin
 --	read_inst <= RAM(conv_integer(pc(3 downto 0)));
 
 
+	
+	ADDR <= count(19 downto 0) when state = init else
+	pc(19 downto 0) when state = inst else
+	(others => '0');
+	
+	DATAIN <= RAM(conv_integer(count(3 downto 0))) when state = init else
+	write_data when (state = data) else
+	(others => '0');
+	
+	RW <= '0' when state = init else
+	(not load_store) when state = data else
+	'1';		
+	
+	read_inst <= DATAOUT when state = data else
+	sleep;
+	
+	read_data_ready <= '1' when state = data_w4 else
+	'0';
+	
 	process(fastclk)
 	begin
-	if rising_edge(clk) then
+	if rising_edge(fastclk) then
 		if state = init then
-			RW <= '1';--write
-			DATAIN <= RAM(conv_integer(count(3 downto 0)));
-			ADDR <= count(19 downto 0);
-			if count(3 downto 0) = "1111" then
+			if count(4 downto 0) = "10000" then
 				state <= inst;
 			else
 				state <= state;
 			end if;
-			read_inst <= sleep;
-			read_data_ready <= '0';
 		elsif state = inst then 
 			state <= inst_w1;
-			RW <= '0';--read
-			ADDR <= pc(19 downto 0);
-			DATAIN <= (others => '0');
-			read_inst <= sleep;
-			read_data_ready <= '0';
 		elsif state = inst_w1 then 
 			state <= inst_w2;
-			RW <= '0';
-			ADDR <= (others => '0');
-			DATAIN <= (others => '0');
-			read_inst <= sleep;
-			read_data_ready <= '0';
 		elsif state = inst_w2 then 
 			state <= inst_w3;
-			RW <= '0';
-			ADDR <= (others => '0');
-			DATAIN <= (others => '0');
-			read_inst <= sleep;
-			read_data_ready <= '0';
 		elsif state = inst_w3 then 
 			state <= data;
-			RW <= '0';
-			ADDR <= (others => '0');
-			DATAIN <= (others => '0');
-			read_inst <= DATAOUT;
-			read_data_ready <= '0';
+		elsif state = inst_w4 then 
+			state <= data;
 		elsif state = data then
 			if (load_store = '1') then--STORE‚¾‚¯L‚Ñ‚é
 				state <= data_w1;
 			else
 				state <= inst;
 			end if;
-			RW <= load_store;
-			ADDR <= (others => '0');
-			DATAIN <= (others => '0');
-			read_inst <= sleep;
-			read_data_ready <= '0';
 		elsif state = data_w1 then
 			state <= data_w2;
-			RW <= '0';
-			ADDR <= (others => '0');
-			DATAIN <= (others => '0');
-			read_inst <= sleep;
-			read_data_ready <= '0';
 		elsif state = data_w2 then
 			state <= data_w3;
-			RW <= '0';
-			ADDR <= (others => '0');
-			DATAIN <= (others => '0');
-			read_inst <= sleep;
-			read_data_ready <= '0';
 		elsif state = data_w3 then
+			state <= write_end;
+		elsif state = write_end then
 			state <= inst;
-			RW <= '0';
-			ADDR <= (others => '0');
-			DATAIN <= (others => '0');
-			read_inst <= sleep;
-			read_data_ready <= '1';
 		end if;
 		count <= count + '1';
 	end if;

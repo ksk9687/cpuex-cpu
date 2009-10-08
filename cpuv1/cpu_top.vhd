@@ -11,6 +11,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
 use work.util.all; 
+use work.instruction.all; 
 	
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -18,7 +19,6 @@ use UNISIM.VComponents.all;
 entity cpu_top is 
 port (
     CLKIN			: in	  std_logic
-    ;enable		: in	std_logic
     
     ;ledout		: out	std_logic_vector(7 downto 0)
 	
@@ -151,9 +151,11 @@ architecture synth of cpu_top is
    
    
    signal clk : std_logic;
+   signal sramc_clk : std_logic;
+   signal sram_clk : std_logic;
    
-   signal inst : std_logic_vector(31 downto 0) := (others => '0');
-   signal pc : std_logic_vector(31 downto 0) := (others => '0');
+   signal inst : std_logic_vector(31 downto 0) := op_halt&"00"&x"000000";
+   signal pc : std_logic_vector(31 downto 0) := (others => '1');
   
    signal alu_op : std_logic_vector(5 downto 0) := (others => '0');
    signal fpu_op : std_logic_vector(5 downto 0) := (others => '0');
@@ -180,8 +182,10 @@ architecture synth of cpu_top is
 begin
     ibufg01 : IBUFG PORT MAP (I=>CLKIN, O=>CLK);
 	
+	sramc_clk <= clk;
+	sram_clk <= not clk;
    MEMORY : mem port map (
-   	clk,clk,clk,
+   	clk,sramc_clk,sram_clk,
    	pc,
    	ls_address,
    	ls_f,

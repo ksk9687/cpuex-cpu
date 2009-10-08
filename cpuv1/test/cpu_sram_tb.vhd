@@ -10,10 +10,10 @@ use ieee.NUMERIC_STD.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
-entity sram_test is
-end sram_test;
+entity cpu_sram_test is
+end cpu_sram_test;
 
-architecture Behavioral of sram_test is
+architecture Behavioral of cpu_sram_test is
 	signal CLK : STD_LOGIC := '0';
 	
 	component sram_model is
@@ -102,10 +102,10 @@ begin
 	process 
 	begin
 		CLK <= not CLK;
-		wait for 10 ns;
+		wait for 20 ns;
 	end process;
 
-	SRAMTOP : sram_top port map(
+	SRAMTOP : cpu_top port map(
 		CLK
 		,LEDOUT
 	

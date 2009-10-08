@@ -116,6 +116,8 @@ begin
   begin
     if sramclk'event and sramclk = '1' then
 		data_out <= SRAMIOA;
+		
+		--DATAOUT <= SRAMIOA;
 	end if;
   end process;
 

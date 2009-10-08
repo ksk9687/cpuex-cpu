@@ -73,19 +73,54 @@ architecture Behavioral of sram_model is
 	signal data_buf11 : std_logic_vector(17 downto 0);
 begin
 	
-	--下位出力
-	SRAMIOA(15 downto 0) <= data_buf01(15 downto 0) when rw_buf01 = '1' else
-	(others => 'Z');
-	SRAMIOPA(1 downto 0) <= data_buf01(17 downto 16) when rw_buf01 = '1' else
-	(others => 'Z');
+--			--下位出力
+--			SRAMIOA(15 downto 0) <= data_buf01(15 downto 0) when rw_buf01 = '1' else
+--			(others => 'Z');
+--			SRAMIOPA(1 downto 0) <= data_buf01(17 downto 16) when rw_buf01 = '1' else
+--			(others => 'Z');
+--		
+--			--上位出力
+--			SRAMIOA(31 downto 16) <=  data_buf11(15 downto 0) when rw_buf11 = '1' else 
+--			(others => 'Z') ;
+--			SRAMIOPA(3 downto 2) <=  data_buf11(17 downto 16) when rw_buf11 = '1' else
+--			(others => 'Z') ;
 
-	--上位出力
-	SRAMIOA(31 downto 16) <=  data_buf11(15 downto 0) when rw_buf11 = '1' else 
-	(others => 'Z') ;
-	SRAMIOPA(3 downto 2) <=  data_buf11(17 downto 16) when rw_buf11 = '1' else
-	(others => 'Z') ;
 
 
+	process (SRAMCLKMA0) begin
+		if falling_edge(SRAMCLKMA0) then
+			--下位出力
+			if rw_buf01 = '1' then
+				SRAMIOA(15 downto 0) <= data_buf01(15 downto 0);
+			else
+				SRAMIOA(15 downto 0) <=(others => 'Z');
+			end if;
+			
+			if rw_buf01 = '1' then
+				SRAMIOPA(1 downto 0) <= data_buf01(17 downto 16);
+			else
+				SRAMIOPA(1 downto 0) <=(others => 'Z');
+			end if;
+			
+		
+			--上位出力
+
+			if rw_buf11 = '1' then
+				SRAMIOA(31 downto 16) <= data_buf11(15 downto 0);
+			else
+				SRAMIOA(31 downto 16) <=(others => 'Z');
+			end if;
+			
+			if rw_buf11 = '1' then
+				SRAMIOPA(3 downto 2) <= data_buf11(17 downto 16);
+			else
+				SRAMIOPA(3 downto 2) <= (others => 'Z');
+			end if;
+		end if;
+	
+	end process;
+	
+	
 	--ひとつ目のSRAM　下位16bitを担当
 	process (SRAMCLKMA0) begin
 		if SRAMCLKMA0'event and SRAMCLKMA0='1' then
