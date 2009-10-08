@@ -36,8 +36,8 @@ begin  -- STRUCTURE
   BS <= B(31); BE <= '0' & B(30 downto 23); BM1 <= "001" & B(22 downto 0);
 
   -- •Ð•ûor—¼•û‚ª0‚Ìê‡‚ð—áŠOˆ—
-  O <= A when B = 0 else
-       B when A = 0 else
+  O <= A when B(30 downto 0) = 0 else
+       B when A(30 downto 0) = 0 else
        O1;
   
   -- Žw”‚ð‘å‚«‚¢‚Ù‚¤‚Ö‘µ‚¦‚é
