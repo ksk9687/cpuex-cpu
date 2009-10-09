@@ -11,6 +11,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
 use work.util.all; 
+use work.instruction.all; 
 	
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -18,6 +19,7 @@ use UNISIM.VComponents.all;
 entity cpu_top is 
 port (
     CLKIN			: in	  std_logic
+    
     ;ledout		: out	std_logic_vector(7 downto 0)
 	
 	--SRAM
@@ -110,12 +112,34 @@ architecture synth of cpu_top is
 	    ls_address : in std_logic_vector(31 downto 0);
 	    load_store : in std_logic;
 	    write_data : in std_logic_vector(31 downto 0);
-	    read_inst,read_data : out std_logic_vector(31 downto 0)
+	    read_inst,read_data : out std_logic_vector(31 downto 0);
+	    read_data_ready : out std_logic
+    
+		--SRAM
+		;SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
+		;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
+		;SRAMIOPA : inout  STD_LOGIC_VECTOR (3 downto 0) --パリティー
+		
+		;SRAMRWA : out  STD_LOGIC	--read=>1,write=>0
+		;SRAMBWA : out  STD_LOGIC_VECTOR (3 downto 0)--書き込みバイトの指定
+	
+		;SRAMCLKMA0 : out  STD_LOGIC	--SRAMクロック
+		;SRAMCLKMA1 : out  STD_LOGIC	--SRAMクロック
+		
+		;SRAMADVLDA : out  STD_LOGIC	--バーストアクセス
+		;SRAMCEA : out  STD_LOGIC --clock enable
+		
+		;SRAMCELA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
+		;SRAMCEHA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
+		;SRAMCEA2X : out  STD_LOGIC	--SRAMを動作させるかどうか
+		;SRAMCEA2 : out  STD_LOGIC	--SRAMを動作させるかどうか
+	
+		;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
+		;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
+		;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
     ); 
     end component mem;
-    
-
-    
+   
     component io_dummy_led
 	port  (
 		clk : in std_logic ;
@@ -125,10 +149,13 @@ architecture synth of cpu_top is
 	);
 	end component;
    
-   signal clk : std_logic;
    
-   signal inst : std_logic_vector(31 downto 0) := (others => '0');
-   signal pc : std_logic_vector(31 downto 0) := (others => '0');
+   signal clk : std_logic;
+   signal sramc_clk : std_logic;
+   signal sram_clk : std_logic;
+   
+   signal inst : std_logic_vector(31 downto 0) := op_halt&"00"&x"000000";
+   signal pc : std_logic_vector(31 downto 0) := (others => '1');
   
    signal alu_op : std_logic_vector(5 downto 0) := (others => '0');
    signal fpu_op : std_logic_vector(5 downto 0) := (others => '0');
@@ -146,21 +173,30 @@ architecture synth of cpu_top is
    signal alu_out,lsu_out,io_out : std_logic_vector(31 downto 0) := (others => '0');
    signal s2select : std_logic := '0';
    signal regwrite : std_logic := '0';
+   signal regwrite_f : std_logic := '0';
    signal reg_write_select : std_logic_vector(2 downto 0) := (others => '0');
-   
    
    signal ls_f : std_logic := '0';--0:ロード・1:ストア
    signal ls_address : std_logic_vector(31 downto 0) := (others => '0');
+   signal read_data_ready : std_logic := '0';
 begin
     ibufg01 : IBUFG PORT MAP (I=>CLKIN, O=>CLK);
 	
+	sramc_clk <= clk;
+	sram_clk <= not clk;
    MEMORY : mem port map (
-   	clk,clk,clk,
+   	clk,sramc_clk,sram_clk,
    	pc,
    	ls_address,
    	ls_f,
    	data_s1,
-   	inst,lsu_out
+   	inst,lsu_out,read_data_ready
+	,SRAMAA,SRAMIOA,SRAMIOPA
+	,SRAMRWA,SRAMBWA
+	,SRAMCLKMA0,SRAMCLKMA1
+	,SRAMADVLDA,SRAMCEA
+	,SRAMCELA1X,SRAMCEHA1X,SRAMCEA2X,SRAMCEA2
+	,SRAMLBOA,SRAMXOEA,SRAMZZA
    );
    
    DEC : decoder port map (
@@ -180,20 +216,19 @@ begin
     -- 符号拡張
 	ex_im <= sign_extention(im);
 	
-	--レジスタに書くものの選択
-	with reg_write_select select
-	 data_d <= alu_out when "000",
-	 --今はない
-	 --fpu_out when "001",
-	 lsu_out when "010",
-	 --今はない
-	 --iou_out when "011",
-	 pc + '1' when others;
+	 
+	 data_d <= alu_out when reg_write_select = "000" else
+	 --fpu_out when reg_write_select = "001" else
+	 --iou_out when reg_write_select = "011" else
+	 lsu_out when read_data_ready = '1' else
+	 pc + '1';
+	 
+	 regwrite_f <= (regwrite or read_data_ready);
 	
 	REGISTERS : reg port map (
 		clk,
 		reg_d,reg_s1,reg_s2,
-		regwrite,
+		regwrite_f,
 		data_d,
 		data_s1,data_s2
 	);
@@ -223,6 +258,8 @@ begin
 		data_s1,
 		ledout
 	);
+
+
 
 	PC1 : process (clk)
 	begin
