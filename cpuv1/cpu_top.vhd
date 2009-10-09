@@ -267,8 +267,7 @@ begin
 			if pc_op = "000" then
 				pc <= pc + 1;
 			elsif pc_op = "001" then--jmp
-				if (reg_s2(3) or (data_s1(2) and reg_s2(2)) or
-		    	 (data_s1(1)and reg_s2(1)) or (data_s1(0)and reg_s2(0)) ) = '1' then
+				if (((data_s1(2) and reg_s2(2)) or (data_s1(1) and reg_s2(1)) or (data_s1(0) and reg_s2(0)))) = '0' then
 					pc <= pc + ex_im;
 				else
 					pc <= pc + 1;
