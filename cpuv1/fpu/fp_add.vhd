@@ -30,7 +30,7 @@ architecture STRUCTURE of FP_ADD is
   signal O1 : std_logic_vector(31 downto 0);
 
 begin  -- STRUCTURE
-  
+
   -- •‰”‚Æ‚³‚ê‚È‚¢‚½‚ß‚Éw”•”‚Ì“ª‚É0
   AS <= A(31); AE <= '0' & A(30 downto 23); AM1 <= "001" & A(22 downto 0);
   BS <= B(31); BE <= '0' & B(30 downto 23); BM1 <= "001" & B(22 downto 0);

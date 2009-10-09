@@ -1,0 +1,61 @@
+
+
+  signal i : integer range 0 to n-1;
+  signal j : std_logic;
+
+  signal clk : std_logic;
+  signal reset : std_logic;
+  
+  signal A, B, O : std_logic_vector(31 downto 0);
+
+  signal count : integer range 0 to 3;
+  
+begin  -- STRUCTURE
+  
+  ibufg_inst : ibufg port map (I => clkin, O => clk);
+  roc_inst : roc port map (O => reset);
+
+  fa : FP_ADD port map (A => A, B => B, O => O);
+  
+  process (clk, reset)
+  begin  -- process
+    if reset = '1' then
+      i <= 0;
+      j <= '0';
+      ledout <= "00";
+    elsif clk'event and clk = '1' then
+      if count = 0 then  
+        -- count が0の時のみ次の行動を行う（クロックを1/4倍速に）
+        
+        if j = '0' then
+          -- jが0  ->  出力が一致しているか検証
+          if O /= table_o(i) then
+            ledout(0) <= '1';
+          end if;
+          
+          j <= '1';
+        else
+          -- jが1  ->  次のデータに
+          if i+1 = n then
+            i <= 0;
+            ledout(1) <= '1';
+          else
+            i <= i+1;
+          end if;
+
+          j <= '0';
+        end if;        
+      end if;
+
+      if count = 3 then
+        count <= 0;
+      else
+        count <= count + 1;
+      end if;
+    end if;
+    
+    A <= table_a(i);
+    B <= table_b(i);
+  end process;
+  
+end STRUCTURE;
