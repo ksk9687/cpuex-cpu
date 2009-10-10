@@ -11,6 +11,12 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 entity sram_model is
+	Generic (
+		setup_time : time := 2.0 ns;
+		hold_time : time := 0.5 ns;
+		tCD : time := 5 ns;
+		tCDC : time := 1.5 ns
+	);
     Port (
 		SRAMAA : in  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
 		;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
@@ -87,8 +93,8 @@ begin
 
 
 
-	process (SRAMCLKMA0) begin
-		if falling_edge(SRAMCLKMA0) then
+	process (SRAMCLKMA0'DELAYED(tCD),SRAMCLKMA0'DELAYED(tCDC)) begin
+		if rising_edge(SRAMCLKMA0'DELAYED(tCD)) then
 			--下位出力
 			if rw_buf01 = '1' then
 				SRAMIOA(15 downto 0) <= data_buf01(15 downto 0);
@@ -101,27 +107,67 @@ begin
 			else
 				SRAMIOPA(1 downto 0) <=(others => 'Z');
 			end if;
+		elsif rising_edge(SRAMCLKMA0'DELAYED(tCDC)) then
+			SRAMIOA(15 downto 0) <=(others => 'Z');
+			SRAMIOPA(1 downto 0) <=(others => 'Z');
 		end if;
 	end process;
 	
 			
-	process (SRAMCLKMA1) begin
-		if falling_edge(SRAMCLKMA1) then
+	process (SRAMCLKMA1'DELAYED(tCD),SRAMCLKMA1'DELAYED(tCDC)) begin
+		if rising_edge(SRAMCLKMA1'DELAYED(tCD)) then
 			--上位出力
 			if rw_buf11 = '1' then
 				SRAMIOA(31 downto 16) <= data_buf11(15 downto 0);
 			else
 				SRAMIOA(31 downto 16) <=(others => 'Z');
 			end if;
-			
 			if rw_buf11 = '1' then
 				SRAMIOPA(3 downto 2) <= data_buf11(17 downto 16);
 			else
 				SRAMIOPA(3 downto 2) <= (others => 'Z');
 			end if;
+		elsif rising_edge(SRAMCLKMA1'DELAYED(tCDC)) then
+			SRAMIOA(31 downto 16) <=(others => 'Z');
+			SRAMIOPA(3 downto 2) <= (others => 'Z');
 		end if;
 	
 	end process;
+	
+	
+	setup_check0 : process(SRAMCLKMA0)
+	begin
+		if rising_edge(SRAMCLKMA0) then
+			ASSERT( SRAMAA'LAST_EVENT >= setup_time)
+			REPORT "SRAMAA setup violation"
+			SEVERITY ERROR;
+		end if;
+		
+		
+		if rising_edge(SRAMCLKMA0) then
+			ASSERT( SRAMIOA'LAST_EVENT >= setup_time)
+			REPORT "SRAMIOA setup violation"
+			SEVERITY ERROR;
+		end if;
+		
+	end process setup_check0;
+	
+	
+	hold_check0 : process(SRAMCLKMA0'DELAYED(hold_time))
+	begin
+		if rising_edge(SRAMCLKMA0'DELAYED(hold_time)) then
+			ASSERT (SRAMAA'LAST_EVENT = 0 ns) or (SRAMAA'LAST_EVENT > hold_time)
+			REPORT "SRAMAA hold violation"
+			SEVERITY ERROR;
+		end if;
+		
+		if rising_edge(SRAMCLKMA0'DELAYED(hold_time)) then
+			ASSERT (SRAMIOA'LAST_EVENT = 0 ns) or (SRAMIOA'LAST_EVENT > hold_time)
+			REPORT "SRAMIOA hold violation"
+			SEVERITY ERROR;
+		end if;
+		
+	end process hold_check0;
 	
 	
 	--ひとつ目のSRAM　下位16bitを担当

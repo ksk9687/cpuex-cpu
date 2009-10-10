@@ -48,12 +48,12 @@ end sram_controller;
 
 architecture Behavioral of sram_controller is
 
-  signal data_buf0 : std_logic_vector(31 downto 0);
-  signal data_buf1 : std_logic_vector(31 downto 0);
+  signal data_buf0 : std_logic_vector(31 downto 0) := (others => '0');
+  signal data_buf1 : std_logic_vector(31 downto 0) := (others => '0');
   signal rw_buf0 :  std_logic := '0';
   signal rw_buf1 :  std_logic := '0';
   
-  signal data_out : std_logic_vector(31 downto 0);
+  signal data_out : std_logic_vector(31 downto 0) := (others => '0');
   
   --xor計算　パリティ用
   function br_xor(a: std_logic_vector) return std_logic is
