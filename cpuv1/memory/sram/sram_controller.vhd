@@ -107,19 +107,19 @@ begin
       data_buf0    <= DATAIN;
       data_buf1    <= data_buf0;
 	  
-	   DATAOUT <= data_out;
+	   DATAOUT <= SRAMIOA;
     end if;
   end process;
   
   --sramに与えるクロックに合わせてsramの出力を保存
-  process (sramclk)
-  begin
-    if sramclk'event and sramclk = '1' then
-		data_out <= SRAMIOA;
-		
-		--DATAOUT <= SRAMIOA;
-	end if;
-  end process;
+--  process (sramclk)
+--  begin
+--    if sramclk'event and sramclk = '1' then
+--		data_out <= SRAMIOA;
+--		
+--		--DATAOUT <= SRAMIOA;
+--	end if;
+--  end process;
 
 end Behavioral;
 

@@ -80,7 +80,7 @@ begin
 	 
 	--’x‰„
 	with op select
-	 delay <= "100" when op_load ,
+	 delay <= "010" when op_load ,
 	 "001" when op_fadd | op_fsub | op_fmul ,
 	 "100" when op_finv ,
 	 "100" when op_read ,

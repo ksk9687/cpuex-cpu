@@ -206,7 +206,8 @@ begin
 		elsif state = inst_w1 then 
 			state <= inst_w2;
 		elsif state = inst_w2 then 
-			state <= inst_w3;
+			state <= data;
+			--state <= inst_w3;
 		elsif state = inst_w3 then 
 			state <= data;
 		elsif state = inst_w4 then
@@ -220,7 +221,8 @@ begin
 		elsif state = data_w1 then
 			state <= data_w2;
 		elsif state = data_w2 then
-			state <= data_w3;
+			state <= inst;
+			--state <= data_w3;
 		elsif state = data_w3 then
 			state <= inst;
 		elsif state = load_end then

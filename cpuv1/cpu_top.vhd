@@ -151,7 +151,7 @@ architecture synth of cpu_top is
 	end component;
    
    
-   signal clk,clk1 : std_logic := '0';
+   signal clk,clk1,clk_op,clk90,clk2 : std_logic := '0';
    signal sramc_clk : std_logic;
    signal sram_clk : std_logic;
    
@@ -167,7 +167,7 @@ architecture synth of cpu_top is
    signal im : std_logic_vector(15 downto 0) := (others => '0');
    signal ex_im : std_logic_vector(31 downto 0) := (others => '0');
    
-   signal reg_d,reg_s1,reg_s2,reg_d_buf : std_logic_vector(4 downto 0) := (others => '0');
+   signal reg_d,reg_s1,reg_s2,reg_d_buf,reg_d_now : std_logic_vector(4 downto 0) := (others => '0');
    
    signal data_d,data_s1,data_s2,alu_s2,data_d_delay,data_d_now : std_logic_vector(31 downto 0) := (others => '0');
    
@@ -184,13 +184,33 @@ architecture synth of cpu_top is
    
    signal counter : std_logic_vector(31 downto 0) := (others => '0');
    signal io_led : std_logic_vector(7 downto 0) := (others => '0');
+   
+   
+    signal logicl : std_logic := '0';
 begin
-    ibufg01 : IBUFG PORT MAP (I=>CLKIN, O=>CLK);
+
+    logicl <= '0';
+    ibufg01 : IBUFG PORT MAP (I=>CLKIN, O=>CLK1);
+    
+    bufg01 : BUFG PORT MAP (I=>CLK2, O=>CLK);
+    bufg02 : BUFG PORT MAP (I=>clk90, O=>sram_clk);
+    
+    
+    DLL1 : DCM
+    generic map (
+      CLK_FEEDBACK       => "1X",
+      CLKIN_PERIOD       => 20.0,
+      CLKFX_MULTIPLY     => 2,
+      CLKFX_DIVIDE       => 1,
+      CLKDV_DIVIDE       => 2.0,
+      CLKOUT_PHASE_SHIFT => "NONE")
+    PORT MAP (CLKIN=>CLK1, CLKFB=>CLK, RST=>logicl,
+            CLK0=>CLK2,  CLK90=>clk90, CLK180=>open, CLK270=>open,
+            CLK2X=>open, CLKDV=>open, LOCKED=>open);
+    
     
     ledout <= io_led(5 downto 0)&pc(0)&(not CLK);
     
-    tmp <= tmp when pc > x"5" else
-    inst_delay when pc = x"5" else "000";
     
 --	process (CLK1) begin
 --		if (CLK1'event and CLK1 = '1') then
@@ -202,12 +222,10 @@ begin
 --	end process;
 	
 	
-	sramc_clk <= clk;
-	sram_clk <= not clk;
 	
 	
    MEMORY : mem port map (
-   	clk,sramc_clk,sram_clk,
+   	clk,clk,sram_clk,
    	pc,
    	ls_address,
    	ls_f,
@@ -249,14 +267,16 @@ begin
 	reg_write_select_now <= reg_write_select_buf when inst_delay = "001" else
 	reg_write_select;
 	  
-
+	reg_d_now <= reg_d_buf when inst_delay = "001" else
+	reg_d;
+	
 	regwrite_f <= regwrite_buf when inst_delay = "001" else
 	regwrite when inst_delay = "000" and delay = "000" else
 	'0';
 	
 	REGISTERS : reg port map (
 		clk,
-		reg_d_buf,reg_s1,reg_s2,
+		reg_d_now,reg_s1,reg_s2,
 		regwrite_f,
 		data_d_delay,
 		data_s1,data_s2
@@ -294,9 +314,7 @@ begin
 	PC1 : process (clk)
 	begin
 		if rising_edge(clk)then
-			if pc = x"10" then
-				pc <= pc;
-			elsif pc_op = "000" then
+			if pc_op = "000" then
 				pc <= pc + 1;
 			elsif pc_op = "001" then--jmp
 				if (((data_s1(2) and reg_s2(2)) or (data_s1(1) and reg_s2(1)) or (data_s1(0) and reg_s2(0)))) = '0' then
@@ -319,7 +337,7 @@ begin
 	begin
 		if rising_edge(clk)then
 			if (delay /= "000") then--V‚µ‚¢’x‰„‚Ì‚ ‚é–½—ß
-				inst_delay <= delay;
+				inst_delay <= delay + '1';
 				reg_d_buf <= reg_d;
 				regwrite_buf <= regwrite;
 				reg_write_select_buf <= reg_write_select;
