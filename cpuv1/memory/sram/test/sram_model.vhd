@@ -101,10 +101,13 @@ begin
 			else
 				SRAMIOPA(1 downto 0) <=(others => 'Z');
 			end if;
+		end if;
+	end process;
+	
 			
-		
+	process (SRAMCLKMA1) begin
+		if falling_edge(SRAMCLKMA1) then
 			--è„à èoóÕ
-
 			if rw_buf11 = '1' then
 				SRAMIOA(31 downto 16) <= data_buf11(15 downto 0);
 			else

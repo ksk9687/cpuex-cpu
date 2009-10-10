@@ -29,6 +29,7 @@ port (
 	;ls : out std_logic_vector(1 downto 0)
 	;io : out std_logic_vector(1 downto 0)
 	;pc : out std_logic_vector(2 downto 0)
+	;delay : out std_logic_vector(2 downto 0)
     );
 end decoder;     
         
@@ -66,25 +67,38 @@ begin
 	
 	--書き込みレジスタの指定
 	with op select
-	regd <= inst(20 downto 16) when op_addi | op_srl | op_sll | op_load | op_li | op_read,
-	inst(15 downto 11) when others;
+	regd <= 
+	"11111" when op_jal, --JALではr31のみ
+	inst(20 downto 16) when op_addi | op_srl | op_sll | op_load | op_li | op_read ,--Rt
+	inst(15 downto 11) when others;--Rd
 	
 	-- レジスタに書き込むかどうか
 	with op select
-	 reg_write <=  '0' when op_store | op_jmp | op_jal | op_jr | op_write | op_nop | op_halt,--書きこまない
+	 reg_write <=  '0' when op_store | op_jmp | op_jr | op_write | op_nop | op_halt,--書きこまない
+	 --'0' when op_load | op_fadd | op_fsub | op_fmul | op_finv | op_read ,--遅延
 	 '1' when others;
+	 
+	--遅延
+	with op select
+	 delay <= "100" when op_load ,
+	 "001" when op_fadd | op_fsub | op_fmul ,
+	 "100" when op_finv ,
+	 "100" when op_read ,
+	 "000" when others;
 	 
 	--レジスタに何を書き込むか
 	with op select
 	 reg_write_select <= "001" when op_fadd | op_fsub | op_fmul | op_finv,
-	 "010" when op_load | op_store,
-	 "011" when op_read | op_write,
+	 "010" when op_load,
+	 "011" when op_read,
+	 "100" when op_jr,
 	 "000" when others;
 
 	--Rs
 	with op select
-	 regs1 <= "11111" when op_jr,
-	 inst(25 downto 21) when others;
+	regs1 <=
+	--  "11111" when op_jr, --JRではr31のみ
+	inst(25 downto 21) when others;
 	
 	--Rt
 	regs2 <= inst(20 downto 16);

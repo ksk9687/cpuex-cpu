@@ -12,25 +12,6 @@
 -- Date         Version  Author   Comment
 -- 2009-10-08   1.00     ksk     Creation of File
 --------------------------------------------------------------------------------
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
-
-package io_dummy_ledPCK is
-
-	component io_dummy_led
-	port  (
-		clk : in std_logic ;
-		op : in std_logic_vector(1 downto 0);
-		reg : in std_logic_vector(31 downto 0);
-		data : out std_logic_vector(7 downto 0)
-	);
-	end component;
-
-end package;
-
-
---------------------------------------------------------------------------------
 
 
 library ieee;

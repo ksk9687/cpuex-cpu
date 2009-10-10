@@ -1,13 +1,10 @@
-
+--　メモリ
 
 -- @module : mem
 -- @author : ksk
 -- @date   : 2009/10/06
 
----SRAMを実装した場合の予定
--- 二倍速
--- 一回目は 命令フェッチ
--- 二回目は ロードストア
+
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -19,11 +16,11 @@ use work.instruction.all;
 
 entity mem is 
 port (
-    clk,fastclk,sramclk	: in	  std_logic;
+    clk,sramcclk,sramclk	: in	  std_logic;
     
     pc : in std_logic_vector(31 downto 0);
     ls_address : in std_logic_vector(31 downto 0);
-    load_store : in std_logic;
+    load_store : in std_logic_vector(1 downto 0);
     write_data : in std_logic_vector(31 downto 0);
     read_inst,read_data : out std_logic_vector(31 downto 0);
     read_data_ready : out std_logic
@@ -59,8 +56,8 @@ end mem;
 
 architecture synth of mem is
 	type mem_state is (init,
-	inst,inst_w1,inst_w2,inst_w3,inst_w4,
-	data,data_w1,data_w2,data_w3,data_w4,write_end
+	inst,inst_w1,inst_w2,inst_w3,inst_w4,data,
+	data_w1,data_w2,data_w3,data_w4,load_end
 	);
 	signal state : mem_state := init;
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
@@ -72,28 +69,54 @@ architecture synth of mem is
 	
     type ram_type is array (0 to 15) of std_logic_vector (31 downto 0); 
 	signal RAM : ram_type :=
-	(--fib10
-	op_li & "00000" & "00000" & x"0000",
+--	(--fib10
+--	op_li & "00000" & "00000" & x"0000",
+--	op_li & "00000" & "00001" & x"0000",
+--	op_li & "00000" & "00010" & x"0001",
+--	op_li & "00000" & "00011" & x"000A",
+--	
+--	op_li & "00000" & "00100" & x"0001",
+--	op_add & "00001" & "00010" & "00000" & "00000000000",
+--	op_addi & "00010" & "00001" & x"0000",
+--	op_addi & "00000" & "00010" & x"0000",
+--	
+--	op_addi & "00011" & "00011" & x"FFFF",
+--	op_cmp & "00011" & "00100" & "00101" & "00000000000",
+--	op_jmp & "00101" & "00011" & x"FFFB",-- -5\
+--	--op_write & "00000" & "00000" & x"0000",
+--	op_store & "00011" & "00000" & x"0000",
+--
+--
+--	--op_store & "00011" & "00000" & x"0001",
+--	--op_nop & "00000" & "00000" & x"0000",
+--	op_load & "00011" & "00000" & x"0000",
+--	op_write & "00000" & "00000" & x"0000",
+--	--op_halt & "00000" & "00000" & x"0000",
+--	--op_halt & "00000" & "00000" & x"0000",
+--	op_halt & "00000" & "00000" & x"0000",
+--	op_halt & "00000" & "00000" & x"0000"
+--	);
+		(--ls
+	op_li & "00000" & "00000" & op_li & "00000" & "00000",
+	op_sll & "00000" & "00000" & x"0010",
+	op_addi & "00000" & "00000" & x"0033",
 	op_li & "00000" & "00001" & x"0000",
-	op_li & "00000" & "00010" & x"0001",
-	op_li & "00000" & "00011" & x"000A",
 	
-	op_li & "00000" & "00100" & x"0001",
-	op_add & "00001" & "00010" & "00000" & "00000000000",
-	op_addi & "00010" & "00001" & x"0000",
-	op_addi & "00000" & "00010" & x"0000",
+	op_li & "00000" & "00010" & x"0007",
+	op_load & "00001" & "00010" & x"0008",
+	op_write & "00010" & "00000" & x"0000",
+	op_halt & "00000" & "00000" & x"0000",
 	
-	op_addi & "00011" & "00011" & x"FFFF",
-	op_cmp & "00011" & "00100" & "00101" & "00000000000",
-	op_jmp & "00101" & "00011" & x"FFFB",-- -5
-	op_write & "00000" & "00000" & x"0000",
+	op_halt & "00000" & "00000" & x"00"&"00011001",
+	op_halt & "00000" & "00000" & x"0000",
+	op_halt & "00000" & "00000" & x"0000",
+	op_halt & "00000" & "00000" & x"0000",
 	
 	op_halt & "00000" & "00000" & x"0000",
 	op_halt & "00000" & "00000" & x"0000",
 	op_halt & "00000" & "00000" & x"0000",
 	op_halt & "00000" & "00000" & x"0000"
 	);
-	
 	component sram_controller is
     Port (
 		CLK : in STD_LOGIC
@@ -148,25 +171,30 @@ begin
 	
 	ADDR <= count(19 downto 0) when state = init else
 	pc(19 downto 0) when state = inst else
+	ls_address(19 downto 0) when state = data else
 	(others => '0');
 	
 	DATAIN <= RAM(conv_integer(count(3 downto 0))) when state = init else
 	write_data when (state = data) else
 	(others => '0');
 	
-	RW <= '0' when state = init else
-	(not load_store) when state = data else
-	'1';		
+	RW <= '0' when state = init else--w
+	(not load_store(0)) when state = data else
+	'1';
 	
 	read_inst <= DATAOUT when state = data else
 	sleep;
 	
-	read_data_ready <= '1' when state = data_w4 else
+	read_data_ready <= '1' when state = load_end else
 	'0';
 	
-	process(fastclk)
+	read_data <= DATAOUT when state = inst else
+	"010101010101"&"0101010101"&"0101010101";
+	
+	
+	process(clk)
 	begin
-	if rising_edge(fastclk) then
+	if rising_edge(clk) then
 		if state = init then
 			if count(4 downto 0) = "10000" then
 				state <= inst;
@@ -181,10 +209,10 @@ begin
 			state <= inst_w3;
 		elsif state = inst_w3 then 
 			state <= data;
-		elsif state = inst_w4 then 
+		elsif state = inst_w4 then
 			state <= data;
 		elsif state = data then
-			if (load_store = '1') then--STOREだけ伸びる
+			if (load_store = "10") then--Loadだけ伸びる
 				state <= data_w1;
 			else
 				state <= inst;
@@ -194,8 +222,8 @@ begin
 		elsif state = data_w2 then
 			state <= data_w3;
 		elsif state = data_w3 then
-			state <= write_end;
-		elsif state = write_end then
+			state <= inst;
+		elsif state = load_end then
 			state <= inst;
 		end if;
 		count <= count + '1';
@@ -203,7 +231,7 @@ begin
 	end process;
 
 	SRAMC : sram_controller port map(
-		 fastclk
+		 sramcclk
 		,sramclk
 		,ADDR
 		,DATAIN

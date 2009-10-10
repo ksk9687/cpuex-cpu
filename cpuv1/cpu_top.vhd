@@ -67,6 +67,7 @@ architecture synth of cpu_top is
 		;ls : out std_logic_vector(1 downto 0)
 		;io : out std_logic_vector(1 downto 0)
 		;pc : out std_logic_vector(2 downto 0)
+		;delay : out std_logic_vector(2 downto 0)
     	);
     end component;
     
@@ -98,7 +99,7 @@ architecture synth of cpu_top is
 		reg : in std_logic_vector(31 downto 0);
 		im : in std_logic_vector(15 downto 0);
 		
-	    loadstore : out std_logic;
+	    loadstore : out std_logic_vector(1 downto 0);
 		address : out std_logic_vector(31 downto 0)
 	    );
    	end component;
@@ -106,11 +107,11 @@ architecture synth of cpu_top is
  
     component mem is
 	port (
-	    clk,fastclk,sramclk	: in	  std_logic;
+	    clk,sramcclk,sramclk	: in	  std_logic;
 	    
 	    pc : in std_logic_vector(31 downto 0);
 	    ls_address : in std_logic_vector(31 downto 0);
-	    load_store : in std_logic;
+	    load_store : in std_logic_vector(1 downto 0);
 	    write_data : in std_logic_vector(31 downto 0);
 	    read_inst,read_data : out std_logic_vector(31 downto 0);
 	    read_data_ready : out std_logic
@@ -150,7 +151,7 @@ architecture synth of cpu_top is
 	end component;
    
    
-   signal clk : std_logic;
+   signal clk,clk1 : std_logic := '0';
    signal sramc_clk : std_logic;
    signal sram_clk : std_logic;
    
@@ -166,30 +167,51 @@ architecture synth of cpu_top is
    signal im : std_logic_vector(15 downto 0) := (others => '0');
    signal ex_im : std_logic_vector(31 downto 0) := (others => '0');
    
-   signal reg_d,reg_s1,reg_s2 : std_logic_vector(4 downto 0) := (others => '0');
+   signal reg_d,reg_s1,reg_s2,reg_d_buf : std_logic_vector(4 downto 0) := (others => '0');
    
-   signal data_d,data_s1,data_s2,alu_s2 : std_logic_vector(31 downto 0) := (others => '0');
+   signal data_d,data_s1,data_s2,alu_s2,data_d_delay,data_d_now : std_logic_vector(31 downto 0) := (others => '0');
    
    signal alu_out,lsu_out,io_out : std_logic_vector(31 downto 0) := (others => '0');
    signal s2select : std_logic := '0';
-   signal regwrite : std_logic := '0';
+   signal regwrite,regwrite_buf : std_logic := '0';
    signal regwrite_f : std_logic := '0';
-   signal reg_write_select : std_logic_vector(2 downto 0) := (others => '0');
+   signal reg_write_select,reg_write_select_buf,reg_write_select_now : std_logic_vector(2 downto 0) := (others => '0');
+   signal delay,inst_delay,tmp : std_logic_vector(2 downto 0) := (others => '0');
    
-   signal ls_f : std_logic := '0';--0:ロード・1:ストア
+   signal ls_f : std_logic_vector(1 downto 0) := "00";--10:ロード・11:ストア
    signal ls_address : std_logic_vector(31 downto 0) := (others => '0');
    signal read_data_ready : std_logic := '0';
+   
+   signal counter : std_logic_vector(31 downto 0) := (others => '0');
+   signal io_led : std_logic_vector(7 downto 0) := (others => '0');
 begin
     ibufg01 : IBUFG PORT MAP (I=>CLKIN, O=>CLK);
+    
+    ledout <= io_led(5 downto 0)&pc(0)&(not CLK);
+    
+    tmp <= tmp when pc > x"5" else
+    inst_delay when pc = x"5" else "000";
+    
+--	process (CLK1) begin
+--		if (CLK1'event and CLK1 = '1') then
+--			counter <= counter+'1'; 
+--			--if counter(21 downto 0) = "10"&"0000000000"&"0000000000" then
+--				CLK <= not CLK;
+--			--end if;
+--		end if;
+--	end process;
+	
 	
 	sramc_clk <= clk;
 	sram_clk <= not clk;
+	
+	
    MEMORY : mem port map (
    	clk,sramc_clk,sram_clk,
    	pc,
    	ls_address,
    	ls_f,
-   	data_s1,
+   	data_s2,
    	inst,lsu_out,read_data_ready
 	,SRAMAA,SRAMIOA,SRAMIOPA
 	,SRAMRWA,SRAMBWA
@@ -210,26 +232,33 @@ begin
    	im,
    	lsu_op,
    	iou_op,
-   	pc_op
+   	pc_op,
+   	delay
    );
    	
     -- 符号拡張
 	ex_im <= sign_extention(im);
-	
 	 
-	 data_d <= alu_out when reg_write_select = "000" else
-	 --fpu_out when reg_write_select = "001" else
-	 --iou_out when reg_write_select = "011" else
-	 lsu_out when read_data_ready = '1' else
-	 pc + '1';
-	 
-	 regwrite_f <= (regwrite or read_data_ready);
+	 with reg_write_select_now select
+	  data_d_delay <= alu_out when "000",
+	  --fpu_out when "001",
+	  lsu_out when "010", 
+	  --iou_out when "011",
+	  pc + '1' when others;
+
+	reg_write_select_now <= reg_write_select_buf when inst_delay = "001" else
+	reg_write_select;
+	  
+
+	regwrite_f <= regwrite_buf when inst_delay = "001" else
+	regwrite when inst_delay = "000" and delay = "000" else
+	'0';
 	
 	REGISTERS : reg port map (
 		clk,
-		reg_d,reg_s1,reg_s2,
+		reg_d_buf,reg_s1,reg_s2,
 		regwrite_f,
-		data_d,
+		data_d_delay,
 		data_s1,data_s2
 	);
 	
@@ -256,15 +285,18 @@ begin
 		clk,
 		iou_op,
 		data_s1,
-		ledout
+		io_led
 	);
 
 
 
+	--プログラムカウンタ
 	PC1 : process (clk)
 	begin
 		if rising_edge(clk)then
-			if pc_op = "000" then
+			if pc = x"10" then
+				pc <= pc;
+			elsif pc_op = "000" then
 				pc <= pc + 1;
 			elsif pc_op = "001" then--jmp
 				if (((data_s1(2) and reg_s2(2)) or (data_s1(1) and reg_s2(1)) or (data_s1(0) and reg_s2(0)))) = '0' then
@@ -281,7 +313,22 @@ begin
 			end if;
 		end if;
 	end process PC1;
-		
+
+	--１クロックで終了しない命令のために・・・	
+	ContDown : process (clk)
+	begin
+		if rising_edge(clk)then
+			if (delay /= "000") then--新しい遅延のある命令
+				inst_delay <= delay;
+				reg_d_buf <= reg_d;
+				regwrite_buf <= regwrite;
+				reg_write_select_buf <= reg_write_select;
+			elsif inst_delay /= "000" then
+				inst_delay <= inst_delay - '1';
+			end if;
+		end if;
+	end process ContDown;
+	
 end synth;
 
 

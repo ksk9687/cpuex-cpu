@@ -20,7 +20,7 @@ port (
 	reg : in std_logic_vector(31 downto 0);
 	im : in std_logic_vector(15 downto 0);
 	
-    loadstore : out std_logic;
+    loadstore : out std_logic_vector(1 downto 0);
 	address : out std_logic_vector(31 downto 0)
     );
      
@@ -30,8 +30,9 @@ end lsu;
 architecture synth of lsu is
         
 begin
-	loadstore <= lsop(1) and lsop(0);
-	address <= reg + sign_extention(im);
+
+	loadstore <= lsop;
+	address <= reg + sign_extention(im);	 
 end synth;
 
 
