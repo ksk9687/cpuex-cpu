@@ -17,9 +17,14 @@ entity cache is
 end cache;
 
 architecture arch of cache is
-    type cache is array (0 to 4095) of std_logic_vector (10 downto 0); --10 + 1
-    type cache_data is array (0 to 4095) of std_logic_vector (31 downto 0); --32
+    type cache_type is array (0 to 4095) of std_logic_vector (10 downto 0); --10 + 1
+    type cache_data_type is array (0 to 4095) of std_logic_vector (31 downto 0); --32
     
+    signal cache : cache_type :=(
+    	others => "0"&"0000000000"
+    );
+   signal cache_data : cache_data_type;
+   
     signal entry : std_logic_vector(10 downto 0) := "00000000000";
     signal read_addr : std_logic_vector(9 downto 0) := (others => '0');
 begin
@@ -42,7 +47,7 @@ begin
 	begin
 	    if rising_edge(clk) then
 	        if set = '1' then
-	            cache_data(conv_integer(set_address(9 downto 0))) <= set_data;
+	            cache_data(conv_integer(address(9 downto 0))) <= set_data;
 	        end if;
 	        read_addr <= address(9 downto 0);
 	    end if;

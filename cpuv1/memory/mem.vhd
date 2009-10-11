@@ -56,7 +56,8 @@ end mem;
 
 architecture synth of mem is
 	type mem_state is (idle,init,
-	inst,inst_w1,inst_w2,inst_w3,inst_w4,data,
+	inst,inst_w1,inst_w2,inst_w3,inst_w4,
+	exec,exec_hit,
 	data_w1,data_w2,data_w3,data_w4,load_end
 	);
 	signal state : mem_state := idle;
@@ -67,6 +68,10 @@ architecture synth of mem is
 	signal DATAOUT : std_logic_vector(31 downto 0) := (others => '0');
 	signal ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	
+	signal cache_out : std_logic_vector(31 downto 0) := (others => '0');
+	signal cache_hit : std_logic := '0';
+	signal cache_set : std_logic := '0';
+		
     type ram_type is array (0 to 31) of std_logic_vector (31 downto 0); 
 	signal RAM : ram_type :=
 --	(--fib10
@@ -169,40 +174,38 @@ op_halt & "00000" & "00000" & x"0001"
 		;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
 	);
 	end component;
-begin
+	
+	component cache is
+	port  (
+		clk : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+	end component;
 
-	--とりあえず分散RAMをメモリとして利用する
+begin
 	  
---	--データ
---	process (clk)
---	begin
---	    if rising_edge(clk) then
---	        if load_store = '1' then
---	            RAM(conv_integer(ls_address(3 downto 0))) <= write_data;
---	        end if;
---	    end if;
---	end process;
---	read_data <= RAM(conv_integer(ls_address(3 downto 0)));
---	
---	-- 命令
---	read_inst <= RAM(conv_integer(pc(3 downto 0)));
 
 
 	
 	ADDR <= count(19 downto 0) when state = init else
 	pc(19 downto 0) when state = inst else
-	ls_address(19 downto 0) when state = data else
+	ls_address(19 downto 0) when state = exec or (state = exec_hit) else
 	(others => '0');
 	
 	DATAIN <= RAM(conv_integer(count(4 downto 0))) when state = init else
-	write_data when (state = data) else
+	write_data when (state = exec) or (state = exec_hit) else
 	(others => '0');
 	
-	RW <= '0' when state = init else--w
-	(not load_store(0)) when state = data else
+	RW <= '0' when state = init else--初めのメモリ書き込み
+	(not load_store(0)) when state = exec or state = exec_hit else
 	'1';
 	
-	read_inst <= DATAOUT when state = data else
+	read_inst <= cache_out when state = exec_hit else
+	DATAOUT when state = exec or state = exec_hit else
 	sleep;
 	
 	read_data_ready <= '1' when state = load_end else
@@ -211,53 +214,67 @@ begin
 	read_data <= DATAOUT when state = inst else
 	"010101010101"&"0101010101"&"0101010101";
 	
+	cache_set <= '1' when state = exec else --ミスじのみセット
+	'0';
+	
 	
 	process(clk)
 	begin
 	if rising_edge(clk) then
-		if state = idle then
-			if count(4 downto 0) = "10000" then
-				state <= init;
-				count <= (others => '0');
-			else
-				count <= count + '1';
-				state <= state;
-			end if;
-		elsif state = init then
-			count <= count + '1';
-			if count(5 downto 0) = "100000" then
+		case state is
+			when idle => --初期化？のせいでクロックがおかしくなるの対策（主にmodelsim）
+				if count(4 downto 0) = "10000" then
+					state <= init;
+					count <= (others => '0');
+				else
+					count <= count + '1';
+					state <= state;
+				end if;
+			when init =>
+				if count(5 downto 0) = "100000" then
+					state <= inst;
+				else
+					count <= count + '1';
+					state <= state;
+				end if;
+			when inst =>
+				if cache_hit = '1' then--ヒット時
+					state <= exec_hit;
+				else--ミス時
+					state <= inst_w1;
+				end if;
+			when inst_w1 =>
+				state <= inst_w2;
+			when inst_w2 =>
+				--state <= data;
+				state <= inst_w3;
+			when inst_w3 =>
+				state <= exec;
+			when exec_hit =>
+				if (load_store = "10") then--Loadだけ伸びる
+					state <= data_w1;
+				else
+					state <= inst;
+				end if;
+			when exec =>
+				if (load_store = "10") then--Loadだけ伸びる
+					state <= data_w1;
+				else
+					state <= inst;
+				end if;
+			when data_w1 =>
+				state <= data_w2;
+			when data_w2 =>
+				--state <= inst;
+				state <= data_w3;
+			when data_w3 =>
 				state <= inst;
-			else
-				state <= state;
-			end if;
-		elsif state = inst then 
-			state <= inst_w1;
-		elsif state = inst_w1 then 
-			state <= inst_w2;
-		elsif state = inst_w2 then 
-			--state <= data;
-			state <= inst_w3;
-		elsif state = inst_w3 then 
-			state <= data;
-		elsif state = inst_w4 then
-			state <= data;
-		elsif state = data then
-			if (load_store = "10") then--Loadだけ伸びる
-				state <= data_w1;
-			else
+			when load_end =>
 				state <= inst;
-			end if;
-		elsif state = data_w1 then
-			state <= data_w2;
-		elsif state = data_w2 then
-			--state <= inst;
-			state <= data_w3;
-		elsif state = data_w3 then
-			state <= inst;
-		elsif state = load_end then
-			state <= inst;
+			when others =>
+				state <= inst;
+			end case;
 		end if;
-	end if;
 	end process;
 
 	SRAMC : sram_controller port map(
@@ -274,7 +291,16 @@ begin
 		,SRAMCELA1X,SRAMCEHA1X,SRAMCEA2X,SRAMCEA2
 		,SRAMLBOA,SRAMXOEA,SRAMZZA
 	);
-
+	
+	ICACHE:cache port map(
+		clk
+		,pc(19 downto 0)
+		,DATAOUT
+		,cache_set
+		,cache_out
+		,cache_hit
+	);
+	
 end synth;
 
 
