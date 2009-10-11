@@ -80,7 +80,7 @@ begin
 	 
 	--’x‰„
 	with op select
-	 delay <= "010" when op_load ,
+	 delay <= "011" when op_load ,
 	 "001" when op_fadd | op_fsub | op_fmul ,
 	 "100" when op_finv ,
 	 "100" when op_read ,
@@ -91,7 +91,7 @@ begin
 	 reg_write_select <= "001" when op_fadd | op_fsub | op_fmul | op_finv,
 	 "010" when op_load,
 	 "011" when op_read,
-	 "100" when op_jr,
+	 "100" when op_jal,
 	 "000" when others;
 
 	--Rs

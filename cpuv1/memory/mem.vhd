@@ -55,11 +55,11 @@ end mem;
         
 
 architecture synth of mem is
-	type mem_state is (init,
+	type mem_state is (idle,init,
 	inst,inst_w1,inst_w2,inst_w3,inst_w4,data,
 	data_w1,data_w2,data_w3,data_w4,load_end
 	);
-	signal state : mem_state := init;
+	signal state : mem_state := idle;
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
 	
 	signal RW : std_logic := '0';
@@ -67,7 +67,7 @@ architecture synth of mem is
 	signal DATAOUT : std_logic_vector(31 downto 0) := (others => '0');
 	signal ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	
-    type ram_type is array (0 to 15) of std_logic_vector (31 downto 0); 
+    type ram_type is array (0 to 31) of std_logic_vector (31 downto 0); 
 	signal RAM : ram_type :=
 --	(--fib10
 --	op_li & "00000" & "00000" & x"0000",
@@ -96,26 +96,46 @@ architecture synth of mem is
 --	op_halt & "00000" & "00000" & x"0000",
 --	op_halt & "00000" & "00000" & x"0000"
 --	);
-		(--ls
-	op_li & "00000" & "00000" & op_li & "00000" & "00000",
-	op_sll & "00000" & "00000" & x"0010",
-	op_addi & "00000" & "00000" & x"0033",
-	op_li & "00000" & "00001" & x"0000",
-	
-	op_li & "00000" & "00010" & x"0007",
-	op_load & "00001" & "00010" & x"0008",
-	op_write & "00010" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000",
-	
-	op_halt & "00000" & "00000" & x"00"&"00011001",
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000",
-	
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000"
+		(--rec fib 10
+op_li & "00000" & "00000" & x"0000",
+op_li & "00000" & "11110" & x"ffff",
+op_li & "00000" & "00011" & x"0001",
+op_load & "00000" & "00001" & x"0017",
+
+op_jal & "00000" & "00000" & x"0007",
+op_write & "00001" & "00000" & x"0000",
+op_halt & "00000" & "00000" & x"0000",
+op_cmp & "00001" & "00011" & "00010" & "00000000000",--fib
+
+op_jmp & "00010" & "00100" & x"000E",
+op_addi & "11110" & "11110" & x"FFFD",
+op_store & "11110" & "11111" & x"0002",
+op_store & "11110" & "00001" & x"0001",
+
+op_addi & "00001" & "00001" & x"FFFF",
+op_jal & "00000" & "00000" & x"0007",
+op_store & "11110" & "00001" & x"0000",
+op_load & "11110" & "00001" & x"0001",
+
+op_addi & "00001" & "00001" & x"FFFE",
+op_jal & "00000" & "00000" & x"0007",
+op_load & "11110" & "00010" & x"0000",
+op_add & "00001" & "00010" & "00001" & "00000000000",
+
+op_load & "11110" & "11111" & x"0002",
+op_addi & "11110" & "11110" & x"0003",
+op_jr & "11111" & "00000" & x"0000",
+"000000" & "00000" & "00000" & x"000A",
+
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001",
+
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001"
 	);
 	component sram_controller is
     Port (
@@ -174,7 +194,7 @@ begin
 	ls_address(19 downto 0) when state = data else
 	(others => '0');
 	
-	DATAIN <= RAM(conv_integer(count(3 downto 0))) when state = init else
+	DATAIN <= RAM(conv_integer(count(4 downto 0))) when state = init else
 	write_data when (state = data) else
 	(others => '0');
 	
@@ -195,8 +215,17 @@ begin
 	process(clk)
 	begin
 	if rising_edge(clk) then
-		if state = init then
+		if state = idle then
 			if count(4 downto 0) = "10000" then
+				state <= init;
+				count <= (others => '0');
+			else
+				count <= count + '1';
+				state <= state;
+			end if;
+		elsif state = init then
+			count <= count + '1';
+			if count(5 downto 0) = "100000" then
 				state <= inst;
 			else
 				state <= state;
@@ -206,8 +235,8 @@ begin
 		elsif state = inst_w1 then 
 			state <= inst_w2;
 		elsif state = inst_w2 then 
-			state <= data;
-			--state <= inst_w3;
+			--state <= data;
+			state <= inst_w3;
 		elsif state = inst_w3 then 
 			state <= data;
 		elsif state = inst_w4 then
@@ -221,14 +250,13 @@ begin
 		elsif state = data_w1 then
 			state <= data_w2;
 		elsif state = data_w2 then
-			state <= inst;
-			--state <= data_w3;
+			--state <= inst;
+			state <= data_w3;
 		elsif state = data_w3 then
 			state <= inst;
 		elsif state = load_end then
 			state <= inst;
 		end if;
-		count <= count + '1';
 	end if;
 	end process;
 
@@ -248,6 +276,7 @@ begin
 	);
 
 end synth;
+
 
 
 

@@ -205,6 +205,12 @@ architecture synth of cpu_top is
 begin
 
     logicl <= '0';
+    ibufg01 : IBUFG PORT MAP (I=>CLKIN, O=>CLK1);
+    
+    bufg01 : BUFG PORT MAP (I=>CLK2, O=>CLK1x);
+    bufg02 : BUFG PORT MAP (I=>clk2x90, O=>sram_clk);
+    bufg03 : BUFG PORT MAP (I=>clk2x, O=>clk3);
+    bufg04 : BUFG PORT MAP (I=>clk2x, O=>clk4);
     
     
     
@@ -236,7 +242,7 @@ begin
 	
 	
    MEMORY : mem port map (
-   	clk,clk,clk180,
+   	clk,clk,clk90,
    	pc,
    	ls_address,
    	ls_f,
