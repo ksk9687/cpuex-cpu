@@ -27,12 +27,13 @@ begin  -- STRUCTURE
   gt <= '1' when A > B else '0';
   cmp <= "00000000000000000000000000000" & gt & eq & lt;
 
-  C <= A + B     when op(5 downto 1) = op_add(5 downto 1) else
-       A - B     when op = op_sub else
-       SHR(A, B) when op = op_srl else
-       SHL(A, B) when op = op_sll else
-       cmp       when op = op_cmp else
-       B         when op = op_li else
-       "11111111111111111111111111111111";  -- BAD OP
+  with op select
+  C <=	A + B when op_add | op_addi,
+  		A - B when op_sub,
+  		SHR(A, B) when op_srl,
+  		SHL(A, B) when op_sll,
+  		cmp when op_cmp,
+  		B when op_li,
+		"11111111111111111111111111111111" when others;
   
 end STRUCTURE;

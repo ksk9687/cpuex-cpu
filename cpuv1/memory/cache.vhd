@@ -17,8 +17,8 @@ entity cache is
 end cache;
 
 architecture arch of cache is
-    type cache_type is array (0 to 4095) of std_logic_vector (10 downto 0); --10 + 1
-    type cache_data_type is array (0 to 4095) of std_logic_vector (31 downto 0); --32
+    type cache_type is array (0 to 1023) of std_logic_vector (10 downto 0); --10 + 1
+    type cache_data_type is array (0 to 1023) of std_logic_vector (31 downto 0); --32
     
     signal cache : cache_type :=(
     	others => "0"&"0000000000"

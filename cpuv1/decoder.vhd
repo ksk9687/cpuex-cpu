@@ -75,15 +75,14 @@ begin
 	-- レジスタに書き込むかどうか
 	with op select
 	 reg_write <=  '0' when op_store | op_jmp | op_jr | op_write | op_nop | op_halt,--書きこまない
-	 --'0' when op_load | op_fadd | op_fsub | op_fmul | op_finv | op_read ,--遅延
 	 '1' when others;
 	 
 	--遅延
 	with op select
 	 delay <= "011" when op_load ,
-	 "001" when op_fadd | op_fsub | op_fmul ,
-	 "100" when op_finv ,
-	 "100" when op_read ,
+	 "000" when op_fadd | op_fsub | op_fmul ,
+	 "000" when op_finv ,
+	 "111" when op_read ,
 	 "000" when others;
 	 
 	--レジスタに何を書き込むか
@@ -95,18 +94,15 @@ begin
 	 "000" when others;
 
 	--Rs
-	with op select
-	regs1 <=
-	--  "11111" when op_jr, --JRではr31のみ
-	inst(25 downto 21) when others;
+	regs1 <= inst(25 downto 21);
 	
 	--Rt
 	regs2 <= inst(20 downto 16);
 
 	--ALUの二番目の入力
 	s2dec : with op select
-	 s2select <= '1' when op_addi | op_srl | op_sll | op_li,--srl sll
-	 '0' when others;--
+	 s2select <= '1' when op_addi | op_srl | op_sll | op_li,--即値
+	 '0' when others;--レジスタ値
 	
 			
 

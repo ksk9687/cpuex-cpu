@@ -1,6 +1,7 @@
 --This file is written in UTF-8
 --clock = 20ns!!!
 
+--の
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;

@@ -23,6 +23,9 @@ architecture CLOCK of CLOCK is
   signal clk180 : std_logic;
   signal clk270 : std_logic;
   signal clk2x  : std_logic;
+  signal clkdv,bufg_clkdv  : std_logic;
+  
+
 
   signal clk2x0   : std_logic;
   signal clk2x180 : std_logic;
@@ -35,9 +38,13 @@ architecture CLOCK of CLOCK is
 
   signal locked0 : std_logic;
   signal locked1 : std_logic;
-
+  
+  signal locked0_b1,locked0_b2,locked0_b3,locked0_b4 : std_logic;
+  
   signal rst0 : std_logic;
   signal rst1 : std_logic;
+  
+  
 
 begin  -- CLOCK
 
@@ -53,7 +60,7 @@ begin  -- CLOCK
       CLKIN_PERIOD       => 20.0,
       CLKFX_MULTIPLY     => 2,
       CLKFX_DIVIDE       => 1,
-      CLKDV_DIVIDE       => 2.0,
+      CLKDV_DIVIDE       => 8.0,
       CLKOUT_PHASE_SHIFT => "NONE")
     port map (
       CLKIN  => ibufg_clkin,
@@ -63,22 +70,34 @@ begin  -- CLOCK
       CLK180 => clk180,
       CLK270 => clk270,
       CLK2X  => clk2x,
+      CLKDV => clkdv,
       LOCKED => locked0,
       RST    => rst0);
+      
+	process(bufg_clkdv)
+	begin
+		if rising_edge(bufg_clkdv) then
+			locked0_b1 <= locked0;
+			locked0_b2 <= locked0_b1;
+			locked0_b3 <= locked0_b2;
+			locked0_b4 <= locked0_b3;
+		end if;
+	end process;
 
-  rst1 <= '1' when rst0 = '1' or locked0 = '0' else
+
+  rst1 <= '1' when rst0 = '1' or locked0_b3 = '0' else
           '0';
   
   DCM1 : DCM
     generic map (
       CLK_FEEDBACK       => "1X",
-      CLKIN_PERIOD       => 10.0,
+      CLKIN_PERIOD       => 160.0,
       CLKFX_MULTIPLY     => 2,
       CLKFX_DIVIDE       => 1,
       CLKDV_DIVIDE       => 2.0,
       CLKOUT_PHASE_SHIFT => "NONE")
     port map (
-      CLKIN  => bufg_clk2x,
+      CLKIN  => bufg_clkdv,
       CLKFB  => bufg_clk2xfb,
       CLK0   => clk2x0,
       CLK180 => clk2x180,
@@ -95,6 +114,12 @@ begin  -- CLOCK
     port map (
       I => clk0,
       O => bufg_clkfb);
+  
+  BUFG_DV : BUFG
+    port map (
+      I => clkdv,
+      O => bufg_clkdv);
+
 
   clkout0 <= bufg_clkfb;
 

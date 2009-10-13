@@ -45,6 +45,13 @@ port (
 	;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
 	;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
     
+	;USBRD : out  STD_LOGIC
+	;USBRXF : in  STD_LOGIC
+	;USBWR : out  STD_LOGIC
+	;USBTXE : in  STD_LOGIC
+	;USBSIWU : out  STD_LOGIC
+	;USBRST : out  STD_LOGIC
+	;USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
     ); 
 end cpu_top;     
         
@@ -90,6 +97,15 @@ architecture synth of cpu_top is
     	C    : out std_logic_vector(31 downto 0)
     	);
     end component;
+    
+   	component FPU
+	  port (
+	    op   : in  std_logic_vector(5 downto 0);
+	    A, B : in  std_logic_vector(31 downto 0);
+	    O    : out std_logic_vector(31 downto 0)
+	  );
+	end component;
+   	
    	
    	component lsu is
    		port (
@@ -150,6 +166,24 @@ architecture synth of cpu_top is
 	);
 	end component;
    
+   component IOU
+	port  (
+		clk : in std_logic;
+		rst : in std_logic;
+		iou_op : in std_logic_vector(1 downto 0);
+		writedata : in std_logic_vector(31 downto 0);
+		readdata : out std_logic_vector(31 downto 0);
+		ok : out std_logic;
+		
+		-- FT245BM 側につなぐ
+	   USBRD : out  STD_LOGIC;
+       USBRXF : in  STD_LOGIC;
+       USBWR : out  STD_LOGIC;
+       USBTXE : in  STD_LOGIC;
+       USBSIWU : out  STD_LOGIC;
+       USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
+	);
+	end component;
    
     component clock
   port (
@@ -166,6 +200,8 @@ architecture synth of cpu_top is
 
    
    signal clk,clk90,clk180,clk270,clk2x,clk2x180,clk2x270: std_logic := '0';
+   signal rst : std_logic;
+   
    signal sramc_clk : std_logic;
    signal sram_clk : std_logic;
    
@@ -185,7 +221,7 @@ architecture synth of cpu_top is
    
    signal data_d,data_s1,data_s2,alu_s2,data_d_delay,data_d_now : std_logic_vector(31 downto 0) := (others => '0');
    
-   signal alu_out,lsu_out,io_out : std_logic_vector(31 downto 0) := (others => '0');
+   signal alu_out,fpu_out,lsu_out,iou_out : std_logic_vector(31 downto 0) := (others => '0');
    signal s2select : std_logic := '0';
    signal regwrite,regwrite_buf : std_logic := '0';
    signal regwrite_f : std_logic := '0';
@@ -198,28 +234,28 @@ architecture synth of cpu_top is
    
    signal counter : std_logic_vector(31 downto 0) := (others => '0');
    signal io_led : std_logic_vector(7 downto 0) := (others => '0');
+	signal io_ok   : std_logic;
    
    
-  signal locked   : std_logic;
-    signal logicl : std_logic := '0';
+	signal locked   : std_logic;
+	signal logicl : std_logic := '0';
 begin
 
-    logicl <= '0';
-    
-    
-    
     --参考
     --http://svn.assembla.com/svn/cpu_egi_han/cpu/vhdl/io/sram-test/sram-test2/clock.vhdl
   		CLOCK0 : CLOCK port map (
         clkin     => CLKIN,
-        clkout0   => clk,
-        clkout90  => clk90,
-        clkout180 => clk180,
-        clkout270 => clk270,
+        --clkout0   => clk,
+        --clkout90  => clk90,
+        --clkout180 => clk180,
+        --clkout270 => clk270,
+        clkout2x    => clk,
+    	clkout2x180 => clk180,
+    	clkout2x270 => clk270,
         locked    => locked
         );
               
-    
+    rst <= '0';
     ledout <= io_led(5 downto 0)&pc(0)&(not CLK);
     
     
@@ -231,9 +267,6 @@ begin
 --			--end if;
 --		end if;
 --	end process;
-	
-	
-	
 	
    MEMORY : mem port map (
    	clk,clk,clk180,
@@ -270,18 +303,20 @@ begin
 	 
 	 with reg_write_select_now select
 	  data_d_delay <= alu_out when "000",
-	  --fpu_out when "001",
+	  fpu_out when "001",
 	  lsu_out when "010", 
-	  --iou_out when "011",
+	  iou_out when "011",
 	  pc + '1' when others;
 
-	reg_write_select_now <= reg_write_select_buf when inst_delay = "001" else
+
+
+	reg_write_select_now <= reg_write_select_buf when inst_delay = "001" or io_ok = '1' else
 	reg_write_select;
-	  
-	reg_d_now <= reg_d_buf when inst_delay = "001" else
+	
+	reg_d_now <= reg_d_buf when inst_delay = "001" or io_ok = '1' else
 	reg_d;
 	
-	regwrite_f <= regwrite_buf when inst_delay = "001" else
+	regwrite_f <= regwrite_buf when inst_delay = "001" or (io_ok = '1') else
 	regwrite when inst_delay = "000" and delay = "000" else
 	'0';
 	
@@ -303,6 +338,11 @@ begin
 		data_s1,alu_s2,
 		alu_out
 	);
+	FPU1 : fpu port map (
+		fpu_op,
+		data_s1,data_s2,
+		fpu_out
+	);
 	
    	LSU1 : lsu port map (
    		lsu_op,
@@ -312,14 +352,21 @@ begin
    		ls_address
    	);
 
-	IOU1 : io_dummy_led port map (
+	IOU2 : io_dummy_led port map (
 		clk,
 		iou_op,
 		data_s1,
 		io_led
 	);
 
-
+	IOU1 : iou port map (
+		clk,rst,
+		iou_op,
+		data_s1,
+		iou_out,
+		io_ok,
+		USBRD,USBRXF,USBWR,USBTXE,USBSIWU,USBD
+	);
 
 	--プログラムカウンタ
 	PC1 : process (clk)
@@ -352,6 +399,12 @@ begin
 				reg_d_buf <= reg_d;
 				regwrite_buf <= regwrite;
 				reg_write_select_buf <= reg_write_select;
+			elsif inst_delay = "111" then
+				if io_ok = '1' then
+					inst_delay <= "000";
+				else
+					inst_delay <= inst_delay;
+				end if;
 			elsif inst_delay /= "000" then
 				inst_delay <= inst_delay - '1';
 			end if;
