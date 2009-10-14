@@ -27,8 +27,9 @@ architecture arch of cache is
    
     signal entry : std_logic_vector(10 downto 0) := "00000000000";
     signal read_addr : std_logic_vector(9 downto 0) := (others => '0');
+    signal read : std_logic_vector(31 downto 0) := (others => '0');
 begin
-	read_data <= cache_data(conv_integer(read_addr));
+	read_data <= read;
 	
 	entry <= cache(conv_integer(address(9 downto 0)));
 	hit <= '1' when entry(9 downto 0) = address(19 downto 10) and entry(10) = '1' else '0';
@@ -49,7 +50,7 @@ begin
 	        if set = '1' then
 	            cache_data(conv_integer(address(9 downto 0))) <= set_data;
 	        end if;
-	        read_addr <= address(9 downto 0);
+	        read <= cache_data(conv_integer(address(9 downto 0)));
 	    end if;
 	end process;
 	

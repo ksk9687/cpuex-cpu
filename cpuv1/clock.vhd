@@ -44,8 +44,7 @@ architecture CLOCK of CLOCK is
   signal rst0 : std_logic;
   signal rst1 : std_logic;
   
-  
-
+ 
 begin  -- CLOCK
 
   locked <= locked0 and locked1;
@@ -60,7 +59,7 @@ begin  -- CLOCK
       CLKIN_PERIOD       => 20.0,
       CLKFX_MULTIPLY     => 2,
       CLKFX_DIVIDE       => 1,
-      CLKDV_DIVIDE       => 8.0,
+      CLKDV_DIVIDE       => 2.0,
       CLKOUT_PHASE_SHIFT => "NONE")
     port map (
       CLKIN  => ibufg_clkin,
@@ -85,19 +84,19 @@ begin  -- CLOCK
 	end process;
 
 
-  rst1 <= '1' when rst0 = '1' or locked0_b3 = '0' else
+  rst1 <= '1' when rst0 = '1' or locked0 = '0' else
           '0';
   
   DCM1 : DCM
     generic map (
       CLK_FEEDBACK       => "1X",
-      CLKIN_PERIOD       => 160.0,
+      CLKIN_PERIOD       => 10.0,
       CLKFX_MULTIPLY     => 2,
       CLKFX_DIVIDE       => 1,
       CLKDV_DIVIDE       => 2.0,
       CLKOUT_PHASE_SHIFT => "NONE")
     port map (
-      CLKIN  => bufg_clkdv,
+      CLKIN  => bufg_clk2x,
       CLKFB  => bufg_clk2xfb,
       CLK0   => clk2x0,
       CLK180 => clk2x180,
