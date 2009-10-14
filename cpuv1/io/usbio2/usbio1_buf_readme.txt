@@ -1,7 +1,44 @@
+バッファ付きUSB I/Oの説明
+
+[ファイル]usbio1_buf.vhd,usbio1.vhd
+[参考]usbio1_test2.vhdという、16byteごとにエコーするプログラムを付しておきます。
+【重要】usbio1.vhdを更新しました。前回のものにバグがあったので、修正しておきます。また、このモジュールを作るにあたり、多少信号を増やしています。
+【重要】usbio1.vhdは20nsで動作します。
+
+[インターフェース]
+clk : in STD_LOGIC; --20nsクロック
+RST : in STD_LOGIC; --リセット信号
+-- こちらを使用
+USBBUF_RD : in STD_LOGIC;     -- read 制御:1にすると、バッファから1個消す
+USBBUF_RData : out STD_LOGIC_VECTOR(7 downto 0);      -- read data
+USBBUF_RC : out STD_LOGIC;    -- read 完了:1の時読んでよい
+USBBUF_WD : in STD_LOGIC;     -- write 制御:1にすると、データを取り込む
+USBBUF_WData : in STD_LOGIC_VECTOR(7 downto 0);       -- write data
+USBBUF_WC : out STD_LOGIC;    -- write 完了:1の時書き込んでよい
+--ledout : out STD_LOGIC_VECTOR(7 downto 0);
+-- FT245BM 側につなぐ
+USBRD : out  STD_LOGIC;
+USBRXF : in  STD_LOGIC;
+USBWR : out  STD_LOGIC;
+USBTXE : in  STD_LOGIC;
+USBSIWU : out  STD_LOGIC;
+USBRST : out  STD_LOGIC;
+USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
+
+[使い方]
+基本的に、1クロックの中で動作させるためには、USBBUF_RDやUSBBUF_WDを1にした状態で、出てきた信号をチェックしてください。
+つまり、readしたいときは、
+1.USBBUF_RDを1にする
+2.次のクロックで、USBBUF_RData,USBBUF_RCを保存、USBBUF_RCをチェックして、1だったら有効なデータである
+writeしたいときは、
+1.USBBUF_WDを1にし、USBBUF_WDataにデータを出力する
+2.次のクロックで、USBBUF_RCをみて、1だったら、データの送信が受理されている
+
+バッファの境界にエラーがある可能性があるので、600KBぐらいの読み書きをテストしてください。
 
 
-
-
+---------------------------------------------------------------------------------------------------
+以下中身のメモ
 
 信号
 	USBBUF_RD
