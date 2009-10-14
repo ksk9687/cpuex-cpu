@@ -101,6 +101,7 @@ begin
               timecounter<=0;
               intstate<=5;
 				else
+              wdata <= USBIO_WData;
               timecounter<=1;
               intstate<=6;
 				end if;
