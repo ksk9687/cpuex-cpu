@@ -418,12 +418,3 @@ begin
 	);
 	
 end synth;
-
-
-
-
-
-
-
-
-

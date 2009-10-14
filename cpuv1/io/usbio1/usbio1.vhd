@@ -71,8 +71,6 @@ begin
 	 WAIT_AFT_WR_H   when (intstate = 6) else
 	 WAIT_AFT_WR_L   when (intstate = 7) else
 	 WAIT_AFT_WRITE;
-	 
-	 
   USBSIWU<='1';
   USBIO_RC<=state(5);
   USBIO_WC<=state(4);
@@ -80,8 +78,6 @@ begin
   USBWR<=state(2);
   USBD<=(others=>'Z') when state(0) = '0' else wdata;
   USBIO_RData <= rdata;
-  
-  
   process (clk, rst)
   begin  -- process
     if rst = '1' then                   -- asynchronous reset
@@ -106,6 +102,7 @@ begin
               timecounter<=0;
               intstate<=5;
 				else
+              wdata <= USBIO_WData;
               timecounter<=1;
               intstate<=6;
 				end if;
