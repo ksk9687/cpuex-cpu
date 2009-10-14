@@ -214,7 +214,7 @@ architecture synth of cpu_top is
    signal sram_clk : std_logic;
    
    signal inst : std_logic_vector(31 downto 0) := op_halt&"00"&x"000000";
-   signal pc,nextpc,jmp_pc : std_logic_vector(31 downto 0) := (others => '1');
+   signal pc,nextpc,jmp_pc : std_logic_vector(31 downto 0) := x"00100000";
   
    signal alu_op : std_logic_vector(5 downto 0) := (others => '0');
    signal fpu_op : std_logic_vector(5 downto 0) := (others => '0');
@@ -399,9 +399,11 @@ begin
 	 data_s1 when "011",--jr
 	 pc when others;
 
-	PC1 : process (clk)
+	PC1 : process (clk,rst)
 	begin
-		if rising_edge(clk)then
+		if rst = '1' then
+		 	pc <= x"00100000";
+		elsif rising_edge(clk)then
 			pc <= nextpc;
 		end if;
 	end process PC1;
