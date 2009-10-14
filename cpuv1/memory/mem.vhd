@@ -58,7 +58,7 @@ end mem;
 architecture synth of mem is
 	type mem_state is (idle,init,
 	inst,inst_w1,inst_w2,inst_w3,inst_w4,
-	exec,exec_hit,wait_ok,
+	exec,exec_hit,wait_ok,store_w1,
 	data_w1,data_w2,data_w3,data_w4,load_end
 	);
 	signal state : mem_state := idle;
@@ -185,14 +185,29 @@ architecture synth of mem is
 --op_halt & "00000" & "00000" & x"0001"
 --	);
 	
-	(--io out
+	(--io out 
+--		op_li & "00000" & "00000" & x"0000",
+--		op_li & "00000" & "10000" & x"0000",
+--		op_li & "00000" & "10001" & x"000C",
+--		op_li & "00000" & "10010" & x"0100",
+--		
+--		op_load & "10001" & "10100" & x"0000",
+--		op_store & "10000" & "10100" & x"0000",
+--		op_addi & "10000" & "10000" & x"0001",
+--		op_addi & "10001" & "10001" & x"0001",
+		
+--		op_cmp & "10001" & "10010" & "10011" & "00000000000",
+--		op_jmp & "10011" & "00110" & x"FFFB",
+--		op_jr & "00000" & "00000" & x"0000",
+--		op_halt & "00000" & "00000" & x"0001",
+		
 		op_li & "00000" & "00000" & x"0000",
 		op_li & "00000" & "00010" & x"0100",
 		op_li & "00000" & "00001" & x"0000",
 		op_read & "00001" & "00001" & x"0000",
 		
 		op_cmp & "00001" & "00010" & "00011" & "00000000000",
-		op_jmp & "00011" & "00110" & x"0002",-- if r1 > r2 then jump
+		op_jmp & "00011" & "00001" & x"0002",-- if r1 > r2 then jump
 		op_write & "00001" & "00000" & x"0000",
 		op_jmp & "00000" & "00000" & x"FFFB",
 		
@@ -272,24 +287,22 @@ architecture synth of mem is
 	end component;
 
 begin
-	  
-
-
 	
 	ADDR <= count(19 downto 0) when state = init else
 	pc(19 downto 0) when state = inst else
 	ls_address(19 downto 0) when (state = exec) or (state = exec_hit) else
 	(others => '0');
 	
-	DATAIN <= RAM(conv_integer(count(4 downto 0))) when state = init else
-	write_data when (state = exec) or (state = exec_hit) else
-	(others => '0');
+	with state select
+	DATAIN <= RAM(conv_integer(count(4 downto 0))) when init,
+	write_data when exec | exec_hit,
+	(others => '0') when others;
 	
-	RW <= '0' when state = init else--初めのメモリ書き込み
-	(not load_store(0)) when state = exec or state = exec_hit else
-	'1';
+	with state select
+	 RW <= '0' when init,--初めのメモリ書き込み
+	 (not load_store(0)) when exec | exec_hit,
+	 '1' when others;
 
-	 
 	with state select
 	read_inst <= cache_out when exec_hit,
 	DATAOUT when exec,
@@ -340,19 +353,25 @@ begin
 			when exec_hit =>--キャッシュヒット
 				if (load_store = "10") then--Loadだけ伸びる
 					state <= data_w1;
+				elsif (load_store = "11") then--Store
+					state <= store_w1;
 				elsif (ok = '0') then--FPU,IO待ち
 					state <= wait_ok;
 				else
 					state <= inst;
 				end if;
 			when exec =>--キャッシュミス
-				if (load_store = "10") then--Loadだけ伸びる
+				if (load_store = "10") then--Load
 					state <= data_w1;
+				elsif (load_store = "11") then--Store
+					state <= store_w1;
 				elsif (ok = '0') then--FPU,IO待ち
 					state <= wait_ok;
 				else
 					state <= inst;
 				end if;
+			when store_w1 =>
+				state <= inst;
 			when data_w1 =>
 				state <= data_w2;
 			when data_w2 =>

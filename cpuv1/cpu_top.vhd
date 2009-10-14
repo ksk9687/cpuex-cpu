@@ -410,7 +410,7 @@ begin
 	ContDown : process (clk)
 	begin
 		if rising_edge(clk)then
-			if (delay /= "000") then--新しい遅延のある命令
+			if (delay /= "000") then--新しい遅延のある命令が発行された。
 				inst_delay <= delay;
 				reg_d_buf <= reg_d;
 				regwrite_buf <= regwrite;
