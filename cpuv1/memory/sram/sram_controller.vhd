@@ -48,12 +48,15 @@ end sram_controller;
 
 architecture Behavioral of sram_controller is
 
-  signal data_buf0 : std_logic_vector(31 downto 0);
-  signal data_buf1 : std_logic_vector(31 downto 0);
+  signal data_buf0 : std_logic_vector(31 downto 0) := (others => '0');
+  signal data_buf1 : std_logic_vector(31 downto 0) := (others => '0');
+  signal data_buf2 : std_logic_vector(31 downto 0) := (others => '0');
   signal rw_buf0 :  std_logic := '0';
   signal rw_buf1 :  std_logic := '0';
+  signal rw_buf2 :  std_logic := '0';
   
-  signal data_out : std_logic_vector(31 downto 0);
+  signal state :std_logic := '0';
+  signal data_out : std_logic_vector(31 downto 0) := (others => '0');
   
   --xor計算　パリティ用
   function br_xor(a: std_logic_vector) return std_logic is
@@ -80,22 +83,26 @@ begin
   SRAMCEA2X  <= '0';
   SRAMBWA    <= "0000";
 
+	SRAMIOA <= data_buf2 when rw_buf2 = '0' and clk = '1' else
+	(others => 'Z');
+	
+	SRAMIOPA <= "0000" when rw_buf2 = '0' and clk = '1' else
+	(others => 'Z');
+
   process (clk)
   begin
     if clk'event and clk = '1' then
-      if rw_buf1 = '0' then
-        --Write
-		--2clock後にデータを渡す
-        SRAMIOA  <= data_buf1;
-        SRAMIOPA <=br_xor(data_buf1(31 downto 24))&
-		br_xor(data_buf1(23 downto 16))&
-		br_xor(data_buf1(15 downto 8))&
-		br_xor(data_buf1(7 downto 0));
-      else
-        -- Read
-        SRAMIOA  <= (others => 'Z');
-        SRAMIOPA <= (others => 'Z');
-      end if;
+    	state <= '1';
+--      if rw_buf1 = '0' then
+--        --Write
+--		--2clock後にデータを渡す
+--        SRAMIOA  <= data_buf1;
+--        SRAMIOPA <=br_xor(data_buf1(31 downto 24))&br_xor(data_buf1(23 downto 16))&br_xor(data_buf1(15 downto 8))&br_xor(data_buf1(7 downto 0));
+--      else
+--        -- Read
+--        SRAMIOA  <= (others => 'Z');
+--        SRAMIOPA <= (others => 'Z');
+--      end if;
 
       SRAMAA  <= ADDR;
       SRAMRWA <= RW;
@@ -103,13 +110,16 @@ begin
 	  --バッファ
       rw_buf0    <= RW;
       rw_buf1    <= rw_buf0;
+      rw_buf2    <= rw_buf1;
 	  
       data_buf0    <= DATAIN;
       data_buf1    <= data_buf0;
+      data_buf2    <= data_buf1;
 	  
 	   DATAOUT <= data_out;
-    end if;
+	end if;
   end process;
+ 
   
   --sramに与えるクロックに合わせてsramの出力を保存
   process (sramclk)

@@ -1,13 +1,10 @@
-
+--　メモリ
 
 -- @module : mem
 -- @author : ksk
 -- @date   : 2009/10/06
 
----SRAMを実装した場合の予定
--- 二倍速
--- 一回目は 命令フェッチ
--- 二回目は ロードストア
+
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -19,11 +16,11 @@ use work.instruction.all;
 
 entity mem is 
 port (
-    clk,fastclk,sramclk	: in	  std_logic;
+    clk,sramcclk,sramclk	: in	  std_logic;
     
     pc : in std_logic_vector(31 downto 0);
     ls_address : in std_logic_vector(31 downto 0);
-    load_store : in std_logic;
+    load_store : in std_logic_vector(1 downto 0);
     write_data : in std_logic_vector(31 downto 0);
     read_inst,read_data : out std_logic_vector(31 downto 0);
     read_data_ready : out std_logic
@@ -58,11 +55,12 @@ end mem;
         
 
 architecture synth of mem is
-	type mem_state is (init,
+	type mem_state is (idle,init,
 	inst,inst_w1,inst_w2,inst_w3,inst_w4,
-	data,data_w1,data_w2,data_w3,data_w4,write_end
+	exec,exec_hit,
+	data_w1,data_w2,data_w3,data_w4,load_end
 	);
-	signal state : mem_state := init;
+	signal state : mem_state := idle;
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
 	
 	signal RW : std_logic := '0';
@@ -70,28 +68,114 @@ architecture synth of mem is
 	signal DATAOUT : std_logic_vector(31 downto 0) := (others => '0');
 	signal ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	
-    type ram_type is array (0 to 15) of std_logic_vector (31 downto 0); 
+	signal cache_out : std_logic_vector(31 downto 0) := (others => '0');
+	signal cache_hit : std_logic := '0';
+	signal cache_set : std_logic := '0';
+		
+    type ram_type is array (0 to 31) of std_logic_vector (31 downto 0); 
 	signal RAM : ram_type :=
-	(--fib10
-	op_li & "00000" & "00000" & x"0000",
-	op_li & "00000" & "00001" & x"0000",
-	op_li & "00000" & "00010" & x"0001",
-	op_li & "00000" & "00011" & x"000A",
-	
-	op_li & "00000" & "00100" & x"0001",
-	op_add & "00001" & "00010" & "00000" & "00000000000",
-	op_addi & "00010" & "00001" & x"0000",
-	op_addi & "00000" & "00010" & x"0000",
-	
-	op_addi & "00011" & "00011" & x"FFFF",
-	op_cmp & "00011" & "00100" & "00101" & "00000000000",
-	op_jmp & "00101" & "00011" & x"FFFB",-- -5
-	op_write & "00000" & "00000" & x"0000",
-	
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000",
-	op_halt & "00000" & "00000" & x"0000"
+--	(--fib10
+--	op_li & "00000" & "00000" & x"0000",
+--	op_li & "00000" & "00001" & x"0000",
+--	op_li & "00000" & "00010" & x"0001",
+--	op_li & "00000" & "00011" & x"000A",
+--	
+--	op_li & "00000" & "00100" & x"0001",
+--	op_add & "00001" & "00010" & "00000" & "00000000000",
+--	op_addi & "00010" & "00001" & x"0000",
+--	op_addi & "00000" & "00010" & x"0000",
+--	
+--	op_addi & "00011" & "00011" & x"FFFF",
+--	op_cmp & "00011" & "00100" & "00101" & "00000000000",
+--	op_jmp & "00101" & "00011" & x"FFFB",-- -5\
+--	--op_write & "00000" & "00000" & x"0000",
+--	op_store & "00011" & "00000" & x"0000",
+--
+--
+--	--op_store & "00011" & "00000" & x"0001",
+--	--op_nop & "00000" & "00000" & x"0000",
+--	op_load & "00011" & "00000" & x"0000",
+--	op_write & "00000" & "00000" & x"0000",
+--	--op_halt & "00000" & "00000" & x"0000",
+--	--op_halt & "00000" & "00000" & x"0000",
+--	op_halt & "00000" & "00000" & x"0000",
+--	op_halt & "00000" & "00000" & x"0000"
+--	);
+--		(--rec fib 10
+--op_li & "00000" & "00000" & x"0000",
+--op_li & "00000" & "11110" & x"ffff",
+--op_li & "00000" & "00011" & x"0001",
+--op_load & "00000" & "00001" & x"0017",
+--
+--op_jal & "00000" & "00000" & x"0007",
+--op_write & "00001" & "00000" & x"0000",
+--op_halt & "00000" & "00000" & x"0000",
+--op_cmp & "00001" & "00011" & "00010" & "00000000000",--fib
+--
+--op_jmp & "00010" & "00100" & x"000E",
+--op_addi & "11110" & "11110" & x"FFFD",
+--op_store & "11110" & "11111" & x"0002",
+--op_store & "11110" & "00001" & x"0001",
+--
+--op_addi & "00001" & "00001" & x"FFFF",
+--op_jal & "00000" & "00000" & x"0007",
+--op_store & "11110" & "00001" & x"0000",
+--op_load & "11110" & "00001" & x"0001",
+--
+--op_addi & "00001" & "00001" & x"FFFE",
+--op_jal & "00000" & "00000" & x"0007",
+--op_load & "11110" & "00010" & x"0000",
+--op_add & "00001" & "00010" & "00001" & "00000000000",
+--
+--op_load & "11110" & "11111" & x"0002",
+--op_addi & "11110" & "11110" & x"0003",
+--op_jr & "11111" & "00000" & x"0000",
+--"000000" & "00000" & "00000" & x"000A",
+--
+--op_halt & "00000" & "00000" & x"0001",
+--op_halt & "00000" & "00000" & x"0001",
+--op_halt & "00000" & "00000" & x"0001",
+--op_halt & "00000" & "00000" & x"0001",
+--
+--op_halt & "00000" & "00000" & x"0001",
+--op_halt & "00000" & "00000" & x"0001",
+--op_halt & "00000" & "00000" & x"0001",
+--op_halt & "00000" & "00000" & x"0001"
+--	);
+			(--rec float fib 16
+"00101000000111100111111111111111",
+"00100100000000110000000000011001",
+"00100100000000010000000000010111",
+"00100100000001000000000000011001",
+"00111000000000000000000000000111",
+"01000100001000000000000000000000",
+"01001100000000000000000000000000",
+"00110000001000110001000000000000",
+"00110100010001000000000000001110",
+"00000111110111101111111111111101",
+"00101111110111110000000000000010",
+"00101111110000010000000000000001",
+"00011000001001000000100000000000",
+"00111000000000000000000000000111",
+"00101111110000010000000000000000",
+"00100111110000010000000000000001",
+"00011000001001000000100000000000",
+"00111000000000000000000000000111",
+"00100111110000100000000000000000",
+"00010100001000100000100000000000",
+"00100111110111110000000000000010",
+"00000111110111100000000000000011",
+"00111111111000000000000000000000",
+"01000011000000000000000000000000",
+"00000000000000000000000000000000",
+"00111111000000000000000000000000",
+"01000000000000000000000000000000",
+op_halt & "00000" & "00000" & x"0001",
+
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001",
+op_halt & "00000" & "00000" & x"0001"
 	);
 	
 	component sram_controller is
@@ -126,84 +210,111 @@ architecture synth of mem is
 		;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
 	);
 	end component;
-begin
+	
+	component cache is
+	port  (
+		clk : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+	end component;
 
-	--とりあえず分散RAMをメモリとして利用する
+begin
 	  
---	--データ
---	process (clk)
---	begin
---	    if rising_edge(clk) then
---	        if load_store = '1' then
---	            RAM(conv_integer(ls_address(3 downto 0))) <= write_data;
---	        end if;
---	    end if;
---	end process;
---	read_data <= RAM(conv_integer(ls_address(3 downto 0)));
---	
---	-- 命令
---	read_inst <= RAM(conv_integer(pc(3 downto 0)));
 
 
 	
 	ADDR <= count(19 downto 0) when state = init else
 	pc(19 downto 0) when state = inst else
+	ls_address(19 downto 0) when (state = exec) or (state = exec_hit) else
 	(others => '0');
 	
-	DATAIN <= RAM(conv_integer(count(3 downto 0))) when state = init else
-	write_data when (state = data) else
+	DATAIN <= RAM(conv_integer(count(4 downto 0))) when state = init else
+	write_data when (state = exec) or (state = exec_hit) else
 	(others => '0');
 	
-	RW <= '0' when state = init else
-	(not load_store) when state = data else
-	'1';		
+	RW <= '0' when state = init else--初めのメモリ書き込み
+	(not load_store(0)) when state = exec or state = exec_hit else
+	'1';
 	
-	read_inst <= DATAOUT when state = data else
+	read_inst <= cache_out when state = exec_hit else
+	DATAOUT when state = exec or state = exec_hit else
 	sleep;
 	
-	read_data_ready <= '1' when state = data_w4 else
+	read_data_ready <= '1' when state = load_end else
 	'0';
 	
-	process(fastclk)
+	read_data <= DATAOUT when state = inst else
+	"010101010101"&"0101010101"&"0101010101";
+	
+	cache_set <= '1' when state = exec else --ミスじのみセット
+	'0';
+	
+	
+	process(clk)
 	begin
-	if rising_edge(fastclk) then
-		if state = init then
-			if count(4 downto 0) = "10000" then
+	if rising_edge(clk) then
+		case state is
+			when idle => --初期化？のせいでクロックがおかしくなるの対策（主にmodelsim）
+				if count(4 downto 0) = "10000" then
+					state <= init;
+					count <= (others => '0');
+				else
+					count <= count + '1';
+					state <= state;
+				end if;
+			when init =>
+				if count(5 downto 0) = "100000" then
+					state <= inst;
+				else
+					count <= count + '1';
+					state <= state;
+				end if;
+			when inst =>
+				if cache_hit = '1' then--ヒット時
+					state <= exec_hit;
+				else--ミス時
+					state <= inst_w1;
+				end if;
+			when inst_w1 =>
+				state <= inst_w2;
+			when inst_w2 =>
+				--state <= data;
+				state <= inst_w3;
+			when inst_w3 =>
+				state <= exec;
+			when exec_hit =>--キャッシュヒット
+				if (load_store = "10") then--Loadだけ伸びる
+					state <= data_w1;
+				else
+					state <= inst;
+				end if;
+			when exec =>--キャッシュミス
+				if (load_store = "10") then--Loadだけ伸びる
+					state <= data_w1;
+				else
+					state <= inst;
+				end if;
+			when data_w1 =>
+				state <= data_w2;
+			when data_w2 =>
+				--state <= inst;
+				state <= data_w3;
+			when data_w3 =>
 				state <= inst;
-			else
-				state <= state;
-			end if;
-		elsif state = inst then 
-			state <= inst_w1;
-		elsif state = inst_w1 then 
-			state <= inst_w2;
-		elsif state = inst_w2 then 
-			state <= inst_w3;
-		elsif state = inst_w3 then 
-			state <= data;
-		elsif state = inst_w4 then 
-			state <= data;
-		elsif state = data then
-			if (load_store = '1') then--STOREだけ伸びる
-				state <= data_w1;
-			else
+			when load_end =>
 				state <= inst;
-			end if;
-		elsif state = data_w1 then
-			state <= data_w2;
-		elsif state = data_w2 then
-			state <= data_w3;
-		elsif state = data_w3 then
-			state <= write_end;
-		elsif state = write_end then
-			state <= inst;
+			when others =>
+				state <= inst;
+			end case;
 		end if;
-		count <= count + '1';
-	end if;
 	end process;
 
 	SRAMC : sram_controller port map(
-		 fastclk
+		 sramcclk
 		,sramclk
 		,ADDR
 		,DATAIN
@@ -216,8 +327,18 @@ begin
 		,SRAMCELA1X,SRAMCEHA1X,SRAMCEA2X,SRAMCEA2
 		,SRAMLBOA,SRAMXOEA,SRAMZZA
 	);
-
+	
+	ICACHE:cache port map(
+		clk
+		,pc(19 downto 0)
+		,DATAOUT
+		,cache_set
+		,cache_out
+		,cache_hit
+	);
+	
 end synth;
+
 
 
 
