@@ -112,7 +112,7 @@ begin
 		);
 
 
-	readdata <= x"000000"&"00"&(not readret)&(not writeret)&readedata;
+	readdata <= x"00000"&"00"&(not readret)&(not writeret)&readedata;
 	--status(2):read‚Å‚«‚È‚¢ -> read‚Å‚«‚È‚¢
 	--status(1):ˆ—’† -> write‚Å‚«‚È‚¢
 	ok <= readret and writeret;
