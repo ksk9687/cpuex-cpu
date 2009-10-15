@@ -11,15 +11,18 @@ entity IOU is
 		iou_op : in std_logic_vector(1 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		readdata : out std_logic_vector(31 downto 0);
-		ok : out std_logic;
+		ok : out std_logic
 		
-		-- FT245BM 側につなぐ
-	   USBRD : out  STD_LOGIC;
-       USBRXF : in  STD_LOGIC;
-       USBWR : out  STD_LOGIC;
-       USBTXE : in  STD_LOGIC;
-       USBSIWU : out  STD_LOGIC;
-       USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
+		;USBWR : out  STD_LOGIC
+		;USBRDX : out  STD_LOGIC
+		
+		;USBTXEX : in  STD_LOGIC
+		;USBSIWU : out  STD_LOGIC
+		
+		;USBRXFX : in  STD_LOGIC
+		;USBRSTX : out  STD_LOGIC
+		
+		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
 	);
 end IOU;
 
@@ -47,60 +50,53 @@ architecture arch of IOU is
 	           );
 	end component;
 	
-	signal read : std_logic := '0';
-	signal read_end : std_logic := '0';
 	
-	signal write : std_logic := '0';
-	signal write_end : std_logic := '0';
-	
-	
-	signal free : std_logic := '1';--暇だ・・・と思っているかどうか
-	
-	signal op_buf : std_logic_vector(1 downto 0);
-	
-	signal readdata_out : std_logic_vector(7 downto 0);
-	signal readdata_buf : std_logic_vector(7 downto 0);
-	signal writedata_buf : std_logic_vector(7 downto 0);
+	component usb2
+	Port (
+		CLK : in  STD_LOGIC
+		
+		;do : in STD_LOGIC
+		;read_write : in STD_LOGIC
+		;data_write : in STD_LOGIC_VECTOR (7 downto 0)
+		;data_read : out STD_LOGIC_VECTOR (7 downto 0)
+		
+		;status : out STD_LOGIC_VECTOR (2 downto 0)
+		
+		;USBWR : out  STD_LOGIC
+		;USBRDX : out  STD_LOGIC
+		
+		;USBTXEX : in  STD_LOGIC
+		;USBSIWU : out  STD_LOGIC
+		
+		;USBRXFX : in  STD_LOGIC
+		;USBRSTX : out  STD_LOGIC
+		
+		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
+		);
+end component;
+	signal data: std_logic_vector(7 downto 0);
+	signal status: std_logic_vector(2 downto 0);
 begin
-	readdata <= x"000000"&readdata_buf;
 	
-	with op_buf select
-	 read <= '1' when "10",
-	 '0' when others;
-
-	with op_buf select
-	 write <= '1' when "11",
-	 '0' when others;
 	 
 	 
-   USB : usbio port map (
-   	clk,rst,
-   	read,readdata_out,read_end,
-   	write,writedata_buf,write_end,
-   	
-	USBRD,USBRXF,USBWR,USBTXE,USBSIWU,USBD
-   );
+--   USB : usbio port map (
+--   	clk,rst,
+--   	read,readdata_out,read_end,
+--   	write,writedata_buf,write_end,
+--   	
+--   	USBRD,USBRXF,USBWR,USBTXE,USBSIWU,USBD
+--   );
 
-	process(clk)
-	begin
-		if rising_edge(clk) then
-			if (free = '1') and (op_buf(1) = '1') then--命令が来た
-				writedata_buf <= writedata(7 downto 0);
-				op_buf <= iou_op;
-				free <= '0';
-				ok <= '0';
-			else
-				if (read_end='0' or write_end= '0') and free = '0' then
-					op_buf <= "00";
-					ok <= '1';
-					free <= '1';
-					readdata_buf <= readdata_out;
-				else
-					ok <= '0';
-				end if;
-			end if;
-		end if;
-	end process;
+   USB : usb2 port map (
+		CLK,
+		iou_op(1),iou_op(0),
+		writedata(7 downto 0),data,
+		status,
+		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRSTX,USBD
+		);
+	readdata <= x"00000"&"00"&status(2)&status(1)&data;
+	ok <= (not status(0)) and (not status(1));
 	
 
 end arch;

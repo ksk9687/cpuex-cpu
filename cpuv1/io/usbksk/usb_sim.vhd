@@ -9,6 +9,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
+
 entity usb_sim is
 	Port (
 		USBWR : in  STD_LOGIC
@@ -30,7 +31,7 @@ begin
 
 USBRXFX <= '0';
 USBTXEX <= '0';
-USBD <= (others => 'Z');
+USBD <= (others => '1');
 
 
 end sim;

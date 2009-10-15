@@ -44,14 +44,17 @@ port (
 	;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
 	;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
 	;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
-    
-	;USBRD : out  STD_LOGIC
-	;USBRXF : in  STD_LOGIC
+
 	;USBWR : out  STD_LOGIC
-	;USBTXE : in  STD_LOGIC
+	;USBRDX : out  STD_LOGIC
+	
+	;USBTXEX : in  STD_LOGIC
 	;USBSIWU : out  STD_LOGIC
+	
+	;USBRXFX : in  STD_LOGIC
 	;USBRST : out  STD_LOGIC
-	;USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
+	
+	;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
     ); 
 end cpu_top;     
         
@@ -92,6 +95,7 @@ architecture synth of cpu_top is
 
 	component alu
     	port (
+ 		clk : in std_logic;
     	op : in std_logic_vector(5 downto 0);
     	A, B : in  std_logic_vector(31 downto 0);
     	C    : out std_logic_vector(31 downto 0)
@@ -129,6 +133,7 @@ architecture synth of cpu_top is
 	    ls_address : in std_logic_vector(31 downto 0);
 	    load_store : in std_logic_vector(1 downto 0);
 	    write_data : in std_logic_vector(31 downto 0);
+		ok	:in std_logic;
 	    read_inst,read_data : out std_logic_vector(31 downto 0);
 	    read_data_ready : out std_logic
     
@@ -173,15 +178,18 @@ architecture synth of cpu_top is
 		iou_op : in std_logic_vector(1 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		readdata : out std_logic_vector(31 downto 0);
-		ok : out std_logic;
+		ok : out std_logic
 		
-		-- FT245BM 側につなぐ
-	   USBRD : out  STD_LOGIC;
-       USBRXF : in  STD_LOGIC;
-       USBWR : out  STD_LOGIC;
-       USBTXE : in  STD_LOGIC;
-       USBSIWU : out  STD_LOGIC;
-       USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
+		;USBWR : out  STD_LOGIC
+		;USBRDX : out  STD_LOGIC
+		
+		;USBTXEX : in  STD_LOGIC
+		;USBSIWU : out  STD_LOGIC
+		
+		;USBRXFX : in  STD_LOGIC
+		;USBRSTX : out  STD_LOGIC
+		
+		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
 	);
 	end component;
    
@@ -206,7 +214,7 @@ architecture synth of cpu_top is
    signal sram_clk : std_logic;
    
    signal inst : std_logic_vector(31 downto 0) := op_halt&"00"&x"000000";
-   signal pc : std_logic_vector(31 downto 0) := (others => '1');
+   signal pc,nextpc,jmp_pc : std_logic_vector(31 downto 0) := x"00100000";
   
    signal alu_op : std_logic_vector(5 downto 0) := (others => '0');
    signal fpu_op : std_logic_vector(5 downto 0) := (others => '0');
@@ -234,28 +242,32 @@ architecture synth of cpu_top is
    
    signal counter : std_logic_vector(31 downto 0) := (others => '0');
    signal io_led : std_logic_vector(7 downto 0) := (others => '0');
-	signal io_ok   : std_logic;
+   signal ok,fpu_ok,iou_ok   : std_logic := '0';
    
    
 	signal locked   : std_logic;
 	signal logicl : std_logic := '0';
 begin
 
+  ROC0 : ROC
+    port map (
+      O => rst);
+      
     --参考
     --http://svn.assembla.com/svn/cpu_egi_han/cpu/vhdl/io/sram-test/sram-test2/clock.vhdl
   		CLOCK0 : CLOCK port map (
         clkin     => CLKIN,
-        --clkout0   => clk,
-        --clkout90  => clk90,
-        --clkout180 => clk180,
-        --clkout270 => clk270,
-        clkout2x    => clk,
-    	clkout2x180 => clk180,
-    	clkout2x270 => clk270,
+        clkout0   => clk,
+        clkout90  => clk90,
+        clkout180 => clk180,
+        clkout270 => clk270,
+        --clkout2x    => clk,
+    	--clkout2x180 => clk180,
+    	--clkout2x270 => clk270,
         locked    => locked
         );
-              
-    rst <= '0';
+        
+    
     ledout <= io_led(5 downto 0)&pc(0)&(not CLK);
     
     
@@ -274,6 +286,7 @@ begin
    	ls_address,
    	ls_f,
    	data_s2,
+   	ok,
    	inst,lsu_out,read_data_ready
 	,SRAMAA,SRAMIOA,SRAMIOPA
 	,SRAMRWA,SRAMBWA
@@ -283,6 +296,7 @@ begin
 	,SRAMLBOA,SRAMXOEA,SRAMZZA
    );
    
+
    DEC : decoder port map (
    	inst,
    	alu_op,
@@ -309,15 +323,20 @@ begin
 	  pc + '1' when others;
 
 
-
-	reg_write_select_now <= reg_write_select_buf when inst_delay = "001" or io_ok = '1' else
+   ok <= '0' when fpu_ok = '0' and reg_write_select_now = "001" else
+   '0' when iou_ok = '0' and reg_write_select_now = "011" else
+   '0' when inst_delay /= "000" and inst_delay /= "001" and inst_delay /= "111" else
+   '0' when delay /= "000" else
+   '1';
+   
+	reg_write_select_now <= reg_write_select_buf when inst_delay /= "000" else
 	reg_write_select;
 	
-	reg_d_now <= reg_d_buf when inst_delay = "001" or io_ok = '1' else
+	reg_d_now <= reg_d_buf when inst_delay /= "000" else
 	reg_d;
 	
-	regwrite_f <= regwrite_buf when inst_delay = "001" or (io_ok = '1') else
-	regwrite when inst_delay = "000" and delay = "000" else
+	regwrite_f <= regwrite when inst_delay = "000" and delay = "000" else
+	regwrite_buf when ok = '1' else
 	'0';
 	
 	REGISTERS : reg port map (
@@ -334,6 +353,7 @@ begin
 	 data_s2 when others;
 	
 	ALU1 : alu port map (
+		clk,
 		alu_op,
 		data_s1,alu_s2,
 		alu_out
@@ -364,29 +384,27 @@ begin
 		iou_op,
 		data_s1,
 		iou_out,
-		io_ok,
-		USBRD,USBRXF,USBWR,USBTXE,USBSIWU,USBD
+		iou_ok,
+		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRST,USBD
 	);
 
 	--プログラムカウンタ
-	PC1 : process (clk)
+	jmp_pc <= pc + ex_im when (((data_s1(2) and reg_s2(2)) or (data_s1(1) and reg_s2(1)) or (data_s1(0) and reg_s2(0)))) = '0' else
+	pc + 1;
+	
+	with pc_op select
+	 nextpc <= pc + 1 when "000",
+	 jmp_pc when "001",
+	 "00000000000" & reg_s2 & im when "010",--jal
+	 data_s1 when "011",--jr
+	 pc when others;
+
+	PC1 : process (clk,rst)
 	begin
-		if rising_edge(clk)then
-			if pc_op = "000" then
-				pc <= pc + 1;
-			elsif pc_op = "001" then--jmp
-				if (((data_s1(2) and reg_s2(2)) or (data_s1(1) and reg_s2(1)) or (data_s1(0) and reg_s2(0)))) = '0' then
-					pc <= pc + ex_im;
-				else
-					pc <= pc + 1;
-				end if;
-			elsif pc_op = "010" then--jal
-				pc <= "00000000000" & reg_s2 & im;
-			elsif pc_op = "011" then--jr
-				pc <= data_s1;
-			else--halt
-				pc <= pc;
-			end if;
+		if rst = '1' then
+		 	pc <= x"00100000";
+		elsif rising_edge(clk)then
+			pc <= nextpc;
 		end if;
 	end process PC1;
 
@@ -394,13 +412,13 @@ begin
 	ContDown : process (clk)
 	begin
 		if rising_edge(clk)then
-			if (delay /= "000") then--新しい遅延のある命令
-				inst_delay <= delay + '1';
+			if (delay /= "000") then--新しい遅延のある命令が発行された。
+				inst_delay <= delay;
 				reg_d_buf <= reg_d;
 				regwrite_buf <= regwrite;
 				reg_write_select_buf <= reg_write_select;
 			elsif inst_delay = "111" then
-				if io_ok = '1' then
+				if ok = '1' then
 					inst_delay <= "000";
 				else
 					inst_delay <= inst_delay;
