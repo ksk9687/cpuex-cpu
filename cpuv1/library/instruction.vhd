@@ -32,6 +32,7 @@ package instruction is
    constant op_write:	std_logic_vector(5 downto 0) := o"21";
    constant op_nop	:	std_logic_vector(5 downto 0) := o"22";
    constant op_halt	:	std_logic_vector(5 downto 0) := o"23";
+   constant op_fcmp	:	std_logic_vector(5 downto 0) := o"24";
  
    	
 
