@@ -14,22 +14,21 @@ end FP_CMP;
 
 architecture STRUCTURE of FP_CMP is
   
-  signal abscmp : std_logic_vector(2 downto 0);
+  signal abslt, abseq, absgt : std_logic;
   signal cmp : std_logic_vector(2 downto 0);
 
 begin  -- STRUCTURE
 
-  -- gt & eq & lt
-  abscmp(2) <= '1' when A(30 downto 0) > B(30 downto 0) else '0';
-  abscmp(1) <= '1' when A(30 downto 0) = B(30 downto 0) else '0';
-  abscmp(0) <= '1' when A(30 downto 0) < B(30 downto 0) else '0';
+  abslt <= '1' when A(30 downto 0) < B(30 downto 0) else '0';
+  abseq <= '1' when A(30 downto 0) = B(30 downto 0) else '0';
+  absgt <= '1' when A(30 downto 0) > B(30 downto 0) else '0';
 
   cmp <= "010"  when A(30 downto 0) = 0 and B(30 downto 0) = 0 else
          "100"  when A(31) = '0' and B(31) = '1' else
          "001"  when A(31) = '1' and B(31) = '0' else
-         abscmp when A(31) = '0' and B(31) = '0' else
-         abscmp xor "111";
-
+         absgt & abseq & abslt when A(31) = '0' and B(31) = '0' else
+         abslt & abseq & absgt;
+  
   O <= "00000000000000000000000000000" & cmp;
 
 end STRUCTURE;

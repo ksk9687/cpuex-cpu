@@ -67,5 +67,5 @@ bin/fp_add_tester_gen: src/fp_add_tester_gen.cpp obj/fp_add.o obj/common.o
 bin/fp_mul_tester_gen: src/fp_mul_tester_gen.cpp obj/fp_mul.o obj/common.o
 	$(CC) $(CFLAGS) -o $@ $^
 
-bin/fp_inv_tester_gen: src/fp_inv_tester_gen.cpp obj/fp_inv.o obj/common.o
+bin/fp_inv_tester_gen: src/fp_inv_tester_gen.cpp obj/fp_inv_table.o obj/fp_inv.o obj/common.o
 	$(CC) $(CFLAGS) -o $@ $^
