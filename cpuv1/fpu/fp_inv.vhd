@@ -1,10 +1,13 @@
 -- 0.0 ‚ÅŠ„‚é‚È‚¨III
--- ‚Æ‚è‚ ‚¦‚¸•MZ‚È‚Ì‚Å‚Ä‚ç’x‚¢
+-- •\ˆø‚«‚µ‚ÄŠ|‚¯Z‚·‚é‚¾‚¯II
 
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
+
+library work;
+use work.fp_inv_table.all;
 
 entity FP_INV is
   
@@ -19,43 +22,30 @@ architecture STRUCTURE of FP_INV is
 
   signal AS : std_logic;
   signal AE : std_logic_vector(7 downto 0);
-  signal AM : std_logic_vector(24 downto 0);
-  
-  signal OM1 : std_logic_vector(24 downto 0);
+  signal X1, X2 : std_logic_vector(11 downto 0);
+  signal C, XX : std_logic_vector(23 downto 0);
+  signal OM1 : std_logic_vector(47 downto 0);
   signal OM2 : std_logic_vector(22 downto 0);
-  signal OE1, OE2 : std_logic_vector(7 downto 0);
-
-  subtype NUM is std_logic_vector(24 downto 0);
-  type P_T is array(0 to 25) of NUM;
-  type TMP_T is array (0 to 24) of NUM;
-  signal P : P_T;
-  signal tmp : TMP_T;
-
+  signal OE : std_logic_vector(7 downto 0);
+  
 begin  -- STRUCTURE
 
   -- •ª‰ğ
   AS <= A(31);
   AE <= A(30 downto 23); 
-  AM <= "01" & A(22 downto 0);
+  X1 <= "1" & A(22 downto 12);
+  X2 <= A(11 downto 0);
 
-  -- ‰¼”•”‚ÌŠ„‚èZ‚ğ•MZ‚Å
-  P(25) <= "0010000000000000000000000";
-  FOR1: for i in 24 downto 0 generate
-    tmp(i) <= P(i + 1)(23 downto 0) & '0';
-    OM1(i) <= '1' when tmp(i) >= AM else '0';
-    P(i) <= tmp(i) - AM when tmp(i) >= AM else tmp(i);
-  end generate; 
+  -- •\ˆø‚«‚µ‚½‚è xor ‚µ‚½‚è‚µ‚ÄŠ|‚¯Z
+  C <= table(CONV_INTEGER(X1(10 downto 0)));
+  XX <= X1 & (X2 xor "111111111111");
+  OM1 <= C * XX;
 
-  -- ³‹K‰»
-  OM2 <= OM1(23 downto 1) when OM1(24) = '1' else
-         OM1(22 downto 0);
-
-  -- w”•”
-  OE1 <= 254 - AE;
-  OE2 <= OE1 when OM1(24) = '1' else
-         OE1 - 1;
-
-  -- I‚í‚è
-  O <= AS & OE2 & OM2;
-  
+  -- ‚»‚ë‚¦‚é
+  OM2 <= OM1(45 downto 23) when OM1(46) = '1' else
+         OM1(44 downto 22);
+  OE <= 253 - AE when OM1(46) = '1' else
+        252 - AE;
+  O <= AS & OE & OM2;
+           
 end STRUCTURE;
