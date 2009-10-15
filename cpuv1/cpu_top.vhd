@@ -395,7 +395,7 @@ begin
 	with pc_op select
 	 nextpc <= pc + 1 when "000",
 	 jmp_pc when "001",
-	 "00000000000" & reg_s2 & im when "010",--jal
+	 "000000" & reg_s1 & reg_s2 & im when "010",--jal
 	 data_s1 when "011",--jr
 	 pc when others;
 

@@ -82,7 +82,7 @@ begin
 	 delay <= "100" when op_load ,
 	 "001" when op_fadd | op_fsub | op_fmul ,
 	 "001" when op_finv ,
-	 "111" when op_read ,
+	 "111" when op_read | op_write,
 	 "001" when op_add | op_addi | op_sub | op_srl | op_sll | op_li | op_cmp ,
 	 "000" when others;
 	 
@@ -90,7 +90,7 @@ begin
 	with op select
 	 reg_write_select <= "001" when op_fadd | op_fsub | op_fmul | op_finv,
 	 "010" when op_load,
-	 "011" when op_read,
+	 "011" when op_read | op_write,
 	 "100" when op_jal,
 	 "000" when others;
 
