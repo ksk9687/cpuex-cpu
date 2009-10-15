@@ -66,12 +66,14 @@ signal USBIO_CAN_READ : STD_LOGIC;    -- read äÆëSäÆóπê¸
 signal USBIO_CAN_WRITE : STD_LOGIC;    -- write äÆëSäÆóπê¸
 
 constant buflen : integer := 9;
+constant bufreadlen : integer := 4;
 type ram_type is array (511 downto 0) of STD_LOGIC_VECTOR(7 downto 0); -- retrieved from http://www.nahitech.com/nahitafu/fpgavhdl/bram/bram.html
+type read_ram_type is array (15 downto 0) of STD_LOGIC_VECTOR(7 downto 0); -- retrieved from http://www.nahitech.com/nahitafu/fpgavhdl/bram/bram.html
 
-signal readbuf : ram_type;
-signal readbuf_writeaddr : STD_LOGIC_VECTOR((buflen-1) downto 0) := conv_std_logic_vector(0,buflen);
-signal readbuf_readaddr : STD_LOGIC_VECTOR((buflen-1) downto 0) := conv_std_logic_vector(0,buflen);
-signal readdata : STD_LOGIC_VECTOR(7 downto 0);
+signal readbuf : read_ram_type;
+signal readbuf_writeaddr : STD_LOGIC_VECTOR((bufreadlen-1) downto 0) := conv_std_logic_vector(0,bufreadlen);
+signal readbuf_readaddr : STD_LOGIC_VECTOR((bufreadlen-1) downto 0) := conv_std_logic_vector(0,bufreadlen);
+--signal readdata : STD_LOGIC_VECTOR(7 downto 0);
 
 signal writebuf : ram_type;
 signal writebuf_writeaddr : STD_LOGIC_VECTOR((buflen-1) downto 0) := conv_std_logic_vector(0,buflen);
@@ -134,8 +136,8 @@ begin
     if rst = '1' then                 -- asynchronous reset (active low)
       lastRC<='1';
       lastWC<='1';
-      readbuf_readaddr<=conv_std_logic_vector(0,buflen);
-      readbuf_writeaddr<=conv_std_logic_vector(0,buflen);
+      readbuf_readaddr<=conv_std_logic_vector(0,bufreadlen);
+      readbuf_writeaddr<=conv_std_logic_vector(0,bufreadlen);
       writebuf_readaddr<=conv_std_logic_vector(0,buflen);
       writebuf_writeaddr<=conv_std_logic_vector(0,buflen);
       state<=STATE_IDLE;
@@ -145,7 +147,7 @@ begin
       lastWC<=USBIO_WC;
       if USBBUF_RD = '1' then
         if readbuf_readaddr /= readbuf_writeaddr then
-          readbuf_readaddr <= readbuf_readaddr+conv_std_logic_vector(1,buflen);
+          readbuf_readaddr <= readbuf_readaddr+conv_std_logic_vector(1,bufreadlen);
         end if;
       end if;
       if USBBUF_WD ='1' then
@@ -168,7 +170,7 @@ begin
           --readdata <= USBIO_RData;
           if lastRC = '0' and USBIO_RC = '1' then
             readbuf(conv_integer(readbuf_writeaddr)) <= USBIO_RData;
-            readbuf_writeaddr <= readbuf_writeaddr + conv_std_logic_vector(1,buflen);
+            readbuf_writeaddr <= readbuf_writeaddr + conv_std_logic_vector(1,bufreadlen);
             state <= STATE_IDLE;
           else
             state <= STATE_WAIT_READ;
