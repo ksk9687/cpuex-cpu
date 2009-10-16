@@ -30,13 +30,16 @@ architecture STRUCTURE of FP_INV is
   signal OM1 : std_logic_vector(47 downto 0);
   signal OM2 : std_logic_vector(22 downto 0);
   signal OE : std_logic_vector(7 downto 0);
-  signal O1 : std_logic_vector(31 downto 0);
 
   signal Adff1 : std_logic_vector(31 downto 0);
+  
   signal Cdff2, XXdff2 : std_logic_vector(23 downto 0);
   signal AEdff2 : std_logic_vector(7 downto 0);
   signal ASdff2 : std_logic;
-  signal Odff3 : std_logic_vector(31 downto 0);
+  
+  signal OMdff3 : std_logic_vector(47 downto 0);
+  signal AEdff3 : std_logic_vector(7 downto 0);
+  signal ASdff3 : std_logic;
   
 begin  -- STRUCTURE
 
@@ -63,21 +66,20 @@ begin  -- STRUCTURE
   
   OM1 <= Cdff2 * XXdff2;
 
-  -- ‚»‚ë‚¦‚é
-  OM2 <= OM1(45 downto 23) when OM1(46) = '1' else
-         OM1(44 downto 22);
-  OE <= 253 - AEdff2 when OM1(46) = '1' else
-        252 - AEdff2;
-  O1 <= ASdff2 & OE & OM2;
   
-
   -----------------------------------------------------------------------------
   -- 3rd stage
   -----------------------------------------------------------------------------
-  -- Odff3 <= O1
+  -- OMdff3 <= OM1, AEdff3 <= AEdff2 (<= AE), ASdff3 <= ASdff2 (<= AS)
 
-  O <= Odff3;
+  -- ‚»‚ë‚¦‚é
+  OM2 <= OMdff3(45 downto 23) when OMdff3(46) = '1' else
+         OMdff3(44 downto 22);
+  OE <= 253 - AEdff3 when OMdff3(46) = '1' else
+        252 - AEdff3;
+  O <= ASdff3 & OE & OM2;
 
+  
   -----------------------------------------------------------------------------
   -- process
   -----------------------------------------------------------------------------
@@ -91,8 +93,10 @@ begin  -- STRUCTURE
       XXdff2 <= XX;
       ASdff2 <= AS;
       AEdff2 <= AE;
-      
-      Odff3 <= O1;
+
+      OMdff3 <= OM1;
+      AEdff3 <= AEdff2;
+      ASdff3 <= ASdff2;
     end if;
   end process;
            
