@@ -1,0 +1,25 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.std_logic_arith.all;
+use IEEE.std_logic_signed.all;
+
+library unisim;
+use unisim.vcomponents.all;
+
+entity FP_INV_TESTER is
+  port (
+    clkin  : in  std_logic;
+    ledout : out std_logic_vector(1 downto 0));
+end FP_INV_TESTER;
+
+
+architecture STRUCTURE of FP_INV_TESTER is
+
+  component FP_INV
+    port (
+      clk : in std_logic;
+      A   : in  std_logic_vector(31 downto 0); 
+      O   : out std_logic_vector(31 downto 0));
+  end component;
+
+  constant m : integer := 3;            -- ‰‰ZŠí‚Ì’†‚É“ü‚Á‚Ä‚¢‚éƒ‰ƒbƒ`‚ÌŒÂ”

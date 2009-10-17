@@ -1,0 +1,68 @@
+
+  signal clk : std_logic;
+  signal reset : std_logic;
+
+  signal i : integer range 0 to n - 1 := 0;
+  signal O : std_logic_vector(31 downto 0);
+  signal Ain, Bin, Oin : std_logic_vector(31 downto 0);
+  signal Oout, Qout : std_logic_vector(31 downto 0);
+  signal Cout : std_logic := '0';
+
+  -- queue_o は出力すべき値のキュー
+  -- queue_c は計算が行われた結果であるか否かのキュー
+  type QUEUE_T is array(0 to m - 1) of std_logic_vector(31 downto 0);
+  signal queue_o : QUEUE_T;
+  signal queue_c : std_logic_vector(0 to m - 1) := CONV_STD_LOGIC_VECTOR(0, m);
+  
+begin  -- STRUCTURE
+  
+  ibufg_inst : ibufg port map (I => clkin, O => clk);
+  roc_inst : roc port map (O => reset);
+  inst : FP_ADD port map (A => Ain, B => Bin, O => O, clk => clk);
+  
+  process (clk, reset)
+  begin  -- process
+    if reset = '1' then
+      i <= 0;
+      ledout <= "00";
+      Ain <= table_a(i);
+      Bin <= table_b(i);
+      Oin <= table_o(i);
+
+    elsif clk'event and clk = '1' then
+      -- チェック
+      if (Cout = '1' and Oout /= Qout) then
+        ledout(0) <= '1';
+      end if;
+
+      -- 取り出し！
+      Oout <= O;
+      Qout <= queue_o(m - 1);
+      Cout <= queue_c(m - 1);
+      
+      -- キュー
+      FOR1: for j in 0 to m - 2 loop
+        queue_o(j + 1) <= queue_o(j);
+        queue_c(j + 1) <= queue_c(j);
+      end loop;
+      
+      -- 投入
+      queue_o(0) <= Oin;
+      queue_c(0) <= '1';
+      
+      -- 次のために読みだし
+      Ain <= table_a(i);
+      Bin <= table_b(i);
+      Oin <= table_o(i);
+      
+      -- i を進める
+      if i + 1 = n then
+        i <= 0;
+        ledout(1) <= '1';    -- 終了
+      else
+        i <= i + 1;
+      end if;
+    end if;
+  end process;
+  
+end STRUCTURE;

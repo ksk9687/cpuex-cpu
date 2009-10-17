@@ -1,0 +1,3 @@
+NET "CLKIN" LOC = "AD15";
+NET "LEDOUT<1>" LOC = "H3"  ;
+NET "LEDOUT<0>" LOC = "K1"  ;
