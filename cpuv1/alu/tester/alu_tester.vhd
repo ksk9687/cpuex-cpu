@@ -21,12 +21,13 @@ architecture STRUCTURE of ALU_TESTER is
 
   component ALU
     port (
+      clk : in std_logic;
       op : in std_logic_vector(5 downto 0);
       A, B : in  std_logic_vector(31 downto 0);
       C    : out std_logic_vector(31 downto 0));
   end component;
 
-  constant n : integer := 8;
+  constant n : integer := 10;
   
   subtype vec6  is std_logic_vector(5 downto 0);
   subtype vec32 is std_logic_vector(31 downto 0);
@@ -41,6 +42,8 @@ architecture STRUCTURE of ALU_TESTER is
     "000100", -- sll
     "001100", -- cmp
     "001100", -- cmp
+    "001100", -- cmp
+    "001100", -- cmp
     "001100"  -- cmp
     );
   
@@ -52,7 +55,9 @@ architecture STRUCTURE of ALU_TESTER is
     "00000000000101011010100100101010",
     "00000000000000000000000000000100",
     "00000000000000000000000000001000",
-    "00000000000000000000000000010000");
+    "00000000000000000000000000010000",
+    "00000000000000000000000000000000",
+    "11111111111111111111111111111111");
   
   constant table_b : table32 := (
     "00000000000000000000000000010110",
@@ -62,7 +67,9 @@ architecture STRUCTURE of ALU_TESTER is
     "00000000000000000000000000000110",
     "00000000000000000000000000001000",
     "00000000000000000000000000001000",
-    "00000000000000000000000000001000");
+    "00000000000000000000000000001000",
+    "11111111111111111111111111111111",
+    "00000000000000000000000000000000");
   
   signal clk, reset : std_logic;
   signal i : integer range 0 to n - 1;
@@ -76,7 +83,7 @@ begin  -- STRUCTURE
   ibufg_inst : ibufg port map (I => clkin, O => clk);
   roc_inst : roc port map (O => reset);
 
-  alu_inst : ALU port map (op => op, A  => a, B  => b, C => c);
+  alu_inst : ALU port map (clk => clk, op => op, A  => a, B  => b, C => c);
 
   ledout <= '0';
 

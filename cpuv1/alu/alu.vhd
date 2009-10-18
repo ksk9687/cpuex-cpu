@@ -20,13 +20,17 @@ architecture STRUCTURE of ALU is
 
   signal lt, eq, gt : std_logic;
   signal cmp : std_logic_vector(31 downto 0);
+
+  signal lt_unsigned, lt_sign : std_logic;
   
   signal C0 : std_logic_vector(31 downto 0) := (others => '0');
 begin  -- STRUCTURE
 
-  lt <= '1' when A < B else '0';
   eq <= '1' when A = B else '0';
-  gt <= '1' when A > B else '0';
+  lt <= A(31) when (A(31) xor B(31)) = '1' else
+        '1' when A < B else '0';
+  gt <= B(31) when (A(31) xor B(31)) = '1' else
+        '1' when A > B else '0';
   cmp <= "00000000000000000000000000000" & gt & eq & lt;
 
   with op select
