@@ -28,6 +28,7 @@ port (
 	
 	;ls : out std_logic_vector(1 downto 0)
 	;io : out std_logic_vector(1 downto 0)
+	;led : out std_logic_vector(1 downto 0)
 	;pc : out std_logic_vector(2 downto 0)
 	;delay : out std_logic_vector(2 downto 0)
     );
@@ -57,6 +58,11 @@ begin
 	 "11" when op_write,
 	 "00" when others;
 	 
+	--IO
+	leddec : with op select
+	 led <= "11" when op_led,
+	 "00" when others;
+	 
 	--PC
 	pcdec : with op select
 	pc <= "001" when op_jmp,
@@ -69,29 +75,30 @@ begin
 	with op select
 	regd <= 
 	"11111" when op_jal, --JALではr31のみ
-	inst(20 downto 16) when op_addi | op_srl | op_sll | op_load | op_li | op_read ,--Rt
+	inst(20 downto 16) when op_addi | op_srl | op_sll | op_load | op_li | op_read | op_write,--Rt
 	inst(15 downto 11) when others;--Rd
 	
 	-- レジスタに書き込むかどうか
 	with op select
-	 reg_write <=  '0' when op_store | op_jmp | op_jr | op_write | op_nop | op_halt,--書きこまない
+	 reg_write <=  '0' when op_store | op_jmp | op_jr | op_nop | op_halt | op_led,--書きこまない
 	 '1' when others;
 	 
 	--遅延
 	with op select
 	 delay <= "100" when op_load ,
-	 "001" when op_fadd | op_fsub | op_fmul ,
-	 "001" when op_finv ,
+	 "011" when op_fadd | op_fsub | op_finv ,
+	 "010" when op_fmul ,
+	 "010" when op_fcmp ,
 	 "111" when op_read | op_write,
-	 "001" when op_add | op_addi | op_sub | op_srl | op_sll | op_li | op_cmp ,
+	 "010" when op_add | op_addi | op_sub | op_srl | op_sll | op_li | op_cmp ,
 	 "000" when others;
 	 
 	--レジスタに何を書き込むか
 	with op select
-	 reg_write_select <= "001" when op_fadd | op_fsub | op_fmul | op_finv,
-	 "010" when op_load,
-	 "011" when op_read | op_write,
-	 "100" when op_jal,
+	 reg_write_select <= "001" when op_fadd | op_fsub | op_fmul | op_finv | op_fcmp,--fpu_out
+	 "010" when op_load,--ls_out
+	 "011" when op_read | op_write,--iou_out
+	 "100" when op_jal,--pc_out
 	 "000" when others;
 
 	--Rs

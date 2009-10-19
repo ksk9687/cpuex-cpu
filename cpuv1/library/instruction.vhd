@@ -33,6 +33,7 @@ package instruction is
    constant op_nop	:	std_logic_vector(5 downto 0) := o"22";
    constant op_halt	:	std_logic_vector(5 downto 0) := o"23";
    constant op_fcmp	:	std_logic_vector(5 downto 0) := o"24";
+   constant op_led	:	std_logic_vector(5 downto 0) := o"25";
  
    	
 

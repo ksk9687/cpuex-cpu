@@ -92,6 +92,7 @@ begin
 	(others=>'Z') when others;
 	
 	datain <= USBD when ustate = R3 else
+	x"00" when ustate = W5 else
 	data_write when ustate = IDLE and read_write = '1' else
 	dataout;
 	

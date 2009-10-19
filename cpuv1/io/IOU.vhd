@@ -8,10 +8,10 @@ entity IOU is
 	port  (
 		clk : in std_logic;
 		rst : in std_logic;
-		iou_op : in std_logic_vector(1 downto 0);--bit1Ç™égópÇ∑ÇÈÇ©Ç«Ç§Ç©ÅAbit0Ç™'1':write,'0':read
+		iou_op : in std_logic_vector(1 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		readdata : out std_logic_vector(31 downto 0);
-		ok : out std_logic  -- 1ÇÃÇ∆Ç´ok
+		ok : out std_logic
 		
 		;USBWR : out  STD_LOGIC
 		;USBRDX : out  STD_LOGIC
@@ -49,73 +49,63 @@ architecture arch of IOU is
 			USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
 		);
 	end component;
-
---	component usb2
---	Port (
---		CLK : in  STD_LOGIC
---		
---		;do : in STD_LOGIC
---		;read_write : in STD_LOGIC
---		;data_write : in STD_LOGIC_VECTOR (7 downto 0)
---		;data_read : out STD_LOGIC_VECTOR (7 downto 0)
---		
---		;status : out STD_LOGIC_VECTOR (2 downto 0)
---		
---		;USBWR : out  STD_LOGIC
---		;USBRDX : out  STD_LOGIC
---		
---		;USBTXEX : in  STD_LOGIC
---		;USBSIWU : out  STD_LOGIC
---		
---		;USBRXFX : in  STD_LOGIC
---		;USBRSTX : out  STD_LOGIC
---		
---		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
---		);
---	end component;
-
-	signal readedata: std_logic_vector(7 downto 0);
-	signal readflag:std_logic;
-	signal writeflag:std_logic;
-	signal readret : std_logic;
-	signal writeret : std_logic;
-begin
-
-	readflag <= iou_op(1) and (not iou_op(0));
-	writeflag <= iou_op(1) and iou_op(0);
-
---	USB : usb2 port map (
---		CLK,
---		iou_op(1),iou_op(0),
---		writedata(7 downto 0),data,
---		status,
---		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRSTX,USBD
---		);
-
-	USB : usbbufio port map (
-		CLK,rst,
+	
+	
+	component usb2
+	Port (
+		CLK : in  STD_LOGIC
 		
-		readflag,
-		readedata,
-		readret,
-		writeflag,
-		writedata(7 downto 0),
-		writeret,
+		;do : in STD_LOGIC
+		;read_write : in STD_LOGIC
+		;data_write : in STD_LOGIC_VECTOR (7 downto 0)
+		;data_read : out STD_LOGIC_VECTOR (7 downto 0)
 		
-		USBRDX,
-		USBRXFX,
-		USBWR,
-		USBTXEX,
-		USBSIWU,
-		USBRSTX,
-		USBD
+		;status : out STD_LOGIC_VECTOR (2 downto 0)
+		
+		;USBWR : out  STD_LOGIC
+		;USBRDX : out  STD_LOGIC
+		
+		;USBTXEX : in  STD_LOGIC
+		;USBSIWU : out  STD_LOGIC
+		
+		;USBRXFX : in  STD_LOGIC
+		;USBRSTX : out  STD_LOGIC
+		
+		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
 		);
+end component;
+	signal data: std_logic_vector(7 downto 0);
+	signal status: std_logic_vector(2 downto 0);
+begin
+	
+	 
+	 
+--   USB : usbbufio port map (
+--   	clk,rst,
+--   	read,readdata_out,read_end,
+--   	write,writedata_buf,write_end,
+--   	
+--   	USBRD,USBRXF,USBWR,USBTXE,USBSIWU,USBD
+--   );
 
-
-	readdata <= x"00000"&"00"&(not readret)&(not writeret)&readedata;
-	--status(2):readÇ≈Ç´Ç»Ç¢ -> readÇ≈Ç´Ç»Ç¢
-	--status(1):èàóùíÜ -> writeÇ≈Ç´Ç»Ç¢
-	ok <= readret and writeret;
+--
+--   usbbufio_inst : usbbufio port map(
+--    clk,reset,
+--    USBBUF_RD,USBBUF_RData,USBBUF_RC,USBBUF_WD,USBBUF_WData,USBBUF_WC,
+--	 --ledout,
+--    -- FT245BM ë§Ç…Ç¬Ç»ÇÆ
+--    USBRD,USBRXF,USBWR,USBTXE,USBRST,USBSIWU,USBD
+--    );
+--    
+   USB : usb2 port map (
+		CLK,
+		iou_op(1),iou_op(0),
+		writedata(7 downto 0),data,
+		status,
+		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRSTX,USBD
+		);
+	readdata <= x"00000"&"00"&status(2)&status(1)&data;
+	ok <= (not status(0)) and (not status(1));
 	
 
 end arch;

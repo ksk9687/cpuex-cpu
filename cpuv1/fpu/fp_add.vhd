@@ -32,8 +32,12 @@ architecture STRUCTURE of FP_ADD is
 begin  -- STRUCTURE
 
   -- •‰”‚Æ‚³‚ê‚È‚¢‚½‚ß‚Éw”•”‚Ì“ª‚É0
-  AS <= A(31); AE <= '0' & A(30 downto 23); AM1 <= "001" & A(22 downto 0);
-  BS <= B(31); BE <= '0' & B(30 downto 23); BM1 <= "001" & B(22 downto 0);
+  AS <= A(31);
+  AE <= '0' & A(30 downto 23);
+  AM1 <= "001" & A(22 downto 0);
+  BS <= B(31);
+  BE <= '0' & B(30 downto 23);
+  BM1 <= "001" & B(22 downto 0);
 
   -- •Ğ•ûor—¼•û‚ª0‚Ìê‡‚ğ—áŠOˆ—
   O <= A when B(30 downto 0) = 0 else

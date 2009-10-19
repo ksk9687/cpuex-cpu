@@ -76,6 +76,7 @@ architecture synth of cpu_top is
 		
 		;ls : out std_logic_vector(1 downto 0)
 		;io : out std_logic_vector(1 downto 0)
+		;led : out std_logic_vector(1 downto 0)
 		;pc : out std_logic_vector(2 downto 0)
 		;delay : out std_logic_vector(2 downto 0)
     	);
@@ -97,13 +98,14 @@ architecture synth of cpu_top is
     	port (
  		clk : in std_logic;
     	op : in std_logic_vector(5 downto 0);
-    	A, B : in  std_logic_vector(31 downto 0);
+    	A0, B0 : in  std_logic_vector(31 downto 0);
     	C    : out std_logic_vector(31 downto 0)
     	);
     end component;
     
    	component FPU
 	  port (
+		clk  : in  std_logic;
 	    op   : in  std_logic_vector(5 downto 0);
 	    A, B : in  std_logic_vector(31 downto 0);
 	    O    : out std_logic_vector(31 downto 0)
@@ -220,6 +222,7 @@ architecture synth of cpu_top is
    signal fpu_op : std_logic_vector(5 downto 0) := (others => '0');
    signal lsu_op : std_logic_vector(1 downto 0) := (others => '0');
    signal iou_op : std_logic_vector(1 downto 0) := (others => '0');
+   signal ledu_op : std_logic_vector(1 downto 0) := (others => '0');
    signal pc_op : std_logic_vector(2 downto 0) := (others => '0');
    
    signal im : std_logic_vector(15 downto 0) := (others => '0');
@@ -268,7 +271,7 @@ begin
         );
         
     
-    ledout <= io_led(5 downto 0)&pc(0)&(not CLK);
+    ledout <= not io_led;
     
     
 --	process (CLK1) begin
@@ -308,6 +311,7 @@ begin
    	im,
    	lsu_op,
    	iou_op,
+   	ledu_op,
    	pc_op,
    	delay
    );
@@ -323,8 +327,7 @@ begin
 	  pc + '1' when others;
 
 
-   ok <= '0' when fpu_ok = '0' and reg_write_select_now = "001" else
-   '0' when iou_ok = '0' and reg_write_select_now = "011" else
+   ok <= '0' when iou_ok = '0' and reg_write_select_now = "011" else
    '0' when inst_delay /= "000" and inst_delay /= "001" and inst_delay /= "111" else
    '0' when delay /= "000" else
    '1';
@@ -359,6 +362,7 @@ begin
 		alu_out
 	);
 	FPU1 : fpu port map (
+	clk,
 		fpu_op,
 		data_s1,data_s2,
 		fpu_out
@@ -374,7 +378,7 @@ begin
 
 	IOU2 : io_dummy_led port map (
 		clk,
-		iou_op,
+		ledu_op,
 		data_s1,
 		io_led
 	);
