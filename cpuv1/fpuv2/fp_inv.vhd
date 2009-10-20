@@ -48,6 +48,9 @@ begin  -- STRUCTURE
   -----------------------------------------------------------------------------
   -- Adff1 <= A
   
+  
+  Adff1 <= A;
+  
   -- •ª‰ð
   AS <= Adff1(31);
   AE <= Adff1(30 downto 23); 
@@ -87,8 +90,8 @@ begin  -- STRUCTURE
   process(clk)
   begin
     if rising_edge(clk) then
-      Adff1 <= A;
-      
+      --Adff1 <= A;
+  
       Cdff2 <= C;
       XXdff2 <= XX;
       ASdff2 <= AS;

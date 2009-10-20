@@ -43,6 +43,7 @@ begin  -- STRUCTURE
     if rising_edge(clk) then
       A <= Ain;
       B <= Bin;
+      
       Oout <= O1;
     end if;
   end process;

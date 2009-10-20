@@ -46,14 +46,16 @@ begin  -- STRUCTURE
   		B when op_li,
 		"11111111111111111111111111111111" when others;
   
+  
+  A <= A0;
+  B <= B0;
+  
   process(clk)
   begin
   	if rising_edge(clk) then
       if op /= op_halt then
         op_hold <= op;
       end if;
-  		A <= A0;
-  		B <= B0;
   		C <= C0;
   	end if;
   end process;
