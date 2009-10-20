@@ -37,7 +37,7 @@ begin  -- STRUCTURE
         '1' when A > B else '0';
   cmp <= "00000000000000000000000000000" & gt & eq & lt;
 
-  with op_hold select
+  with op select
   C0 <=	A + B when op_add | op_addi,
   		A - B when op_sub,
   		SHR(A, B) when op_srl,
