@@ -1,4 +1,4 @@
-NET "CLKIN" LOC = "AD15";
+
 
 
 NET "LEDOUT<7>" LOC = "G4"  ;
@@ -10,6 +10,6 @@ NET "LEDOUT<2>" LOC = "J4"  ;
 NET "LEDOUT<1>" LOC = "H3"  ;
 NET "LEDOUT<0>" LOC = "K1"  ;
 
-
+NET "CLKIN" LOC = "AD15";
 NET "CLKIN" TNM_NET = "CLKIN" ;
 TIMESPEC "TS_CLKIN" = PERIOD "CLKIN" 20.0 ns HIGH 50 %;

@@ -90,7 +90,7 @@ begin
     USBRXF,
     USBWR,
     USBTXE,
-	 USBRST,
+	USBRST,
     USBSIWU,
     USBD
     );
