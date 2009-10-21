@@ -56,8 +56,9 @@ end mem;
         
 
 architecture synth of mem is
-	type mem_state is (idle,init,
-	inst,inst_w1,inst_w2,inst_w3,inst_w4,
+	type mem_state is (
+	idle,load_cache_check,
+	inst,inst_w1,inst_w2,inst_w3,inst_w4,inst_load,
 	exec,exec_hit,wait_ok,store_w1,
 	data_w1,data_w2,data_w3,data_w4,load_end
 	);
@@ -74,8 +75,11 @@ architecture synth of mem is
 	signal cache_set : std_logic := '0';
 
 	signal dcache_out : std_logic_vector(31 downto 0) := (others => '0');
+	signal dcache_in : std_logic_vector(31 downto 0) := (others => '0');
 	signal dcache_hit : std_logic := '0';
 	signal dcache_set : std_logic := '0';
+	signal dcache_addr : std_logic_vector(19 downto 0) := (others => '0');
+	signal addr_buf : std_logic_vector(19 downto 0) := (others => '0');
 		
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 	signal RAM : ram_type :=
@@ -204,25 +208,30 @@ op_halt&"11111" & "00000" & x"0000"
 		hit : out std_logic
 	);
 	end component;
+	
+	component dcache is
+	port  (
+		clk : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+	end component;
 
 begin
 	
-	
-	
-	
-	ADDR <= count(19 downto 0) when state = init else
-	pc(19 downto 0) when state = inst else
+	ADDR <= pc(19 downto 0) when state = inst or state = inst_load or state = load_cache_check else
 	ls_address(19 downto 0) when (state = exec) or (state = exec_hit) else
 	(others => '0');
 	
 	with state select
-	DATAIN <= --RAM(conv_integer(count(5 downto 0))) when init,
-	write_data when exec | exec_hit,
+	DATAIN <= write_data when exec | exec_hit,
 	(others => '0') when others;
 	
 	with state select
-	 RW <= '0' when init,--初めのメモリ書き込み
-	 (not load_store(0)) when exec | exec_hit,
+	 RW <= (not load_store(0)) when exec | exec_hit,
 	 '1' when others;
 	 
 	read_inst <= RAM(conv_integer(pc(5 downto 0))) when pc(20) = '1' and state = exec else
@@ -230,10 +239,11 @@ begin
 	DATAOUT when state = exec else
 	sleep;
 	
-	read_data_ready <= '1' when state = data_w3 else
+	read_data_ready <= '1' when (state = load_cache_check and dcache_hit = '1') or state = inst_load else
 	'0';
 	
-	read_data <= DATAOUT when state = inst else
+	read_data <= DATAOUT when state = inst_load else
+	dcache_out when state = load_cache_check else
 	"010101010101"&"0101010101"&"0011001100";
 	
 	cache_set <= 
@@ -241,7 +251,11 @@ begin
 	'1' when state = exec else --ミスじのみセット
 	'0';
 	
-	dcache_set <= '1' when state = store_w1 or state = data_w3 else '0';
+	dcache_set <= '1' when (load_store = "11") or state = inst_load else '0';--store,load
+	
+	dcache_in <= write_data when (load_store(1) = '1') else DATAOUT;
+	
+	dcache_addr <= ls_address(19 downto 0) when (load_store(1) = '1') else addr_buf;
 	
 	process(clk)
 	begin
@@ -255,18 +269,27 @@ begin
 					count <= count + '1';
 					state <= state;
 				end if;
-			when init =>
-				if count(6 downto 0) = "1000000" then
-					state <= inst;
-				else
-					count <= count + '1';
-					state <= state;
-				end if;
 			when inst =>
 				if cache_hit = '1' then--ヒット時
 					state <= exec_hit;
 				else--ミス時
 					state <= inst_w1;
+				end if;
+			when inst_load =>
+				if cache_hit = '1' then--ヒット時
+					state <= exec_hit;
+				else--ミス時
+					state <= inst_w1;
+				end if;
+			when load_cache_check =>
+				if dcache_hit = '1' then--DCacheHit
+					if cache_hit = '1' then--ヒット時
+						state <= exec_hit;
+					else--ミス時
+						state <= inst_w1;
+					end if;
+				else--DCacheMiss
+					state <= data_w2;
 				end if;
 			when inst_w1 =>
 				state <= inst_w2;
@@ -277,35 +300,32 @@ begin
 				state <= exec;
 			when exec_hit =>--キャッシュヒット
 				if (load_store = "10") then--Loadだけ伸びる
-					state <= data_w1;
+					state <= load_cache_check;
+					addr_buf <= ls_address(19 downto 0);
 				elsif (load_store = "11") then--Store
-					state <= store_w1;
-				elsif (ok = '0') then--FPU,IO待ち
+					state <= inst;
+				elsif (ok = '0') then--ALU,FPU,IO待ち
 					state <= wait_ok;
 				else
 					state <= inst;
 				end if;
 			when exec =>--キャッシュミス
 				if (load_store = "10") then--Load
-					state <= data_w1;
+					state <= load_cache_check;
+					addr_buf <= ls_address(19 downto 0);
 				elsif (load_store = "11") then--Store
 					state <= inst;
-				elsif (ok = '0') then--FPU,IO待ち
+				elsif (ok = '0') then--ALU,FPU,IO待ち
 					state <= wait_ok;
-				else
+				else--おわり
 					state <= inst;
 				end if;
-			when store_w1 =>
-				state <= inst;
 			when data_w1 =>
-				state <= data_w2;
+			
 			when data_w2 =>
-				--state <= inst;
 				state <= data_w3;
 			when data_w3 =>
-				state <= inst;
-			when load_end =>
-				state <= inst;
+				state <= inst_load;
 			when wait_ok =>--終わるまで待つ
 				if ok = '1' then
 					state <= inst;
@@ -342,10 +362,10 @@ begin
 		,cache_hit
 	);
 	
-	DCACHE:cache port map(
+	DCACHE0:dcache port map(
 		clk
-		,ls_address(19 downto 0)
-		,DATAOUT
+		,dcache_addr
+		,dcache_in
 		,dcache_set
 		,dcache_out
 		,dcache_hit

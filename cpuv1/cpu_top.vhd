@@ -12,7 +12,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 library work;
 use work.util.all; 
 use work.instruction.all; 
-	
+
 library UNISIM;
 use UNISIM.VComponents.all;
 
@@ -95,6 +95,15 @@ architecture synth of cpu_top is
     	
 
 	component alu
+    	port (
+ 		clk : in std_logic;
+    	op : in std_logic_vector(5 downto 0);
+    	A0, B0 : in  std_logic_vector(31 downto 0);
+    	C    : out std_logic_vector(31 downto 0)
+    	);
+    end component;
+
+	component alu_im
     	port (
  		clk : in std_logic;
     	op : in std_logic_vector(5 downto 0);
@@ -232,7 +241,7 @@ architecture synth of cpu_top is
    
    signal data_d,data_s1,data_s2,alu_s2,data_d_delay,data_d_now : std_logic_vector(31 downto 0) := (others => '0');
    
-   signal alu_out,fpu_out,lsu_out,iou_out : std_logic_vector(31 downto 0) := (others => '0');
+   signal alu_out,alu_im_out,fpu_out,lsu_out,iou_out : std_logic_vector(31 downto 0) := (others => '0');
    signal s2select : std_logic := '0';
    signal regwrite,regwrite_buf : std_logic := '0';
    signal regwrite_f : std_logic := '0';
@@ -245,7 +254,7 @@ architecture synth of cpu_top is
    
    signal counter : std_logic_vector(31 downto 0) := (others => '0');
    signal io_led : std_logic_vector(7 downto 0) := (others => '0');
-   signal ok,fpu_ok,iou_ok   : std_logic := '0';
+   signal ok,lsu_ok,fpu_ok,iou_ok   : std_logic := '0';
    
    
 	signal locked   : std_logic;
@@ -290,7 +299,7 @@ begin
    	ls_f,
    	data_s2,
    	ok,
-   	inst,lsu_out,read_data_ready
+   	inst,lsu_out,lsu_ok
 	,SRAMAA,SRAMIOA,SRAMIOPA
 	,SRAMRWA,SRAMBWA
 	,SRAMCLKMA0,SRAMCLKMA1
@@ -321,6 +330,7 @@ begin
 	 
 	 with reg_write_select_now select
 	  data_d_delay <= alu_out when "000",
+	  alu_im_out when "101",
 	  fpu_out when "001",
 	  lsu_out when "010", 
 	  iou_out when "011",
@@ -328,6 +338,7 @@ begin
 
 
    ok <= '0' when iou_ok = '0' and reg_write_select_now = "011" else
+   '0' when lsu_ok = '0' and reg_write_select_now = "010" else
    '0' when inst_delay /= "000" and inst_delay /= "001" and inst_delay /= "111" else
    '0' when delay /= "000" else
    '1';
@@ -350,16 +361,18 @@ begin
 		data_s1,data_s2
 	);
 	
-	--ALU‚É“ü‚ê‚é‚à‚Ì‚Ì‘I‘ð
-	with s2select select
-	 alu_s2 <= ex_im when '1',
-	 data_s2 when others;
 	
 	ALU1 : alu port map (
 		clk,
 		alu_op,
-		data_s1,alu_s2,
+		data_s1,data_s2,
 		alu_out
+	);	
+	ALU2 : alu_im port map (
+		clk,
+		alu_op,
+		data_s1,ex_im,
+		alu_im_out
 	);
 	FPU1 : fpu port map (
 	clk,

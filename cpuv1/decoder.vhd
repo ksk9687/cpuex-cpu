@@ -85,7 +85,7 @@ begin
 	 
 	--’x‰„
 	with op select
-	 delay <= "100" when op_load ,
+	 delay <= "111" when op_load ,
 	 "011" when op_fadd | op_fsub ,
 	 "010" when op_finv ,
 	 "010" when op_fmul ,
@@ -100,6 +100,7 @@ begin
 	 "010" when op_load,--ls_out
 	 "011" when op_read | op_write,--iou_out
 	 "100" when op_jal,--pc_out
+	 "101" when op_addi | op_srl | op_sll | op_li,--alu im
 	 "000" when others;
 
 	--Rs
@@ -108,7 +109,7 @@ begin
 	--Rt
 	regs2 <= inst(20 downto 16);
 
-	--ALU‚Ì“ñ”Ô–Ú‚Ì“ü—Í
+	--ALU‚Ì“ñ”Ô–Ú‚Ì“ü—Í(!”pŽ~!)
 	s2dec : with op select
 	 s2select <= '1' when op_addi | op_srl | op_sll | op_li,--‘¦’l
 	 '0' when others;--ƒŒƒWƒXƒ^’l
