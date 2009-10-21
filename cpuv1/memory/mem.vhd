@@ -72,6 +72,10 @@ architecture synth of mem is
 	signal cache_out : std_logic_vector(31 downto 0) := (others => '0');
 	signal cache_hit : std_logic := '0';
 	signal cache_set : std_logic := '0';
+
+	signal dcache_out : std_logic_vector(31 downto 0) := (others => '0');
+	signal dcache_hit : std_logic := '0';
+	signal dcache_set : std_logic := '0';
 		
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 	signal RAM : ram_type :=
@@ -226,7 +230,7 @@ begin
 	DATAOUT when state = exec else
 	sleep;
 	
-	read_data_ready <= '1' when state = load_end else
+	read_data_ready <= '1' when state = data_w3 else
 	'0';
 	
 	read_data <= DATAOUT when state = inst else
@@ -237,6 +241,7 @@ begin
 	'1' when state = exec else --ミスじのみセット
 	'0';
 	
+	dcache_set <= '1' when state = store_w1 or state = data_w3 else '0';
 	
 	process(clk)
 	begin
@@ -284,7 +289,7 @@ begin
 				if (load_store = "10") then--Load
 					state <= data_w1;
 				elsif (load_store = "11") then--Store
-					state <= store_w1;
+					state <= inst;
 				elsif (ok = '0') then--FPU,IO待ち
 					state <= wait_ok;
 				else
@@ -337,4 +342,12 @@ begin
 		,cache_hit
 	);
 	
+	DCACHE:cache port map(
+		clk
+		,ls_address(19 downto 0)
+		,DATAOUT
+		,dcache_set
+		,dcache_out
+		,dcache_hit
+	);
 end synth;
