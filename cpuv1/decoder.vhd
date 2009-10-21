@@ -86,11 +86,12 @@ begin
 	--’x‰„
 	with op select
 	 delay <= "100" when op_load ,
-	 "011" when op_fadd | op_fsub | op_finv ,
+	 "011" when op_fadd | op_fsub ,
+	 "010" when op_finv ,
 	 "010" when op_fmul ,
 	 "010" when op_fcmp ,
 	 "111" when op_read | op_write,
-	 "010" when op_add | op_addi | op_sub | op_srl | op_sll | op_li | op_cmp ,
+	 "001" when op_add | op_addi | op_sub | op_srl | op_sll | op_li | op_cmp ,
 	 "000" when others;
 	 
 	--ƒŒƒWƒXƒ^‚É‰½‚ð‘‚«ž‚Þ‚©

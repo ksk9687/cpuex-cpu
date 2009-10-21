@@ -37,7 +37,7 @@ begin  -- STRUCTURE
         '1' when A > B else '0';
   cmp <= "00000000000000000000000000000" & gt & eq & lt;
 
-  with op_hold select
+  with op select
   C0 <=	A + B when op_add | op_addi,
   		A - B when op_sub,
   		SHR(A, B) when op_srl,
@@ -46,14 +46,16 @@ begin  -- STRUCTURE
   		B when op_li,
 		"11111111111111111111111111111111" when others;
   
+  
+  A <= A0;
+  B <= B0;
+  
   process(clk)
   begin
   	if rising_edge(clk) then
       if op /= op_halt then
         op_hold <= op;
       end if;
-  		A <= A0;
-  		B <= B0;
   		C <= C0;
   	end if;
   end process;
