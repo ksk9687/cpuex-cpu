@@ -91,7 +91,8 @@ begin
 	 "010" when op_fmul ,
 	 "010" when op_fcmp ,
 	 "111" when op_read | op_write,
-	 "001" when op_add | op_addi | op_sub | op_srl | op_sll | op_li | op_cmp ,
+	 "001" when op_add | op_sub | op_cmp ,
+	 "000" when op_addi | op_srl | op_sll | op_li,
 	 "000" when others;
 	 
 	--ƒŒƒWƒXƒ^‚É‰½‚ğ‘‚«‚Ş‚©
