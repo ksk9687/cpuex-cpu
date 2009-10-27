@@ -116,7 +116,5 @@ begin
 	        read <= cache_data(conv_integer(address((19 - width)downto 0)));
 	    end if;
 	end process;
-	
-	
 end arch;
 
