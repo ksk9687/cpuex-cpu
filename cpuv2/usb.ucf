@@ -1,0 +1,14 @@
+NET "USBWR" LOC = "AJ16"  ;
+NET "USBTXEX" LOC = "AK17"  ;
+NET "USBSIWU" LOC = "AJ23"  ;
+NET "USBRXFX" LOC = "AJ22"  ;
+NET "USBRST" LOC = "AH23"  ;
+NET "USBRDX" LOC = "AG22"  ;
+NET "USBD<7>" LOC = "AH22"  ;
+NET "USBD<6>" LOC = "AG21"  ;
+NET "USBD<5>" LOC = "AF21"  ;
+NET "USBD<4>" LOC = "AF20"  ;
+NET "USBD<3>" LOC = "AF23"  ;
+NET "USBD<2>" LOC = "AD22"  ;
+NET "USBD<1>" LOC = "AD21"  ;
+NET "USBD<0>" LOC = "AE21"  ;

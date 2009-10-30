@@ -19,41 +19,31 @@ use UNISIM.VComponents.all;
 entity cpu_top is 
 port (
     CLKIN			: in	  std_logic
-    
     ;ledout		: out	std_logic_vector(7 downto 0)
-	
 	--SRAM
 	;SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
 	;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
 	;SRAMIOPA : inout  STD_LOGIC_VECTOR (3 downto 0) --パリティー
-	
 	;SRAMRWA : out  STD_LOGIC	--read=>1,write=>0
 	;SRAMBWA : out  STD_LOGIC_VECTOR (3 downto 0)--書き込みバイトの指定
-
 	;SRAMCLKMA0 : out  STD_LOGIC	--SRAMクロック
 	;SRAMCLKMA1 : out  STD_LOGIC	--SRAMクロック
-	
 	;SRAMADVLDA : out  STD_LOGIC	--バーストアクセス
 	;SRAMCEA : out  STD_LOGIC --clock enable
-	
 	;SRAMCELA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
 	;SRAMCEHA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
 	;SRAMCEA2X : out  STD_LOGIC	--SRAMを動作させるかどうか
 	;SRAMCEA2 : out  STD_LOGIC	--SRAMを動作させるかどうか
-
 	;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
 	;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
 	;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
-
+	-- USB
 	;USBWR : out  STD_LOGIC
 	;USBRDX : out  STD_LOGIC
-	
 	;USBTXEX : in  STD_LOGIC
 	;USBSIWU : out  STD_LOGIC
-	
 	;USBRXFX : in  STD_LOGIC
 	;USBRST : out  STD_LOGIC
-	
 	;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
     ); 
 end cpu_top;     
@@ -173,14 +163,7 @@ architecture synth of cpu_top is
     ); 
     end component mem;
    
-    component io_dummy_led
-	port  (
-		clk : in std_logic ;
-		op : in std_logic_vector(1 downto 0) ;
-		reg : in std_logic_vector(31 downto 0);
-		data : out std_logic_vector(7 downto 0)
-	);
-	end component;
+
    
    component IOU
 	port  (

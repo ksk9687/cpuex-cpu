@@ -43,8 +43,8 @@ architecture sim of usb_sim is
     );
     signal pointer : std_logic_vector(6 downto 0) := "1111111";
 begin
-
 USBRXFX <= '0';
+
 USBTXEX <= '0';
 USBD <= RAM(conv_integer(pointer));
 

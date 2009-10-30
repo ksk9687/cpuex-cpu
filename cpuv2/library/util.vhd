@@ -12,14 +12,7 @@ use IEEE.STD_LOGIC_ARITH.ALL;
 package util is
    function sign_extention (a:std_logic_vector) return std_logic_vector;
    	
-	    component io_dummy_led
-	port  (
-		clk : in std_logic ;
-		op : in std_logic_vector(1 downto 0) ;
-		reg : in std_logic_vector(31 downto 0);
-		data : out std_logic_vector(7 downto 0)
-	);
-	end component;
+	
 end package util;  
  
  
