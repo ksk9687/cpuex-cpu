@@ -4,6 +4,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+library work;
+use work.util.all; 
+use work.instruction.all; 
+use work.SuperScalarComponents.all; 
+
+
 entity cpu_top is
 	port  (
 	    CLKIN			: in	  std_logic--50Mhz
@@ -38,24 +44,7 @@ entity cpu_top is
 	);
 end cpu_top;
 
-architecture arch of cpu_top is
-    component clock
-	port (
-    clkin       : in  std_logic;
-    clkout0     : out std_logic;
-    clkout90    : out std_logic;
-    clkout180   : out std_logic;
-    clkout270   : out std_logic;
-    clkout2x    : out std_logic;
-    clkout2x90 : out std_logic;
-    clkout2x180 : out std_logic;
-    clkout2x270 : out std_logic;
-    clkout4x : out std_logic;
-    locked      : out std_logic);
-	end component;
-	
-	
-	
+architecture arch of cpu_top is	
    signal clk,clk90,clk180,clk2x,rst: std_logic := '0';
 begin
   	ROC0 : ROC port map (O => rst);

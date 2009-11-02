@@ -7,7 +7,6 @@ library work;
 use work.instruction.all;
 
 entity ALU_IM is
-
   port (
  	clk : in std_logic;
     op : in std_logic_vector(2 downto 0);

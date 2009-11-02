@@ -1,0 +1,40 @@
+SHELL = /bin/bash
+
+CMD = php ./scripts/components.php
+ALL_COM_FILES = tmp/*/*.cmp
+
+
+all : cpuv2
+
+cpuv2 : tmp/2/alu.cmp tmp/2/alu_im.cmp tmp/2/sramc.cmp tmp/2/cache.cmp\
+	tmp/2/branchPredictor.cmp tmp/2/clock.cmp tmp/2/clock.cmp tmp/2/decoder.cmp tmp/2/dff.cmp
+	$(CMD) -l 2 cpuv2/library/SuperScalarComponents.vhd  
+	
+tmp/2/alu.cmp:cpuv2/alu/alu.vhd
+	$(CMD) 2 $< $@
+
+tmp/2/alu_im.cmp:cpuv2/alu/alu_im.vhd
+	$(CMD) 2 $< $@
+	
+tmp/2/sramc.cmp:cpuv2/memory/sram/sram_controller.vhd
+	$(CMD) 2 $< $@
+	
+tmp/2/cache.cmp:cpuv2/memory/cache.vhd
+	$(CMD) 2 $< $@
+
+tmp/2/branchPredictor.cmp:cpuv2/branchPredictor.vhd
+	$(CMD) 2 $< $@
+	
+tmp/2/clock.cmp:cpuv2/clock.vhd
+	$(CMD) 2 $< $@
+	
+tmp/2/decoder.cmp:cpuv2/decoder.vhd
+	$(CMD) 2 $< $@
+	
+tmp/2/dff.cmp:cpuv2/dff.vhd
+	$(CMD) 2 $< $@
+
+clean:
+	rm -f $(ALL_COM_FILES)
+	
+.PHONY: clean

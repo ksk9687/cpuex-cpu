@@ -11,7 +11,7 @@ use ieee.std_logic_1164.all;
 library work;
 
 package instruction is
-    
+   
    constant op_li	:	std_logic_vector(5 downto 0) := o"00";
    constant op_addi	:	std_logic_vector(5 downto 0) := o"01";
    constant op_sll	:	std_logic_vector(5 downto 0) := o"02";
