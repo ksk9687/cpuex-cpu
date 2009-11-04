@@ -11,7 +11,6 @@ use work.fp_inv_table.all;
 entity FP_ABS is
   
   port (
-    clk : in std_logic;
     A   : in  std_logic_vector(31 downto 0);
     O   : out std_logic_vector(31 downto 0));
 
@@ -22,11 +21,6 @@ architecture STRUCTURE of FP_ABS is
   
 begin  -- STRUCTURE
   
-  process(clk)
-  begin
-    if rising_edge(clk) then
-      O <= '0' & A(30 downto 0);
-    end if;
-  end process;
+  O <= '0' & A(30 downto 0);
            
 end STRUCTURE;

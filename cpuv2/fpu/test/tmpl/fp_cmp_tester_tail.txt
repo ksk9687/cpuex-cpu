@@ -1,3 +1,4 @@
+
   signal clk : std_logic;
   signal reset : std_logic;
 
@@ -15,9 +16,22 @@
   
 begin  -- STRUCTURE
   
-  ibufg_inst : ibufg port map (I => clkin, O => clk);
+  --ibufg_inst : ibufg port map (I => clkin, O => clk);
   roc_inst : roc port map (O => reset);
-  inst : FP_CMP port map (Ain => Ain, Bin => Bin, Oout => O, clk => clk);
+  
+  clock_inst : clock port map (
+    clkin     => clkin,
+    --clkout0   => clk,
+    --clkout90  => clk90,
+    --clkout180 => clk180,
+    --clkout270 => clk270,
+    clkout2x    => clk
+    --clkout2x180 => clk180,
+    --clkout2x270 => clk270,
+    --locked    => locked
+    );  
+
+  inst : FP_CMP port map (A => Ain, B => Bin, O => O, clk => clk);
   
   process (clk, reset)
   begin  -- process
