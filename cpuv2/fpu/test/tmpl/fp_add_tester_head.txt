@@ -22,4 +22,17 @@ architecture STRUCTURE of FP_ADD_TESTER is
       O    : out std_logic_vector(31 downto 0));
   end component;
 
+  component clock
+    port (
+      clkin       : in  std_logic;
+      clkout0     : out std_logic;
+      clkout90    : out std_logic;
+      clkout180   : out std_logic;
+      clkout270   : out std_logic;
+      clkout2x    : out std_logic;
+      clkout2x180 : out std_logic;
+      clkout2x270 : out std_logic;
+      locked      : out std_logic);
+  end component;
+
   constant m : integer := 2;            -- ‰‰ZŠí‚Ì’†‚É“ü‚Á‚Ä‚¢‚éƒ‰ƒbƒ`‚ÌŒÂ”

@@ -12,7 +12,8 @@ CFLAGS = -Wall -Wextra
 
 .PHONY: all clean
 
-all: vhdl/fp_add_tester_sim.vhd vhdl/fp_add_tester_fpga.vhd \
+all: obj bin \
+	vhdl/fp_add_tester_sim.vhd vhdl/fp_add_tester_fpga.vhd \
 	vhdl/fp_mul_tester_sim.vhd vhdl/fp_mul_tester_fpga.vhd \
 	vhdl/fp_inv_tester_sim.vhd vhdl/fp_inv_tester_fpga.vhd \
 	vhdl/fp_cmp_tester_sim.vhd vhdl/fp_cmp_tester_fpga.vhd \
@@ -21,6 +22,13 @@ all: vhdl/fp_add_tester_sim.vhd vhdl/fp_add_tester_fpga.vhd \
 clean:
 	rm -f obj/* bin/* vhdl/*_sim.vhd vhdl/*_fpga.vhd
 
+
+# ディレクトリ
+obj:
+	mkdir obj
+
+bin:
+	mkdir bin
 
 
 # VHDL を生成
