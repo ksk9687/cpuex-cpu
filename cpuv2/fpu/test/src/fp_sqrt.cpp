@@ -9,6 +9,8 @@ extern int fsqrt_table[];
 #define DEBUG(x) do { puts(#x); print_bits((char*)&x, sizeof(x)); puts(""); } while (0)
 
 bool fsqrt(float src, float &dst) {
+  if (src < 0) return false;
+
   myfloat a;
   a.f = src;
 

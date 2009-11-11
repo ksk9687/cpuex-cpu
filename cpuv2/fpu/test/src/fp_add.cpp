@@ -5,13 +5,12 @@ using namespace std;
 #include "common.hpp"
 
 
-// TODO bool‚ğ•Ô‚·ŠÖ”‚Ö
-float fadd(float src1, float src2) {
+bool fadd(float src1, float src2, float &dst) {
   myfloat a, b, r;
   int am, bm, m;
 
-  if (fabs(src1) == 0) return src2;
-  if (fabs(src2) == 0) return src1;
+  if (fabs(src1) == 0) { dst = src2; return true; }
+  if (fabs(src2) == 0) { dst = src1; return true; }
 
   a.f = src1;
   b.f = src2;
@@ -43,6 +42,7 @@ float fadd(float src1, float src2) {
     }
     r.m = m;
   }
-  
-  return r.f;
+
+  dst = r.f;
+  return dst == 0 || is_normalized(dst);
 }

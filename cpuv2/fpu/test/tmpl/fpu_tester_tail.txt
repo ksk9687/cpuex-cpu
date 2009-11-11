@@ -1,0 +1,64 @@
+  signal clk, reset : std_logic;
+
+  signal i : integer range 0 to n - 1 := 0;
+  signal A, B, O, Q, Oout : std_logic_vector(31 downto 0);
+  signal op : std_logic_vector(3 downto 0);
+  signal chk : std_logic := '0';
+  
+begin  -- STRUCTURE
+
+  --ibufg_inst : ibufg port map (I => clkin, O => clk);
+  roc_inst : roc port map (O => reset);
+  
+  clock_inst : clock port map (
+    clkin     => clkin,
+    --clkout0   => clk,
+    --clkout90  => clk90,
+    --clkout180 => clk180,
+    --clkout270 => clk270,
+    clkout2x    => clk
+    --clkout2x180 => clk180,
+    --clkout2x270 => clk270,
+    --locked    => locked
+    );  
+
+  inst : FPU port map (clk => clk, op => op, A => A, B => B, O => Oout);
+  
+  process (clk, reset)
+  begin  -- process
+    if reset = '1' then
+      i <= 0;
+      ledout <= "00";
+
+      A <= table_a(i);
+      B <= table_b(i);
+      Q <= table_o(i);
+      op <= table_op(i);
+      chk <= table_chk(i);
+      O <= Oout;
+      
+    elsif clk'event and clk = '1' then
+      -- チェック
+      if (chk = '1' and O /= Q) then
+        ledout(0) <= '1';
+      end if;
+
+      A <= table_a(i);
+      B <= table_b(i);
+      Q <= table_o(i);
+      op <= table_op(i);
+      chk <= table_chk(i);
+      O <= Oout;
+      
+      -- i を進める
+      if i + 1 = n then
+        i <= 0;
+        ledout(1) <= '1';    -- 終了
+      else
+        i <= i + 1;
+      end if;
+    end if;
+    
+  end process;
+  
+end STRUCTURE;

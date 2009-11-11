@@ -98,7 +98,9 @@ begin  -- STRUCTURE
   -- 加算を終え繰り上がりを処理
   
   -- TODO 一番下のビットを別に処理すると +1 になって都合がよい可能性がある
-  OM1 <= (OMH2 & '0') + ("00000000000" & OMM3) + 2;
+  --OM1 <= (OMH2 & '0') + ("00000000000" & OMM3) + 2;
+  OM1(24 downto 1) <= OMH2 + ("0000000000" & OMM3(13 downto 1)) + 1;
+  OM1(0) <= OMM3(0);
   
   OM2 <= OM1(23 downto 1) when OM1(24) = '1' else OM1(22 downto 0);
   OE3 <= OE2 + 1 when OM1(24) = '1' else OE2;

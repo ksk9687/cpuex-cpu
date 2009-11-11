@@ -88,6 +88,17 @@ vhdl/fp_sqrt_tester_fpga.vhd: bin/fp_sqrt_tester_gen
 	cat tmpl/fp_sqrt_tester_tail.txt >> vhdl/fp_sqrt_tester_fpga.vhd
 
 
+vhdl/fpu_tester_sim.vhd: bin/fpu_tester_gen
+	cat tmpl/fpu_tester_head.txt > vhdl/fpu_tester_sim.vhd
+	bin/fpu_tester_gen $(SIM_TESTS) >> vhdl/fpu_tester_sim.vhd
+	cat tmpl/fpu_tester_tail.txt >> vhdl/fpu_tester_sim.vhd
+
+vhdl/fpu_tester_fpga.vhd: bin/fpu_tester_gen
+	cat tmpl/fpu_tester_head.txt > vhdl/fpu_tester_fpga.vhd
+	bin/fpu_tester_gen $(FPGA_TESTS) >> vhdl/fpu_tester_fpga.vhd
+	cat tmpl/fpu_tester_tail.txt >> vhdl/fpu_tester_fpga.vhd
+
+
 
 # 実行ファイルを生成
 
@@ -107,4 +118,9 @@ bin/fp_cmp_tester_gen: src/fp_cmp_tester_gen.cpp obj/common.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 bin/fp_sqrt_tester_gen: src/fp_sqrt_tester_gen.cpp obj/fp_sqrt_table.o obj/fp_sqrt.o obj/common.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+bin/fpu_tester_gen: src/fpu_tester_gen.cpp obj/common.o \
+		obj/fp_add.o obj/fp_mul.o obj/fp_inv.o obj/fp_inv_table.o \
+		obj/fp_sqrt.o obj/fp_sqrt_table.o
 	$(CC) $(CFLAGS) -o $@ $^
