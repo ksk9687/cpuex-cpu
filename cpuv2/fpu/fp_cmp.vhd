@@ -70,5 +70,6 @@ begin  -- STRUCTURE
          abslt & abseq & absgt;
   
   O <= "00000000000000000000000000000" & cmp;
+  --O <= "00000000000000000000000000000010";
 
 end STRUCTURE;

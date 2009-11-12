@@ -35,4 +35,4 @@ architecture STRUCTURE of FP_INV_TESTER is
       locked      : out std_logic);
   end component;
 
-  constant m : integer := 2;            -- 演算器の中に入っているラッチの個数
+  constant m : integer := 3;            -- 演算器の中に入っているラッチの個数
