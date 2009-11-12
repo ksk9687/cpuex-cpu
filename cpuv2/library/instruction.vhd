@@ -70,6 +70,8 @@ package instruction is
 	constant alu_op_cmp	: std_logic_vector(2 downto 0) := o"2";
 	
 	constant iou_op_led	: std_logic_vector(2 downto 0) := o"2";
+	
+	constant sp_op_nop	: std_logic_vector(2 downto 0) := o"0";
 
 end package instruction;  
  

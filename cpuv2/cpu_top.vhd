@@ -74,6 +74,8 @@ begin
 	-- IF
 	-- 
 	----------------------------------
+
+	
   MEMORY : mem port map (
    	clk,clk,clk180,
    	pc,ls_address,
@@ -87,6 +89,18 @@ begin
 	,SRAMLBOA,SRAMXOEA,SRAMZZA
    );
    
+   PC0:process(clk)
+   begin
+   	if rising_edge(clk) then
+   		if jmp_taken then
+   			pc <= jmp_addr;
+   		else
+   			pc <= pc + '1';
+   		end if;
+   	end if;
+   end process PC0;
+   
+   
    	----------------------------------
 	-- 
 	-- ID
@@ -95,7 +109,8 @@ begin
     DEC : decoder port map (
    	inst,
    	reg_d,reg_s1,reg_s2,
-   	regwrite,
+   	reg_s1_use,reg_s2_use,
+   	regwrite,cr_flg,
    	im,
    	reg_write_select
    );
@@ -107,12 +122,15 @@ begin
 	----------------------------------
   	REGISTERS : reg port map (
 		clk,rst
-		reg_d_buf,reg_d,reg_s1,reg_s2,
-		regwrite_f_buf,
+		reg_d_buf,regwrite&reg_d,reg_s1_use&reg_s1,reg_s2_use&reg_s2,
+		regwrite_f,cr_flg_buf1,cr_flg,
+		cr_d,
 		data_d,
 		data_s1,data_s2
 		cr,reg_ok
 	);
+	ext_im <= sign_extention(im);
+	
 	
 	ID_RD : process(CLK)
 	begin
@@ -120,10 +138,18 @@ begin
 			if reg_ok = '1' then
 				unit_op <= inst(31 downto 29);
 				sub_op <= inst(28 downto 26);
-				im_buf0 <= im;
-				reg_d_buf0 <= reg_d;
+				reg_write_buf0 <= regwrite;
+				cr_flg_buf0 <= cr_flg;
 			else
+				unit_op <= op_unit_sp;--STALL
+				sub_op <= sp_op_nop;
+				reg_write_buf0 <= '0';
 			end if;
+			mask <= data_s1(2 downto 0);
+			im_buf0 <= im;
+			ext_im_buf0 <= ext_im;
+			reg_d_buf0 <= reg_d;
+			jmp_addr <= reg_s1(5 downto 3)&reg_s2&im;
 		end if;
 	end process ID_RD;
 	
@@ -143,20 +169,61 @@ begin
 		end if;
 	end process LED_OUT;
 	
+	--JMP
+	jmp_taken <= not (((mask(2) and cr(2)) or (mask(1) and cr(1)) or (mask(0) and cr(0))));
+	
 	ALU0 : alu port map (
 		clk,
 		sub_op,
 		data_in_0,data_in_1,
-		alu_out
+		alu_out,alu_cmp
 	);	
 	ALU_IM0 : alu_im port map (
 		clk,
 		sub_op,
 		data_s1,im,
-		alu_im_out
+		alu_im_out,alui_cmp
 	);
 	
-
-
+	EX1 : process(CLK)
+	begin
+		if rigind_edge(clk) then
+			unit_op_buf1 <= unit_op;
+			sub_op_buf1 <= sub_op;
+			reg_d_buf1 <= reg_d_buf0;
+			cr_flg_buf1 <= cr_flg_buf0;
+		end if;
+	end process ID_RD;
+	
+	EX2 : process(CLK)
+	begin
+		if rigind_edge(clk) then
+			unit_op_buf2 <= unit_op_buf1;
+			sub_op_buf2 <= sub_op_buf1;
+			reg_d_buf2 <= reg_d_buf1;
+		end if;
+	end process ID_RD;
+	
+	EX3 : process(CLK)
+	begin
+		if rigind_edge(clk) then
+			unit_op_buf3 <= unit_op_buf2;
+			sub_op_buf3 <= sub_op_buf2;
+			reg_d_buf3 <= reg_d_buf2;
+		end if;
+	end process ID_RD;
+	
+	----------------------------------
+	-- 
+	-- WR
+	-- 
+	----------------------------------
+	
+	with unit_op_buf1 select
+	 cr_d <= alui_cmp when op_unit_alui,
+	 --fpu_cmp when op_unit_fpu,
+	 alu_cmp when others;
+	 
+	
 
 end arch;

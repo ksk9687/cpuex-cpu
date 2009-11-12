@@ -18,7 +18,10 @@ port (
     
     --レジスタの指定
     ;reg_d,reg_s1,reg_s2 : out std_logic_vector(5 downto 0)
+    ;reg_s1_use,reg_s2_use : out std_logic
     ;reg_write : out std_logic
+    
+    ;cr_flg : out std_logic_vector(1 downto 0)
 	;im : out std_logic_vector(13 downto 0)
     ;reg_write_select : out std_logic_vector(2 downto 0)
     );
@@ -36,17 +39,27 @@ begin
 	with op select
 	regd <= 
 	"111111" when op_jal, --JALではr63のみ
-	inst(20 downto 16) when op_addi | op_sll | op_load | op_li | op_read | op_write | | op_hsread ,--Rt
-	inst(15 downto 11) when others;--Rd
+	inst(19 downto 14) when op_addi | op_sll | op_load | op_li | op_read | op_write | | op_hsread ,--Rt
+	inst(13 downto 8) when others;--Rd
 	
 	-- レジスタに書き込むかどうか
 	with op select
 	 reg_write <=  '0' when op_cmp | op_cmpi | op_fcmp | op_store | op_hs_write | op_jmp | op_jr | op_nop | op_halt | op_led,--書きこまない
 	 '1' when others;
 	 
-	--レジスタに何を書き込むか
-	with op select
-	 reg_write_select <= op(5 downto 3);
+	 --レジスタを読み込むかどうか
+	 with op select
+	 reg_s1_use <=  '0' when op_jmp ,--読み込まない
+	 '1' when others;
+	 with op select
+	 reg_s2_use <=  '0' when op_jmp | op_led | op_cmpi | op_li,--読み込まない
+	 '1' when others;
+	 
+	 
+	 with op select
+	 cr_flg <= "11" when op_fcmp | op_cmp | op_cmpi | ,--書きこむ
+	 "10" when op_jmp,--読み込む
+	 "00" when others;
 
 	--Rs
 	regs1 <= inst(25 downto 20);
