@@ -94,6 +94,33 @@ component dff is
 end component;
 
 
+component IROM is
+	port  (
+		clk : in std_logic;
+		pc : in std_logic_vector(19 downto 0);
+		
+		inst : out std_logic_vector(31 downto 0)
+	);
+end component;
+
+
+component reg is 
+port (
+    clk,rst			: in	  std_logic;
+    d,pd,s1,s2 : in std_logic_vector(6 downto 0);
+    crflg,pcrflg : in std_logic_vector(1 downto 0);
+    
+    cr_d : in std_logic_vector(2 downto 0);
+    data_d : in std_logic_vector(31 downto 0);
+    data_s1,data_s2 : out std_logic_vector(31 downto 0);
+    
+    cr : out std_logic_vector(2 downto 0);
+    reg_ok: out std_logic
+    ); 
+    
+end component;
+
+
 component sram_controller is
     Port (
 		CLK : in STD_LOGIC
