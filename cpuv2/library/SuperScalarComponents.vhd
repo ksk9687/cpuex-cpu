@@ -2,12 +2,11 @@ package SuperScalarComponents is
 
 component ALU is
   port (
- 	clk : in std_logic;
-    op : in std_logic_vector(2 downto 0);
+    clk  : in std_logic;
+    op   : in std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
-    C    : out std_logic_vector(31 downto 0);
-    cmp    : out std_logic_vector(2 downto 0)
-    );
+    O    : out std_logic_vector(31 downto 0);
+    cmp  : out std_logic_vector(2 downto 0));
 end component;
 
 
@@ -23,10 +22,10 @@ end component;
 
 component branchPredictor is
 	port  (
-	
 		clk,rst :in std_logic;
 		pc : in std_logic_vector(19 downto 0);
-		taken : out std_logic;
+		im : in std_logic_vector(13 downto 0);
+		taken : out std_logic
 	);
 end component;
 
@@ -81,9 +80,9 @@ port (
     
     --レジスタの指定
     ;reg_d,reg_s1,reg_s2 : out std_logic_vector(5 downto 0)
-    
-
-    
+    ;reg_write : out std_logic
+	;im : out std_logic_vector(13 downto 0)
+    ;reg_write_select : out std_logic_vector(2 downto 0)
     );
 end component;
 

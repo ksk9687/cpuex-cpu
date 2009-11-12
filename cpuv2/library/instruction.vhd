@@ -11,6 +11,17 @@ use ieee.std_logic_1164.all;
 library work;
 
 package instruction is
+
+
+   constant op_unit_alui	: std_logic_vector(2 downto 0) := o"0";
+   constant op_unit_alu		: std_logic_vector(2 downto 0) := o"1";
+   constant op_unit_fpu		: std_logic_vector(2 downto 0) := o"2";
+   constant op_unit_lsu		: std_logic_vector(2 downto 0) := o"3";
+   constant op_unit_hsmu	: std_logic_vector(2 downto 0) := o"4";
+   constant op_unit_iou		: std_logic_vector(2 downto 0) := o"5";
+   constant op_unit_sp		: std_logic_vector(2 downto 0) := o"6";
+   constant op_unit_jmp 	: std_logic_vector(2 downto 0) := o"7";
+   
    
    constant op_li	:	std_logic_vector(5 downto 0) := o"00";
    constant op_addi	:	std_logic_vector(5 downto 0) := o"01";
@@ -49,14 +60,16 @@ package instruction is
    constant op_jr	:	std_logic_vector(5 downto 0) := o"72"; 	
 
 
-   constant alui_op_li	:	std_logic_vector(5 downto 0) := o"0";
-   constant alui_op_addi	:	std_logic_vector(5 downto 0) := o"1";
-   constant alui_op_sll	:	std_logic_vector(5 downto 0) := o"2";
-   constant alui_op_cmpi	:	std_logic_vector(5 downto 0) := o"3";
+   constant alui_op_li		:	std_logic_vector(2 downto 0) := o"0";
+   constant alui_op_addi	:	std_logic_vector(2 downto 0) := o"1";
+   constant alui_op_sll		:	std_logic_vector(2 downto 0) := o"2";
+   constant alui_op_cmpi	:	std_logic_vector(2 downto 0) := o"3";
    
 	constant alu_op_add	: std_logic_vector(2 downto 0) := o"0";
 	constant alu_op_sub	: std_logic_vector(2 downto 0) := o"1";
 	constant alu_op_cmp	: std_logic_vector(2 downto 0) := o"2";
+	
+	constant iou_op_led	: std_logic_vector(2 downto 0) := o"2";
 
 end package instruction;  
  

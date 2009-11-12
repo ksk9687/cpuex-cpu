@@ -14,6 +14,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 library work;
 use work.instruction.all;
 
+use work.SuperScalarComponents.all; 
 entity memory is 
 port (
     clk,rst,sramcclk,sramclk	: in	  std_logic;
@@ -51,15 +52,20 @@ port (
 	;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
 	;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
     ); 
-     
 end memory;
         
 
 architecture synth of mem is
-	type mem_state_t is (
+	type i_mem_state_t is (
 		idle,inst_w1,inst_w2,inst_w3,inst_w4,inst_w5
 	);
-	signal mem_state : mem_state_t := idle;
+	signal i_mem_state : i_mem_state_t := idle;
+	
+	type d_mem_state_t is (
+		idle,data_w1,data_w2,data_w3,data_w4,data_w5
+	);
+	signal d_mem_state : d_mem_state_t := idle;
+	
 	
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
 	
@@ -77,46 +83,91 @@ architecture synth of mem is
 	signal dcache_hit : std_logic := '0';
 	signal dcache_set : std_logic := '0';
 	signal dcache_addr : std_logic_vector(19 downto 0) := (others => '0');
-	signal addr_buf : std_logic_vector(19 downto 0) := (others => '0');
+	signal ls_addr_buf : std_logic_vector(19 downto 0) := (others => '0');
 		
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 
 		
 begin
-
+	--!@TODO 少なくともデータキャッシュはおかしい。
 
 	inst <= cache_out when cache_hit = '1' else
-	DATAOUT when inst_state = inst_w4 else
-	;
+	DATAOUT when i_mem_state = inst_w4 else
+	op_halt&"00"&x"000000";
 	
 	inst_ok <= '1' when cache_hit = '1' else
-	'1' when inst_state = inst_read_end else
+	'1' when i_mem_state = inst_w4 else
 	'0';
 	
-	cache_set <= '1' when inst_state = inst_read_end else
+	ls_ok <= '1' when ls_flg = "11"  else
+	 '1' when dcache_hit = '1' else
+	 '1' when d_mem_state = data_w4 else
+	 '0';
+	
+	cache_set <= '1' when inst_state = inst_w4 else
 	'0';
 	
+	--データキャッシュアドレス
+	dcache_addr <= ls_addr_buf when d_mem_state = data_w4 else
+	ls_addr;--Store
+	--データキャッシュデータ
+	dcache_in <= DATAOUT when d_mem_state = data_w4 else--missload
+	store_data;--Store
+	--データキャッシュセット　MissLoad,Store
+	dcache_set <= '1' when d_mem_state = data_w4 or ls_flg = "11" else
+	'0';
 	
-	process(clk)
+	--SRAMアドレス
+	ADDR <= ls_addr　when (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1') else
+	pc(19 downto 0);
+	--SRAM書き込みデータ
+	DATAIN <= store_data when ls_flg = "11" else
+	(others => '0');
+	--SRAM読み書き　1:Read 0:Write
+	RW <= '0' when ls_flg = "11" else
+	'1';
+	
+	IMEM_STATE : process(clk)
 	begin
 		if rising_edge(clk) then
-		case mem_state is
+		case i_mem_state is
 			when idle =>
-				if ls_flg = "11" then--Store
-					mem_state <= inst_w1;
-				elsif ls_flg = "10" then--Load
-					mem_state <= inst_w1;
-				elsif cache_hit = '0' then--Inst
-					mem_state <= inst_w1;
+				if (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1') then--Loadキャッシュミス or Store
+					i_mem_state <= idle;
+				elsif cache_hit = '0' then--Instメモリアクセス要求があり、キャッシュミス
+					i_mem_state <= inst_w1;
+				else
+					i_mem_state <= idle;
 				end if;
-			when inst_w1 => mem_state <= inst_w2;
-			when inst_w2 => mem_state <= inst_w3;
-			when inst_w3 => mem_state <= inst_w4;
-			when inst_w4 => mem_state <= inst_w5;
-			when others => mem_state <= idle;
+			when inst_w1 => i_mem_state <= inst_w2;
+			when inst_w2 => i_mem_state <= inst_w3;
+			when inst_w3 => i_mem_state <= inst_w4;
+			when inst_w4 => i_mem_state <= idle;
+			when others => i_mem_state <= idle;
 		end case;
 	end process;
 
+
+	DMEM_STATE : process(clk)
+	begin
+		if rising_edge(clk) then
+		case d_mem_state is
+			when idle =>
+				if ls_flg = "11" then--Store
+					d_mem_state <= idle;
+				elsif (ls_flg(1) = '1' and (dcache_hit = '0') then--Loadキャッシュミス
+					d_mem_state <= data_w1;
+					ls_addr_buf <= ls_addr;
+				end if;
+			when data_w1 => d_mem_state <= data_w2;
+			when data_w2 => d_mem_state <= data_w3;
+			when data_w3 => d_mem_state <= data_w4;
+			when data_w4 => d_mem_state <= idle;
+			when others => d_mem_state <= idle;
+		end case;
+	end process;
+	
+	
 	SRAMC : sram_controller port map(
 		 sramcclk
 		,sramclk
