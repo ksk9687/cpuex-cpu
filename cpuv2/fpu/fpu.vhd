@@ -121,6 +121,7 @@ begin  -- STRUCTURE
     O_ADD when fpu_op_fsub,
     O_MUL when fpu_op_fmul,
     O_INV when fpu_op_finv,
+    O_SQRT when fpu_op_fsqrt,
     O_CMP when fpu_op_fcmp,
     "11111111111111111111111111111111" when others;  -- BAD OP
   
@@ -144,6 +145,10 @@ begin  -- STRUCTURE
         op_queue(0) <= op_queue(1);
         op_queue(1) <= op_queue(2);
         op_queue(2) <= op;
+      else
+        -- ‰‰ŽZ‚ª“ü‚Á‚Ä‚±‚È‚©‚Á‚½
+        op_queue(0) <= op_queue(1);
+        op_queue(1) <= op_queue(2);
       end if;
     end if;
   end process;

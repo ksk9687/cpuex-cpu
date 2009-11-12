@@ -5,7 +5,7 @@ using namespace std;
 
 #include "common.hpp"
 
-extern float fadd(float, float);
+extern bool fadd(float, float, float&);
 
 const int MAX_N = 100000;
 
@@ -47,13 +47,14 @@ static void make_table(int n, float *a, float *b, float *o) {
     do {
       a[j] = make_random_float();
       b[j] = make_random_float();
-    } while (!is_normalized(fadd(a[j], b[j])));
+    } while (!fadd(a[j], b[j], o[j]));
     j++;
   }
 
   // output
   rep (i, n) {
-    o[i] = fadd(a[i], b[i]);
+    //fprintf(stderr, "%d : %f + %f (%d)\n", i, a[i], b[i], fadd(a[i], b[i], o[i]));
+    fadd(a[i], b[i], o[i]);
     check(a[i] + b[i], o[i]);
   }
 }

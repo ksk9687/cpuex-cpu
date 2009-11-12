@@ -1,11 +1,14 @@
 #pragma once
 
+#include <sys/types.h>
+
 #define rep(i, n) for (int i = 0; i < (int)(n); i++)
 #define iter(c) __typeof((c).begin())
 #define tr(c, i) for (iter(c) i = (c).begin(); i != (c).end(); ++i)
 
 typedef unsigned int uint;
 
+typedef uint32_t bit32;
 
 
 // •‚“®¬”“_”
@@ -32,4 +35,5 @@ typedef union {
     uint e : 8;
     uint s : 1; 
   };
+  bit32 b;
 } myfloat;

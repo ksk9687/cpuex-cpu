@@ -96,8 +96,9 @@ begin  -- STRUCTURE
   begin
     if rising_edge(clk) then
       -- êœ (6ns é„)
-      OMM1 <= OMM1tmp(23 downto 11);
-      OMM2 <= OMM2tmp(23 downto 11);
+      --OMM1 <= OMM1tmp(23 downto 11);
+      --OMM2 <= OMM2tmp(23 downto 11);
+      OMM3 <= ('0' & OMM1tmp(23 downto 11)) + ('0' & OMM2tmp(23 downto 11));
       OMH  <= OMHtmp(23 downto 0);
       
       OE3 <= OE2;
@@ -109,8 +110,11 @@ begin  -- STRUCTURE
   -- 4th stage
   -----------------------------------------------------------------------------
 
-  OMM3 <= ('0' & OMM1(12 downto 0)) + ('0' & OMM2(12 downto 0));
-  OM1 <= (OMH & '0') + ("00000000000" & OMM3) + 2;
+  --OMM3 <= ('0' & OMM1(12 downto 0)) + ('0' & OMM2(12 downto 0));
+  
+  --OM1 <= (OMH & '0') + ("00000000000" & OMM3) + 2;
+  OM1(24 downto 1) <= OMH + ("0000000000" & OMM3(13 downto 1)) + 1;
+  OM1(0) <= OMM3(0);
   
   -- åJÇËè„Ç™ÇËÇèàóù
   OM2 <= OM1(23 downto 1) when OM1(24) = '1' else OM1(22 downto 0);

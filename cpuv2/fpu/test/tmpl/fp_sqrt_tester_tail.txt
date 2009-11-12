@@ -6,7 +6,7 @@
   signal O : std_logic_vector(31 downto 0);
   signal Ain, Oin : std_logic_vector(31 downto 0);
   signal Oout, Qout : std_logic_vector(31 downto 0);
-  signal Cout : std_logic := '0';
+  signal Cin, Cout : std_logic := '0';
 
   -- queue_o は出力すべき値のキュー
   -- queue_c は計算が行われた結果であるか否かのキュー
@@ -36,10 +36,14 @@ begin  -- STRUCTURE
   process (clk, reset)
   begin  -- process
     if reset = '1' then
-      i <= 0;
       ledout <= "00";
       Ain <= table_a(i);
       Oin <= table_o(i);
+      Cin <= '0';
+      i <= 0;
+
+      Cout <= '0';
+      queue_c <= CONV_STD_LOGIC_VECTOR(0, m);
 
     elsif clk'event and clk = '1' then
       -- チェック
@@ -60,11 +64,12 @@ begin  -- STRUCTURE
       
       -- 投入
       queue_o(0) <= Oin;
-      queue_c(0) <= '1';
+      queue_c(0) <= Cin;
       
       -- 次のために読みだし
       Ain <= table_a(i);
       Oin <= table_o(i);
+      Cin <= '1';
       
       -- i を進める
       if i + 1 = n then
