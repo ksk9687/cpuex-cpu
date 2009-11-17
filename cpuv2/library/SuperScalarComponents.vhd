@@ -15,8 +15,8 @@ component ALU_IM is
  	clk : in std_logic;
     op : in std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
-    C    : out std_logic_vector(31 downto 0)
-    );
+    O    : out std_logic_vector(31 downto 0);
+    cmp  : out std_logic_vector(2 downto 0));
 end component;
 
 
@@ -80,7 +80,10 @@ port (
     
     --レジスタの指定
     ;reg_d,reg_s1,reg_s2 : out std_logic_vector(5 downto 0)
+    ;reg_s1_use,reg_s2_use : out std_logic
     ;reg_write : out std_logic
+    
+    ;cr_flg : out std_logic_vector(1 downto 0)
 	;im : out std_logic_vector(13 downto 0)
     ;reg_write_select : out std_logic_vector(2 downto 0)
     );
@@ -108,7 +111,7 @@ component reg is
 port (
     clk,rst			: in	  std_logic;
     d,pd,s1,s2 : in std_logic_vector(6 downto 0);
-    crflg,pcrflg : in std_logic_vector(1 downto 0);
+    dflg,crflg,pcrflg : in std_logic_vector(1 downto 0);
     
     cr_d : in std_logic_vector(2 downto 0);
     data_d : in std_logic_vector(31 downto 0);
