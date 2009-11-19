@@ -87,21 +87,25 @@ architecture synth of memory is
 		
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 
+	signal inst_select : std_logic_vector(1 downto 0) := (others => '0');
 		
 begin
 	--!@TODO 少なくともデータキャッシュはおかしい。
-
-	inst <= 
-	irom_inst when pc(20) = '1' else
-	cache_out when cache_hit = '1' else
-	DATAOUT when i_mem_state = inst_w4 else
-	op_halt&"00"&x"000000";
 	
-	inst_ok <= 
-	'1' when pc(20) = '1' else
-	'1' when cache_hit = '1' else
-	'1' when i_mem_state = inst_w4 else
-	'0';
+	with inst_select select
+	inst <= irom_inst when "00",
+	cache_out when "01",
+	DATAOUT when "10",
+	op_halt&"00"&x"000000" when others;
+	
+--	inst_ok <= 
+--	'1' when pc(20) = '1' else
+--	'1' when cache_hit = '1' else
+--	'1' when i_mem_state = inst_w4 else
+--	'0';
+
+	inst_ok <= '0' when inst_select = "11" else
+	'1';
 	
 	ls_ok <= '1' when ls_flg = "11"  else
 	 '1' when dcache_hit = '1' else
@@ -130,6 +134,22 @@ begin
 	--SRAM読み書き　1:Read 0:Write
 	RW <= '0' when ls_flg = "11" else
 	'1';
+	
+	process(clk)
+	begin
+		if rising_edge(clk) then
+		if pc(20) = '1' then
+			inst_select <= "00";
+		elsif cache_hit = '1' then
+			inst_select <= "01";
+		elsif i_mem_state = inst_w4 then
+			inst_select <= "10";
+		else
+			inst_select <= "00";
+		end if;
+		end if;
+	end process;
+
 	
 	IMEM_STATE : process(clk)
 	begin

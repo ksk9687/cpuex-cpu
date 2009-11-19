@@ -51,10 +51,10 @@ architecture arch of cpu_top is
    signal stall,flush: std_logic := '0';
    signal inst_ok,lsu_ok,reg_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
-   signal ext_im,data_s1,data_s2,data_im : std_logic_vector(31 downto 0);
+   signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
-   signal nextpc,pc,jmp_addr : std_logic_vector(20 downto 0) := '0'&x"FFFFF";
-   signal inst : std_logic_vector(31 downto 0) := (others=>'0');
+   signal nextpc,pc,jmp_addr,pc_p1 : std_logic_vector(20 downto 0) := '1'&x"00000";
+   signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
    --LS
    signal ls_f : std_logic_vector(1 downto 0) := (others=>'0');
    signal ls_addr,lsu_out,ls_data :std_logic_vector(31 downto 0) := (others=>'0');
@@ -62,9 +62,9 @@ architecture arch of cpu_top is
    --register
    signal pd,s1,s2 :std_logic_vector(6 downto 0) := (others=>'0'); 
    signal cr,cr_d: std_logic_vector(2 downto 0) := "000";
-   signal reg_d,reg_d_buf,reg_s1,reg_s2 :std_logic_vector(5 downto 0) := (others=>'0');
-   signal reg_s1_use,reg_s2_use,regwrite,regwrite_f :std_logic := '0';
-   signal dflg,cr_flg,pcr_flg : std_logic_vector(1 downto 0) := (others=>'0');
+   signal reg_d,reg_d_b,reg_d_buf,reg_s1,reg_s1_b,reg_s2,reg_s2_b :std_logic_vector(5 downto 0) := (others=>'0');
+   signal reg_s1_use,reg_s2_use,regwrite,reg_s1_use_b,reg_s2_use_b,regwrite_b,regwrite_f :std_logic := '0';
+   signal dflg,cr_flg,cr_flg_b,pcr_flg : std_logic_vector(1 downto 0) := (others=>'0');
    signal data_d : std_logic_vector(31 downto 0) := (others=>'0');
    
 	--ALU
@@ -85,23 +85,29 @@ architecture arch of cpu_top is
    	
    signal jmp_taken,taken : std_logic := '0';
 begin
+	USBWR <= '0';
+	USBRDX <= '0';
+	USBSIWU <= '0';
+	USBRST <= '0';
+	USBD <= (others => 'Z');
+
+
   	ROC0 : ROC port map (O => rst);
   	
 	CLOCK0 : CLOCK port map (
   		clkin     => CLKIN,
-    clkout2x    => clk,
+    	clkout2x    => clk,
 		clkout2x90 => clk90,
 		clkout2x180 => clk180,
 		clkout2x270 => clk270,
 		clkout4x => clk2x,
-  		locked    => rst);
+  		locked    => locked0);
   	
   BP0 : branchPredictor port map (
   	clk,rst,
   	pc(19 downto 0),inst(13 downto 0),
   	taken
   );
-  
   
   	----------------------------------
 	-- 
@@ -111,7 +117,7 @@ begin
 
   MEMORY0 : memory port map (
    	clk,rst,clk,clk180,
-   	nextpc,inst,inst_ok,
+   	pc,inst,inst_ok,
    	ls_f,ls_address(19 downto 0),ls_data,lsu_out,lsu_ok
 	,SRAMAA,SRAMIOA,SRAMIOPA
 	,SRAMRWA,SRAMBWA
@@ -121,8 +127,8 @@ begin
 	,SRAMLBOA,SRAMXOEA,SRAMZZA
    );
    
-   nextpc <= jmp_addr when jmp_taken = '1' else
-   pc + '1';
+   
+
    
    stall <= '1' when inst(31 downto 26) = op_halt else
    '1' when inst(31 downto 26) = op_jmp else
@@ -133,10 +139,12 @@ begin
    if (rst = '1')then
    		pc <= '1'&x"00000";
    elsif rising_edge(clk) then
-   		if stall = '1' then 
+   		if jmp_taken = '1' then
+   			pc <= jmp_addr;
+   		elsif stall = '1' then 
    			pc <= pc;
    		else
-			pc <= nextpc;
+			pc <= pc + '1';
 		end if;
    	end if;
    end process PC0;
@@ -151,38 +159,51 @@ begin
    	inst,
    	reg_d,reg_s1,reg_s2,
    	reg_s1_use,reg_s2_use,
-   	regwrite,cr_flg,
-   	im
+   	regwrite,cr_flg
    );
-  
+   
+  	IF_ID : process(CLK)
+	begin
+		if rising_edge(clk) then
+			inst_b <= inst;
+			reg_d_b <= reg_d;
+			reg_s1_b <= reg_s1;
+			reg_s2_b <= reg_s2;
+			reg_s1_use_b <= reg_s1_use;
+			reg_s1_use_b <= reg_s2_use;
+			regwrite_b <= regwrite;
+			cr_flg_b <= cr_flg;
+			im <= inst(13 downto 0);
+		end if;
+	end process IF_ID;
 	----------------------------------
 	-- 
 	-- RD
 	-- 
 	----------------------------------
 	
-	pd <= regwrite&reg_d;
-	s1 <= reg_s1_use&reg_s1;
-	s2 <= reg_s2_use&reg_s2;
+	pd <= regwrite_b&reg_d_b;
+	s1 <= reg_s1_use_b&reg_s1_b;
+	s2 <= reg_s2_use_b&reg_s2_b;
 	
 	REGISTERS : reg port map (
 		clk,rst,
 		reg_d_buf,pd,s1,s2,
-		regwrite_f,cr_flg_buf1,cr_flg,
+		regwrite_f,cr_flg_buf1,cr_flg_b,
 		cr_d,
 		data_d,
-		data_s1,data_s2,
+		data_s1_p,data_s2_p,
 		cr,reg_ok
 	);
 	ext_im <= sign_extention(im);
 	
 	
-	ID_RD : process(CLK)
+	RD : process(CLK)
 	begin
 		if rising_edge(clk) then
 			if reg_ok = '1' then
-				unit_op_buf0 <= inst(31 downto 29);
-				sub_op_buf0 <= inst(28 downto 26);
+				unit_op_buf0 <= inst_b(31 downto 29);
+				sub_op_buf0 <= inst_b(28 downto 26);
 				reg_write_buf0 <= regwrite;
 				cr_flg_buf0 <= cr_flg;
 			else--STALL
@@ -191,13 +212,15 @@ begin
 				reg_write_buf0 <= '0';
 				cr_flg_buf0 <= "00";
 			end if;
-			mask <= data_s1(2 downto 0);
+			mask <= data_s1_p(2 downto 0);
 			im_buf0 <= "00"&x"0000"&im;
 			ext_im_buf0 <= ext_im;
 			reg_d_buf0 <= reg_d;
 			jmp_addr <= reg_s1(3)&reg_s2&im;--21bit
+			data_s1 <= data_s1_p;
+			data_s2 <= data_s1_p;
 		end if;
-	end process ID_RD;
+	end process RD;
 	
 	
 	----------------------------------

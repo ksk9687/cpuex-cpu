@@ -88,7 +88,6 @@ port (
     ;reg_write : out std_logic
     
     ;cr_flg : out std_logic_vector(1 downto 0)
-	  ;im : out std_logic_vector(13 downto 0)
     );
 end component;
 

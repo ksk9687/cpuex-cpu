@@ -22,7 +22,6 @@ port (
     ;reg_write : out std_logic
     
     ;cr_flg : out std_logic_vector(1 downto 0)
-	  ;im : out std_logic_vector(13 downto 0)
     );
 end decoder;     
         
@@ -32,7 +31,6 @@ architecture synth of decoder is
 	alias op : std_logic_vector(5 downto 0) is inst(31 downto 26);
 	
 begin
-	im <= inst(13 downto 0);
 	
 	--書き込みレジスタの指定
 	with op select
