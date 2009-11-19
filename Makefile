@@ -7,7 +7,7 @@ ALL_COMPONENT_FILES = tmp/*/*.cmp
 all : cpuv2
 
 cpuv2 : tmp/2/alu.cmp tmp/2/alu_im.cmp tmp/2/sramc.cmp tmp/2/cache.cmp\
-	tmp/2/reg.cmp tmp/2/irom.cmp\
+	tmp/2/reg.cmp tmp/2/irom.cmp tmp/2/memory.cmp\
 	tmp/2/branchPredictor.cmp tmp/2/clock.cmp tmp/2/clock.cmp tmp/2/decoder.cmp tmp/2/dff.cmp
 	$(CMD) -l 2 cpuv2/library/SuperScalarComponents.vhd  
 	
@@ -39,6 +39,9 @@ tmp/2/reg.cmp:cpuv2/reg.vhd
 	$(CMD) 2 $< $@
 	
 tmp/2/irom.cmp:cpuv2/memory/IROM.vhd
+	$(CMD) 2 $< $@
+	
+tmp/2/memory.cmp:cpuv2/memory/memory.vhd
 	$(CMD) 2 $< $@
 clean:
 	rm -f $(ALL_COMPONENT_FILES)

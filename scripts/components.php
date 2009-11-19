@@ -7,6 +7,10 @@ if($argv[1] == "-l"){
 	$itr = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path));
 
 	$data =<<<EOM
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+
 package SuperScalarComponents is
 
 EOM;
