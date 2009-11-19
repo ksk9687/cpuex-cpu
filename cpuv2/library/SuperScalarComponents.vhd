@@ -1,3 +1,7 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+
 package SuperScalarComponents is
 
 component ALU is
@@ -84,8 +88,7 @@ port (
     ;reg_write : out std_logic
     
     ;cr_flg : out std_logic_vector(1 downto 0)
-	;im : out std_logic_vector(13 downto 0)
-    ;reg_write_select : out std_logic_vector(2 downto 0)
+	  ;im : out std_logic_vector(13 downto 0)
     );
 end component;
 
@@ -107,11 +110,53 @@ component IROM is
 end component;
 
 
+component memory is 
+port (
+    clk,rst,sramcclk,sramclk	: in	  std_logic;
+    
+    pc : in std_logic_vector(20 downto 0);
+    inst : out std_logic_vector(31 downto 0);
+    inst_ok : out std_logic;
+    
+    ls_flg : in std_logic_vector(1 downto 0);
+    ls_addr : in std_logic_vector(19 downto 0);
+    store_data : in std_logic_vector(31 downto 0);
+    load_data : out std_logic_vector(31 downto 0);
+    ls_ok : out std_logic;
+    
+	--SRAM
+	SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
+	;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
+	;SRAMIOPA : inout  STD_LOGIC_VECTOR (3 downto 0) --パリティー
+	
+	;SRAMRWA : out  STD_LOGIC	--read=>1,write=>0
+	;SRAMBWA : out  STD_LOGIC_VECTOR (3 downto 0)--書き込みバイトの指定
+
+	;SRAMCLKMA0 : out  STD_LOGIC	--SRAMクロック
+	;SRAMCLKMA1 : out  STD_LOGIC	--SRAMクロック
+	
+	;SRAMADVLDA : out  STD_LOGIC	--バーストアクセス
+	;SRAMCEA : out  STD_LOGIC --clock enable
+	
+	;SRAMCELA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
+	;SRAMCEHA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
+	;SRAMCEA2X : out  STD_LOGIC	--SRAMを動作させるかどうか
+	;SRAMCEA2 : out  STD_LOGIC	--SRAMを動作させるかどうか
+
+	;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
+	;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
+	;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
+    ); 
+end component;
+
+
 component reg is 
 port (
     clk,rst			: in	  std_logic;
-    d,pd,s1,s2 : in std_logic_vector(6 downto 0);
-    dflg,crflg,pcrflg : in std_logic_vector(1 downto 0);
+    d: in std_logic_vector(5 downto 0);
+    pd,s1,s2 : in std_logic_vector(6 downto 0);
+    dflg: in	  std_logic;
+    crflg,pcrflg : in std_logic_vector(1 downto 0);
     
     cr_d : in std_logic_vector(2 downto 0);
     data_d : in std_logic_vector(31 downto 0);

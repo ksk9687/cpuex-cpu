@@ -24,7 +24,7 @@ port (
     inst_ok : out std_logic;
     
     ls_flg : in std_logic_vector(1 downto 0);
-    ls_addr : in std_logic_vector(31 downto 0);
+    ls_addr : in std_logic_vector(19 downto 0);
     store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
     ls_ok : out std_logic;
@@ -55,7 +55,7 @@ port (
 end memory;
         
 
-architecture synth of mem is
+architecture synth of memory is
 	type i_mem_state_t is (
 		idle,inst_w1,inst_w2,inst_w3,inst_w4,inst_w5
 	);
@@ -66,7 +66,7 @@ architecture synth of mem is
 	);
 	signal d_mem_state : d_mem_state_t := idle;
 	
-	
+	signal irom_inst: std_logic_vector(31 downto 0) := (others => '0');
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
 	
 	signal RW : std_logic := '0';
@@ -91,11 +91,15 @@ architecture synth of mem is
 begin
 	--!@TODO 少なくともデータキャッシュはおかしい。
 
-	inst <= cache_out when cache_hit = '1' else
+	inst <= 
+	irom_inst when pc(20) = '1' else
+	cache_out when cache_hit = '1' else
 	DATAOUT when i_mem_state = inst_w4 else
 	op_halt&"00"&x"000000";
 	
-	inst_ok <= '1' when cache_hit = '1' else
+	inst_ok <= 
+	'1' when pc(20) = '1' else
+	'1' when cache_hit = '1' else
 	'1' when i_mem_state = inst_w4 else
 	'0';
 	
@@ -104,7 +108,7 @@ begin
 	 '1' when d_mem_state = data_w4 else
 	 '0';
 	
-	cache_set <= '1' when inst_state = inst_w4 else
+	cache_set <= '1' when i_mem_state = inst_w4 else
 	'0';
 	
 	--データキャッシュアドレス
@@ -118,7 +122,7 @@ begin
 	'0';
 	
 	--SRAMアドレス
-	ADDR <= ls_addr　when (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1') else
+	ADDR <= ls_addr when (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1')) else
 	pc(19 downto 0);
 	--SRAM書き込みデータ
 	DATAIN <= store_data when ls_flg = "11" else
@@ -132,7 +136,7 @@ begin
 		if rising_edge(clk) then
 		case i_mem_state is
 			when idle =>
-				if (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1') then--Loadキャッシュミス or Store
+				if (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1')) then--Loadキャッシュミス or Store
 					i_mem_state <= idle;
 				elsif cache_hit = '0' then--Instメモリアクセス要求があり、キャッシュミス
 					i_mem_state <= inst_w1;
@@ -145,6 +149,7 @@ begin
 			when inst_w4 => i_mem_state <= idle;
 			when others => i_mem_state <= idle;
 		end case;
+		end if;
 	end process;
 
 
@@ -155,7 +160,7 @@ begin
 			when idle =>
 				if ls_flg = "11" then--Store
 					d_mem_state <= idle;
-				elsif (ls_flg(1) = '1' and (dcache_hit = '0') then--Loadキャッシュミス
+				elsif (ls_flg(1) = '1') and (dcache_hit = '0') then--Loadキャッシュミス
 					d_mem_state <= data_w1;
 					ls_addr_buf <= ls_addr;
 				end if;
@@ -165,9 +170,14 @@ begin
 			when data_w4 => d_mem_state <= idle;
 			when others => d_mem_state <= idle;
 		end case;
+		end if;
 	end process;
 	
-	
+	IROM0:IROM port map(
+		clk
+		,pc(19 downto 0)
+		,irom_inst
+	);
 	SRAMC : sram_controller port map(
 		 sramcclk
 		,sramclk

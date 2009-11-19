@@ -16,8 +16,10 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity reg is 
 port (
     clk,rst			: in	  std_logic;
-    d,pd,s1,s2 : in std_logic_vector(6 downto 0);
-    dflg,crflg,pcrflg : in std_logic_vector(1 downto 0);
+    d: in std_logic_vector(5 downto 0);
+    pd,s1,s2 : in std_logic_vector(6 downto 0);
+    dflg: in	  std_logic;
+    crflg,pcrflg : in std_logic_vector(1 downto 0);
     
     cr_d : in std_logic_vector(2 downto 0);
     data_d : in std_logic_vector(31 downto 0);
@@ -42,8 +44,8 @@ architecture synth of reg is
 	signal ok :std_logic:= '0';
 begin
     --read
-    data_s1 <= registers(conv_integer(s1));
-    data_s2 <= registers(conv_integer(s2));
+    data_s1 <= registers(conv_integer(s1(5 downto 0)));
+    data_s2 <= registers(conv_integer(s2(5 downto 0)));
     cr <= cr_a;
     
     reg_ok <= ok;
@@ -64,13 +66,13 @@ begin
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
 	     	if dflg = '1' then
-	     		registers(conv_integer(d)) <= data_d;
-	     		using(conv_integer(s1)) <= '0';
+	     		registers(conv_integer(d(5 downto 0))) <= data_d;
+	     		using(conv_integer(s1(5 downto 0))) <= '0';
 	     	end if;
 	     	
 	     	if ok = '1' then
 	     		if pd(6) = '1' then
-	     			using(conv_integer(pd)) <= '1';
+	     			using(conv_integer(pd(5 downto 0))) <= '1';
 	     		end if;
 	     		if pcrflg = "11" then
 	     			cr_using <= '1';

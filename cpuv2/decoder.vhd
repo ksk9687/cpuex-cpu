@@ -22,8 +22,7 @@ port (
     ;reg_write : out std_logic
     
     ;cr_flg : out std_logic_vector(1 downto 0)
-	;im : out std_logic_vector(13 downto 0)
-    ;reg_write_select : out std_logic_vector(2 downto 0)
+	  ;im : out std_logic_vector(13 downto 0)
     );
 end decoder;     
         
@@ -37,14 +36,13 @@ begin
 	
 	--書き込みレジスタの指定
 	with op select
-	regd <= 
-	"111111" when op_jal, --JALではr63のみ
-	inst(19 downto 14) when op_addi | op_sll | op_load | op_li | op_read | op_write | | op_hsread ,--Rt
+	reg_d <= "111111" when op_jal, --JALではr63のみ
+	inst(19 downto 14) when op_addi | op_sll | op_load | op_li | op_read | op_write |op_hsread ,--Rt
 	inst(13 downto 8) when others;--Rd
 	
 	-- レジスタに書き込むかどうか
 	with op select
-	 reg_write <=  '0' when op_cmp | op_cmpi | op_fcmp | op_store | op_hs_write | op_jmp | op_jr | op_nop | op_halt | op_led,--書きこまない
+	 reg_write <=  '0' when op_cmp | op_cmpi | op_fcmp | op_store | op_hswrite | op_jmp | op_jr | op_nop | op_halt | op_led,--書きこまない
 	 '1' when others;
 	 
 	 --レジスタを読み込むかどうか
@@ -57,15 +55,15 @@ begin
 	 
 	 
 	 with op select
-	 cr_flg <= "11" when op_fcmp | op_cmp | op_cmpi | ,--書きこむ
+	 cr_flg <= "11" when op_fcmp | op_cmp | op_cmpi ,--書きこむ
 	 "10" when op_jmp,--読み込む
 	 "00" when others;
 
 	--Rs
-	regs1 <= inst(25 downto 20);
+	reg_s1 <= inst(25 downto 20);
 	
 	--Rt
-	regs2 <= inst(19 downto 14);
+	reg_s2 <= inst(19 downto 14);
 
 	
 			

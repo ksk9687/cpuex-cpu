@@ -21,13 +21,14 @@ architecture STRUCTURE of ALU_IM is
   -- ”äŠr‚Ü‚í‚è
   signal tmpA1, tmpB1, tmpA2, tmpB2 : std_logic_vector(5 downto 0);
   signal AS, BS : std_logic;
+  signal Ob : std_logic_vector(31 downto 0);
   
   signal uslt, useq, usgt : std_logic;
   
 begin  -- STRUCTURE
 
   with op select
-  C <=	A + B when alui_op_addi,
+  O <=	A + B when alui_op_addi,
   		SHL(A, B) when alui_op_sll,
   		B when alui_op_li,
 		"11111111111111111111111111111111" when others;
@@ -59,6 +60,8 @@ begin  -- STRUCTURE
 
       AS <= A(31);
       BS <= B(31);
+      
+     -- O <= Ob;
     end if;
   end process;
 
