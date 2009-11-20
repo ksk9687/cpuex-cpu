@@ -25,10 +25,11 @@ architecture STRUCTURE of FP_SQRT is
 
   -- 1st stage
   signal C, X : std_logic_vector(23 downto 0);
-  signal CH, CL, XH, XL : std_logic_vector(11 downto 0);
   signal OE1 : std_logic_vector(7 downto 0);
+  signal IS0 : boolean;
 
   -- 2nd stage
+  signal CH, CL, XH, XL : std_logic_vector(11 downto 0);
   signal OMHtmp, OMM1tmp, OMM2tmp : std_logic_vector(23 downto 0);
   signal OE2 : std_logic_vector(7 downto 0);
 
@@ -36,43 +37,46 @@ architecture STRUCTURE of FP_SQRT is
   signal OMM1, OMM2 : std_logic_vector(12 downto 0);
   signal OMH : std_logic_vector(23 downto 0);
   signal OMM3 : std_logic_vector(13 downto 0);
-  signal OE3 : std_logic_vector(7 downto 0);
+  signal OE3  : std_logic_vector(7 downto 0);
+  signal OE3P1 : std_logic_vector(7 downto 0);
   
   -- 4th stage
   signal OM1 : std_logic_vector(24 downto 0);
   signal OM2 : std_logic_vector(22 downto 0);
   signal OE4 : std_logic_vector(7 downto 0);
+
   
 begin  -- STRUCTURE
-
+  
   -----------------------------------------------------------------------------
   -- 1st stage
   -----------------------------------------------------------------------------
 
   -- ï\à¯Ç´ÇµÇΩÇË xor ÇµÇΩÇËÇµÇƒèÊéZÇ…îıÇ¶ÇÈ
-  C <= table(CONV_INTEGER((not A(23)) & A(22 downto 13)));
-  X <= "1" & A(22 downto 12) & (not A(12)) & A(11 downto 1);
-
-  -- âºêîïîÇï™â
   process(clk)
   begin
     if rising_edge(clk) then
+      C <= table(CONV_INTEGER((not A(23)) & A(22 downto 13)));
+      X <= "1" & A(22 downto 12) & (not A(12)) & A(11 downto 1);
+      IS0 <= (A(30 downto 23) = 0);
+
       if A(30 downto 23) = 0 then
-        CH <= "000000000000"; CL <= "000000000000";
-        XH <= "000000000000"; XL <= "000000000000";
         OE1 <= "00000000";
       else
-        CH <= C(23 downto 12); CL <= C(11 downto 0);
-        XH <= X(23 downto 12); XL <= X(11 downto 0);
         OE1 <= 63 + ('0' & A(30 downto 24));
       end if;
-            
     end if;
   end process;
 
+  
   -----------------------------------------------------------------------------
   -- 2st stage
   -----------------------------------------------------------------------------
+  
+  CH <= "000000000000" when IS0 else C(23 downto 12);
+  CL <= "000000000000" when IS0 else C(11 downto 0);
+  XH <= "000000000000" when IS0 else X(23 downto 12);
+  XL <= "000000000000" when IS0 else X(11 downto 0);
 
   process (clk)
   begin  -- process
@@ -85,6 +89,7 @@ begin  -- STRUCTURE
     end if;
   end process;
 
+  
   -----------------------------------------------------------------------------
   -- 3rd stage
   -----------------------------------------------------------------------------
@@ -92,13 +97,12 @@ begin  -- STRUCTURE
   process (clk)
   begin
     if rising_edge(clk) then
-      -- êœ
-      --OMM1 <= OMM1tmp(23 downto 11);
-      --OMM2 <= OMM2tmp(23 downto 11);
+      -- êœÇÇ∆ÇËÇæÇµÅié¿ç€Ç…ÇÕÇ±ÇÃstageÇ≈Ç‡êœÇÃåvéZÇ™åãç\Ç†ÇÈÅj
       OMM3 <= ('0' & OMM1tmp(23 downto 11)) + ('0' & OMM2tmp(23 downto 11));
       OMH  <= OMHtmp(23 downto 0);
       
       OE3 <= OE2;
+      OE3P1 <= OE2 + 1;
     end if;
   end process;
 
@@ -106,15 +110,13 @@ begin  -- STRUCTURE
   -- 4th stage
   -----------------------------------------------------------------------------
 
-  --OMM3 <= ('0' & OMM1(12 downto 0)) + ('0' & OMM2(12 downto 0));
-
-  --OM1 <= (OMH & '0') + ("00000000000" & OMM3) + 2;
+  -- ë´ÇµçáÇÌÇπÇÈ
   OM1(24 downto 1) <= OMH + ("0000000000" & OMM3(13 downto 1)) + 1;
   OM1(0) <= OMM3(0);
   
   -- åJÇËè„Ç™ÇËÇèàóù
   OM2 <= OM1(23 downto 1) when OM1(24) = '1' else OM1(22 downto 0);
-  OE4 <= OE3 + 1 when OM1(24) = '1' else OE3;
+  OE4 <= OE3P1 when OM1(24) = '1' else OE3;
 
   -- åãâ 
   O <= '0' & OE4 & OM2;

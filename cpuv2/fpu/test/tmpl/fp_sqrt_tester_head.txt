@@ -9,7 +9,7 @@ use unisim.vcomponents.all;
 entity FP_SQRT_TESTER is
   port (
     clkin  : in  std_logic;
-    ledout : out std_logic_vector(1 downto 0));
+    ledout : out std_logic_vector(7 downto 0));
 end FP_SQRT_TESTER;
 
 

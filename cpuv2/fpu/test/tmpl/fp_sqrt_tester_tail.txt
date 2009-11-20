@@ -1,4 +1,4 @@
-
+                                           
   signal clk : std_logic;
   signal reset : std_logic;
 
@@ -13,6 +13,8 @@
   type QUEUE_T is array(0 to m - 1) of std_logic_vector(31 downto 0);
   signal queue_o : QUEUE_T;
   signal queue_c : std_logic_vector(0 to m - 1) := CONV_STD_LOGIC_VECTOR(0, m);
+
+  signal stop : boolean := false;
   
 begin  -- STRUCTURE
 
@@ -21,7 +23,7 @@ begin  -- STRUCTURE
   
   clock_inst : clock port map (
     clkin     => clkin,
-    --clkout0   => clk,
+    --clkout0   => clk--,
     --clkout90  => clk90,
     --clkout180 => clk180,
     --clkout270 => clk270,
@@ -32,11 +34,14 @@ begin  -- STRUCTURE
     );  
 
   inst : FP_SQRT port map (A => Ain, O => O, clk => clk);
+
+  ledout(2) <= '0';
   
   process (clk, reset)
   begin  -- process
     if reset = '1' then
-      ledout <= "00";
+      ledout(1 downto 0) <= "00";
+      ledout(7 downto 3) <= "11111";
       Ain <= table_a(i);
       Oin <= table_o(i);
       Cin <= '0';
@@ -45,10 +50,14 @@ begin  -- STRUCTURE
       Cout <= '0';
       queue_c <= CONV_STD_LOGIC_VECTOR(0, m);
 
-    elsif clk'event and clk = '1' then
+      stop <= false;
+
+    elsif clk'event and clk = '1' and stop = false then
       -- チェック
       if (Cout = '1' and Oout /= Qout) then
         ledout(0) <= '1';
+        ledout(7 downto 3) <= not CONV_STD_LOGIC_VECTOR(i, 5);
+        stop <= true;
       end if;
 
       -- 取り出し！
@@ -75,6 +84,7 @@ begin  -- STRUCTURE
       if i + 1 = n then
         i <= 0;
         ledout(1) <= '1';    -- 終了
+        stop <= true;
       else
         i <= i + 1;
       end if;
