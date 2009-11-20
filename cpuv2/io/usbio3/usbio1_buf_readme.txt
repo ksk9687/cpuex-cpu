@@ -2,11 +2,13 @@
 
 [ファイル]usbio1_buf.vhd,usbio1.vhd
 [参考]usbio1_test2.vhdという、16byteごとにエコーするプログラムを付しておきます。
-【重要】usbio1.vhdを更新しました。前回のものにバグがあったので、修正しておきます。また、このモジュールを作るにあたり、多少信号を増やしています。
-【重要】usbio1.vhdは20nsで動作します。
+
+USBモジュール自体は以前の50MHzで動かすやつで、バッファの制御のみを100MHzにしているので、時々1クロック遅いです。
+モジュールに50MHzのクロックを入れてください。
 
 [インターフェース]
-clk : in STD_LOGIC; --20nsクロック
+clk50 : in STD_LOGIC;--20nsクロック
+clk : in STD_LOGIC; 
 RST : in STD_LOGIC; --リセット信号
 -- こちらを使用
 USBBUF_RD : in STD_LOGIC;     -- read 制御:1にすると、バッファから1個消す
