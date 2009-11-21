@@ -21,6 +21,7 @@ architecture STRUCTURE of ALU_IM is
   -- ”äŠr‚Ü‚í‚è
   signal tmpA1, tmpB1, tmpA2, tmpB2 : std_logic_vector(5 downto 0);
   signal AS, BS : std_logic;
+  
   signal Ob : std_logic_vector(31 downto 0);
   
   signal uslt, useq, usgt : std_logic;

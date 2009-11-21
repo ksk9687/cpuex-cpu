@@ -67,7 +67,7 @@ begin
 	    elsif rising_edge(clk) then
 	     	if dflg = '1' then
 	     		registers(conv_integer(d(5 downto 0))) <= data_d;
-	     		using(conv_integer(s1(5 downto 0))) <= '0';
+	     		using(conv_integer(d(5 downto 0))) <= '0';
 	     	end if;
 	     	
 	     	if ok = '1' then

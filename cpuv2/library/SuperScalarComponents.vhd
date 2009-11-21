@@ -111,7 +111,7 @@ end component;
 
 component memory is 
 port (
-    clk,rst,sramcclk,sramclk	: in	  std_logic;
+    clk,rst,sramcclk,sramclk,stall	: in	  std_logic;
     
     pc : in std_logic_vector(20 downto 0);
     inst : out std_logic_vector(31 downto 0);

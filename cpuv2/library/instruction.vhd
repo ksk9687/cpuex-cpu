@@ -54,6 +54,7 @@ package instruction is
    
    constant op_nop	:	std_logic_vector(5 downto 0) := o"60";
    constant op_halt	:	std_logic_vector(5 downto 0) := o"61";
+   constant op_sleep:	std_logic_vector(5 downto 0) := o"62";
    
    constant op_jmp	:	std_logic_vector(5 downto 0) := o"70";
    constant op_jal	:	std_logic_vector(5 downto 0) := o"71";

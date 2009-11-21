@@ -17,7 +17,7 @@ use work.instruction.all;
 use work.SuperScalarComponents.all; 
 entity memory is 
 port (
-    clk,rst,sramcclk,sramclk	: in	  std_logic;
+    clk,rst,sramcclk,sramclk,stall	: in	  std_logic;
     
     pc : in std_logic_vector(20 downto 0);
     inst : out std_logic_vector(31 downto 0);
@@ -66,7 +66,7 @@ architecture synth of memory is
 	);
 	signal d_mem_state : d_mem_state_t := idle;
 	
-	signal irom_inst: std_logic_vector(31 downto 0) := (others => '0');
+	signal irom_inst,inst_buf,inst_i: std_logic_vector(31 downto 0) := (others => '0');
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
 	
 	signal RW : std_logic := '0';
@@ -87,16 +87,18 @@ architecture synth of memory is
 		
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 
-	signal inst_select : std_logic_vector(1 downto 0) := (others => '0');
+	signal inst_select : std_logic_vector(2 downto 0) := (others => '0');
 		
 begin
 	--!@TODO 少なくともデータキャッシュはおかしい。
-	
+	inst <= inst_i;
 	with inst_select select
-	inst <= irom_inst when "00",
-	cache_out when "01",
-	DATAOUT when "10",
-	op_halt&"00"&x"000000" when others;
+	inst_i <= 
+	inst_buf when "100",
+	irom_inst when "000",
+	cache_out when "001",
+	DATAOUT when "010",
+	op_sleep&"00"&x"000000" when others;
 	
 --	inst_ok <= 
 --	'1' when pc(20) = '1' else
@@ -138,15 +140,19 @@ begin
 	process(clk)
 	begin
 		if rising_edge(clk) then
-		if pc(20) = '1' then
-			inst_select <= "00";
-		elsif cache_hit = '1' then
-			inst_select <= "01";
-		elsif i_mem_state = inst_w4 then
-			inst_select <= "10";
-		else
-			inst_select <= "00";
-		end if;
+			inst_buf <= inst_i;
+			if stall = '1' then
+				inst_select <= "100";
+			elsif pc(20) = '1' then
+				inst_select <= "000";
+			elsif cache_hit = '1' then
+				inst_select <= "001";
+			elsif i_mem_state = inst_w4 then
+				inst_select <= "010";
+			else
+				inst_select <= "000";
+			end if;
+		
 		end if;
 	end process;
 
