@@ -48,7 +48,7 @@ end cpu_top;
 
 architecture arch of cpu_top is	
    signal clk,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
-   signal stall,flush,sleep,stall_b: std_logic := '0';
+   signal stall,flush,sleep,stall_b,stall_id,stall_rd,stall_ex: std_logic := '0';
    signal inst_ok,lsu_ok,reg_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
@@ -56,9 +56,10 @@ architecture arch of cpu_top is
    signal next_pc,pc,jmp_addr,pc_p1,next_pc_p1,pc_mem,pc_buf0,pc_buf1,pc_buf2,pc_buf3,pc_buf4 : std_logic_vector(20 downto 0) := '1'&x"00000";
    signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
    --LS
-   signal ls_f : std_logic_vector(1 downto 0) := (others=>'0');
-   signal ls_addr,lsu_out,ls_data :std_logic_vector(31 downto 0) := (others=>'0');
-   signal ls_address :std_logic_vector(20 downto 0) := (others=>'0');
+   signal ls_f,ls_f_p : std_logic_vector(1 downto 0) := (others=>'0');
+   signal lsu_out,lsu_out_buf2,lsu_out_buf3,ls_data,ls_data_p :std_logic_vector(31 downto 0) := (others=>'0');
+   signal ls_address,ls_address_p :std_logic_vector(19 downto 0) := (others=>'0');
+   
    --register
    signal pd,s1,s2 :std_logic_vector(6 downto 0) := (others=>'0'); 
    signal cr,cr_d,cr_p: std_logic_vector(2 downto 0) := "000";
@@ -136,16 +137,20 @@ begin
 	sleep <= '1' when (inst(31 downto 26) = op_jal) else
 	'0';
 	
-   stall <= --“¯‚¶–½—ß‚ð“Ç‚Ýo‚·B
-   '0' when flush = '1' else 
-   '1' when (inst(31 downto 26) = op_halt) else
-   not reg_ok;
+   stall <= (not flush) and (not ((reg_ok) and (lsu_ok)));
+   
+   
+   
+   stall_id <= (not reg_ok) or (not lsu_ok);
+   stall_rd <= (not reg_ok) or (not lsu_ok);
+   stall_ex <= not lsu_ok;
    
    
    next_pc <= 
    pc + '1' when jmp_taken = '1' else
    jmp_addr when inst_b(31 downto 26) = op_jr else
    inst(20 downto 0) when (inst(31 downto 26) = op_jal) else
+   pc when (inst(31 downto 26) = op_halt) else
    pc when (jmp_not_taken_p = '1') else
    jmp_addr when jmp_taken_p = '1' else
    pc + '1';
@@ -183,7 +188,7 @@ begin
 				inst_b <= op_nop & "00"&x"000000";
 				regwrite_b <= '0';
 				cr_flg_b <= "00";
-			elsif reg_ok = '1' then
+			elsif stall_id = '0' then
 				inst_b <= inst;
 				reg_d_b <= reg_d;
 				reg_s1_b <= reg_s1;
@@ -229,7 +234,7 @@ begin
 	RD : process(CLK)
 	begin
 		if rising_edge(clk) then
-			if reg_ok = '1' and flush = '0' then
+			if stall_rd = '0' and flush = '0' then
 				unit_op_buf0 <= inst_b(31 downto 29);
 				sub_op_buf0 <= inst_b(28 downto 26);
 				reg_write_buf0 <= regwrite_b;
@@ -273,13 +278,7 @@ begin
 			end if;
 		end if;
 	end process LED_OUT;
-	
-	--JMP
---	jmp_taken <= jmp_taken_p when unit_op_buf0&sub_op_buf0 = op_jmp else
---	'0';
---	jmp_not_taken <= not jmp_taken_p when unit_op_buf0&sub_op_buf0 = op_jmp else
---	'0';
-	
+
 	ALU0 : alu port map (
 		clk,
 		sub_op_buf0,
@@ -298,6 +297,18 @@ begin
 		alu_im_out,alui_cmp
 	);
 	
+    --LOAD,Store
+	with unit_op_buf0&sub_op_buf0 select
+	ls_f_p <= "11" when op_store,
+	"10" when op_load | op_loadr,
+	"00" when others;
+	
+	with unit_op_buf0&sub_op_buf0 select
+	ls_address_p <= data_s1(19 downto 0) + ext_im(19 downto 0) when op_store | op_load,
+	data_s1(19 downto 0) + data_s2(19 downto 0) when others;
+	 
+	ls_data_p <= data_s2;
+	
 	EX1 : process(CLK)
 	begin
 		if rising_edge(clk) then
@@ -308,17 +319,28 @@ begin
 --				reg_write_buf1 <= '0';
 --				cr_flg_buf1 <= "00";
 --			else
-				pc_buf2 <= pc_buf1;
-				unit_op_buf1 <= unit_op_buf0;
-				sub_op_buf1 <= sub_op_buf0;
-				reg_d_buf1 <= reg_d_buf0;
-				cr_flg_buf1 <= cr_flg_buf0;
-				reg_write_buf1 <= reg_write_buf0;
-				alu_out_buf1 <= alu_out;
-				alu_im_out_buf1 <= alu_im_out;
+
+				if stall_ex = '1' then
+				
+				else
+					ls_f <= ls_f_p;
+					ls_address <= ls_address_p;
+					ls_data <= ls_data_p;
+					
+					pc_buf2 <= pc_buf1;
+					unit_op_buf1 <= unit_op_buf0;
+					sub_op_buf1 <= sub_op_buf0;
+					reg_d_buf1 <= reg_d_buf0;
+					cr_flg_buf1 <= cr_flg_buf0;
+					reg_write_buf1 <= reg_write_buf0;
+					alu_out_buf1 <= alu_out;
+					alu_im_out_buf1 <= alu_im_out;
+				end if;
 --			end if;
 		end if;
 	end process EX1;
+	
+	
 	
 	EX2 : process(CLK)
 	begin
@@ -329,19 +351,24 @@ begin
 --				reg_d_buf2 <= "000000";
 --				reg_write_buf2 <= '0';
 --			else 
-				unit_op_buf2 <= unit_op_buf1;
-				sub_op_buf2 <= sub_op_buf1;
-				reg_d_buf2 <= reg_d_buf1;
-				reg_write_buf2 <= reg_write_buf1;
-				pc_buf3 <= pc_buf2;
-				if unit_op_buf1 = op_unit_alu then
-					alu_out_buf2 <= alu_out_buf1;
+				if stall_ex = '1' then
+				
 				else
-					alu_out_buf2 <= alu_im_out_buf1;
+					unit_op_buf2 <= unit_op_buf1;
+					sub_op_buf2 <= sub_op_buf1;
+					reg_d_buf2 <= reg_d_buf1;
+					reg_write_buf2 <= reg_write_buf1;
+					pc_buf3 <= pc_buf2;
+					if unit_op_buf1 = op_unit_alu then
+						alu_out_buf2 <= alu_out_buf1;
+					else
+						alu_out_buf2 <= alu_im_out_buf1;
+					end if;
 				end if;
 --			end if;
 		end if;
 	end process EX2;
+	
 	
 	EX3 : process(CLK)
 	begin
@@ -351,13 +378,19 @@ begin
 --				sub_op_buf3 <= sp_op_nop;
 --				reg_d_buf3 <= "000000";
 --				reg_write_buf3 <= '0';
---			else 
-				unit_op_buf3 <= unit_op_buf2;
-				sub_op_buf3 <= sub_op_buf2;
-				reg_d_buf3 <= reg_d_buf2;	
-				reg_write_buf3 <= reg_write_buf2;	
-				alu_out_buf3 <= alu_out_buf2;
-				pc_buf4 <= pc_buf3;
+--			else
+
+				if stall_ex = '1' then
+				
+				else
+					unit_op_buf3 <= unit_op_buf2;
+					sub_op_buf3 <= sub_op_buf2;
+					reg_d_buf3 <= reg_d_buf2;	
+					lsu_out_buf3 <= lsu_out;
+					reg_write_buf3 <= reg_write_buf2;	
+					alu_out_buf3 <= alu_out_buf2;
+					pc_buf4 <= pc_buf3;
+				end if;
 --			end if;
 		end if;
 	end process EX3;
@@ -380,9 +413,11 @@ begin
 	
 	with unit_op_buf3 select
 	 data_d <= alu_out_buf3 when op_unit_alu | op_unit_alui,
+	 lsu_out_buf3 when op_unit_lsu,
 	 "00000000000"&pc_buf4 when op_unit_jmp,
 	 --fpu_out when op_unit_fpu,
-	 --lsu_out when op_unit_fpu,
+	 --iou_out when op_unit_iou, 
+	 --fpu_out when op_un,
 	 alu_out_buf3 when others;
 	
 		

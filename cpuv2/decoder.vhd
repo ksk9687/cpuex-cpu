@@ -1,4 +1,4 @@
--- デコーダの実装
+-- デコーダ の
 
 -- @module : decoder
 -- @author : ksk
@@ -35,12 +35,13 @@ begin
 	--書き込みレジスタの指定
 	with op select
 	reg_d <= "111111" when op_jal, --JALではr63のみ
-	inst(19 downto 14) when op_mv | op_addi | op_sll | op_load | op_li | op_read | op_write |op_hsread ,--Rt
+	inst(19 downto 14) when op_load | op_mv |
+	 op_addi | op_sll | op_li | op_read | op_write |op_hsread ,--Rt
 	inst(13 downto 8) when others;--Rd
 	
 	-- レジスタに書き込むかどうか
 	with op select
-	 reg_write <=  '0' when op_cmp | op_cmpi | op_fcmp | op_store | op_hswrite | op_jmp | op_jr | op_nop | op_halt |op_sleep| op_led,--書きこまない
+	 reg_write <=  '0' when  op_cmp | op_cmpi | op_fcmp | op_store | op_hswrite | op_jmp | op_jr | op_nop | op_halt |op_sleep| op_led,--書きこまない
 	 '1' when others;
 	 
 	 --レジスタを読み込むかどうか
@@ -49,13 +50,14 @@ begin
 	 '1' when others;
 	 --レジスタを読み込むかどうか その２
 	 with op select
-	 reg_s2_use <=  '0' when op_jmp | op_jal| op_jr | op_led | op_cmpi | op_addi |op_li |op_sleep|op_halt | op_nop,--読み込まない
+	 reg_s2_use <=  '0' when op_load |op_jmp | op_jal| op_jr | op_led | op_cmpi 
+	 | op_addi |op_li |op_sleep|op_halt | op_nop,--読み込まない
 	 '1' when others;
 	 
 	 --コンディションレジスタを使うか
 	 with op select
 	 cr_flg <= "11" when op_fcmp | op_cmp | op_cmpi ,--書きこむ
-	 "10" when op_jmp,--読み込む
+	 "10" when op_jmp,--読む
 	 "00" when others;
 
 	--Rs

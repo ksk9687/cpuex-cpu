@@ -74,7 +74,7 @@ architecture synth of memory is
 	signal DATAOUT : std_logic_vector(31 downto 0) := (others => '0');
 	signal ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	
-	signal cache_out,cache_out_buf : std_logic_vector(31 downto 0) := (others => '0');
+	signal cache_out,cache_out_buf,store_data_buf : std_logic_vector(31 downto 0) := (others => '0');
 	signal cache_hit : std_logic := '0';
 	signal cache_set : std_logic := '0';
 
@@ -87,10 +87,11 @@ architecture synth of memory is
 		
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 
+	signal ls_buf0,ls_buf1,ls_buf2,ls_buf3,ls_buf4 : std_logic_vector(1 downto 0) := "00";
 	signal inst_select : std_logic_vector(2 downto 0) := (others => '0');
 		
 begin
-	--!@TODO 少なくともデータキャッシュはおかしい。
+
 	inst <= inst_i;
 	with inst_select select
 	inst_i <= 
@@ -109,32 +110,33 @@ begin
 	inst_ok <= '0' when inst_select = "011" else
 	'1';
 	
-	ls_ok <= '1' when ls_flg = "11"  else
-	 '1' when dcache_hit = '1' else
-	 '1' when d_mem_state = data_w4 else
-	 '0';
+	ls_ok <= 
+	dcache_hit when ls_buf0 = "10" else
+	not (ls_buf3(1) or ls_buf2(1) or ls_buf1(1));
+	
+	load_data <= DATAOUT when ls_buf4 = "10" else
+	dcache_out;
 	
 	cache_set <= '1' when i_mem_state = inst_w4 else
 	'0';
 	
 	--データキャッシュアドレス
-	dcache_addr <= ls_addr_buf when d_mem_state = data_w4 else
-	ls_addr;--Store
+	dcache_addr <= ls_addr_buf;
 	--データキャッシュデータ
-	dcache_in <= DATAOUT when d_mem_state = data_w4 else--missload
-	store_data;--Store
+	dcache_in <= DATAOUT when ls_buf4 = "10" else--missload
+	store_data_buf;--Store
 	--データキャッシュセット　MissLoad,Store
-	dcache_set <= '1' when d_mem_state = data_w4 or ls_flg = "11" else
+	dcache_set <= '1' when ls_buf4 = "10" or ls_buf0 = "11" else
 	'0';
 	
 	--SRAMアドレス
-	ADDR <= ls_addr when (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1')) else
+	ADDR <= ls_addr_buf when (ls_buf0(1) = '1' and (dcache_hit = '0' or ls_buf0(0) = '1')) else
 	pc(19 downto 0);
 	--SRAM書き込みデータ
-	DATAIN <= store_data when ls_flg = "11" else
+	DATAIN <= store_data_buf when ls_buf0 = "11" else
 	(others => '0');
 	--SRAM読み書き　1:Read 0:Write
-	RW <= '0' when ls_flg = "11" else
+	RW <= '0' when ls_buf0 = "11" else
 	'1';
 	
 	
@@ -190,20 +192,20 @@ begin
 	DMEM_STATE : process(clk)
 	begin
 		if rising_edge(clk) then
-		case d_mem_state is
-			when idle =>
-				if ls_flg = "11" then--Store
-					d_mem_state <= idle;
-				elsif (ls_flg(1) = '1') and (dcache_hit = '0') then--Loadキャッシュミス
-					d_mem_state <= data_w1;
-					ls_addr_buf <= ls_addr;
-				end if;
-			when data_w1 => d_mem_state <= data_w2;
-			when data_w2 => d_mem_state <= data_w3;
-			when data_w3 => d_mem_state <= data_w4;
-			when data_w4 => d_mem_state <= idle;
-			when others => d_mem_state <= idle;
-		end case;
+			 ls_buf0 <= ls_flg;
+			  store_data_buf <= store_data;
+			 if (ls_flg = "10") then
+			  ls_addr_buf <= ls_addr;
+			end if;
+			
+			if dcache_hit = '0' then
+			 ls_buf1 <= ls_buf0;
+			else
+			 ls_buf1 <= "00";
+			end if;
+			ls_buf2 <= ls_buf1;
+			ls_buf3 <= ls_buf2;
+			ls_buf4 <= ls_buf3;
 		end if;
 	end process;
 	
