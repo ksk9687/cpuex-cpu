@@ -137,6 +137,8 @@ begin
 	RW <= '0' when ls_flg = "11" else
 	'1';
 	
+	
+	
 	process(clk)
 	begin
 		if rising_edge(clk) then
@@ -147,6 +149,8 @@ begin
 			end if;
 			if stall = '1' then
 				inst_select <= "100";
+			elsif sleep = '1' then
+				inst_select <= "101";
 			elsif pc(20) = '1' then
 				inst_select <= "000";
 			elsif cache_hit = '1' then

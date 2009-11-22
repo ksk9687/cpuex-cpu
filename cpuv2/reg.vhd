@@ -65,11 +65,11 @@ begin
 	     	cr_using <= '0';
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
-	    	if flush = '1' then
-	     		using<= (others => '0');
-		     	cr_using <= '0';
-		     	cr_a <= "000";
-	    	else
+--	    	if flush = '1' then
+--	     		using<= (others => '0');
+--		     	cr_using <= '0';
+--		     	cr_a <= "000";
+--	    	else
 		     	if dflg = '1' then
 		     		registers(conv_integer(d(5 downto 0))) <= data_d;
 		     		using(conv_integer(d(5 downto 0))) <= '0';
@@ -89,7 +89,7 @@ begin
 		     		cr_a <= cr_d;
 		     		cr_using <= '0';
 		     	end if;
-	     	end if;
+--	     	end if;
      	end if;
      end process WRITE;
     	
