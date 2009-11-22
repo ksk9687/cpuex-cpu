@@ -7,7 +7,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity cache is
 	port  (
-		clk : in std_logic;
+		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
@@ -42,9 +42,9 @@ begin
 	    end if;
 	end process;
 	
-	process (clk)
+	process (clkfast)
 	begin
-	    if rising_edge(clk) then
+	    if rising_edge(clkfast) then
 	        if set = '1' then
 	            cache_data(conv_integer(address(11 downto 0))) <= set_data;
 	        end if;

@@ -15,7 +15,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity reg is 
 port (
-    clk,rst			: in	  std_logic;
+    clk,rst,flush			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;
@@ -58,31 +58,37 @@ begin
     '1';
     
     
-    WRITE : process (clk)
+    WRITE : process (clk,rst)
      begin
      	if rst = '1'then
      		using<= (others => '0');
 	     	cr_using <= '0';
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
-	     	if dflg = '1' then
-	     		registers(conv_integer(d(5 downto 0))) <= data_d;
-	     		using(conv_integer(d(5 downto 0))) <= '0';
-	     	end if;
-	     	
-	     	if ok = '1' then
-	     		if pd(6) = '1' then
-	     			using(conv_integer(pd(5 downto 0))) <= '1';
-	     		end if;
-	     		if pcrflg = "11" then
-	     			cr_using <= '1';
-	     		end if;
-	     	end if;
-	     	
-	     	--Cr‚Ì‘‚«Š·‚¦
-	     	if crflg = "11" then
-	     		cr_a <= cr_d;
-	     		cr_using <= '0';
+	    	if flush = '1' then
+	     		using<= (others => '0');
+		     	cr_using <= '0';
+		     	cr_a <= "000";
+	    	else
+		     	if dflg = '1' then
+		     		registers(conv_integer(d(5 downto 0))) <= data_d;
+		     		using(conv_integer(d(5 downto 0))) <= '0';
+		     	end if;
+		     	
+		     	if ok = '1' then
+		     		if pd(6) = '1' then
+		     			using(conv_integer(pd(5 downto 0))) <= '1';
+		     		end if;
+		     		if pcrflg = "11" then
+		     			cr_using <= '1';
+		     		end if;
+		     	end if;
+		     	
+		     	--Cr‚Ì‘‚«Š·‚¦
+		     	if crflg = "11" then
+		     		cr_a <= cr_d;
+		     		cr_using <= '0';
+		     	end if;
 	     	end if;
      	end if;
      end process WRITE;

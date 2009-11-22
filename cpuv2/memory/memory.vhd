@@ -17,7 +17,7 @@ use work.instruction.all;
 use work.SuperScalarComponents.all; 
 entity memory is 
 port (
-    clk,rst,sramcclk,sramclk,stall	: in	  std_logic;
+    clk,rst,sramcclk,sramclk,clkfast,stall,sleep	: in	  std_logic;
     
     pc : in std_logic_vector(20 downto 0);
     inst : out std_logic_vector(31 downto 0);
@@ -74,7 +74,7 @@ architecture synth of memory is
 	signal DATAOUT : std_logic_vector(31 downto 0) := (others => '0');
 	signal ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	
-	signal cache_out : std_logic_vector(31 downto 0) := (others => '0');
+	signal cache_out,cache_out_buf : std_logic_vector(31 downto 0) := (others => '0');
 	signal cache_hit : std_logic := '0';
 	signal cache_set : std_logic := '0';
 
@@ -96,7 +96,7 @@ begin
 	inst_i <= 
 	inst_buf when "100",
 	irom_inst when "000",
-	cache_out when "001",
+	cache_out_buf when "001",
 	DATAOUT when "010",
 	op_sleep&"00"&x"000000" when others;
 	
@@ -106,7 +106,7 @@ begin
 --	'1' when i_mem_state = inst_w4 else
 --	'0';
 
-	inst_ok <= '0' when inst_select = "11" else
+	inst_ok <= '0' when inst_select = "011" else
 	'1';
 	
 	ls_ok <= '1' when ls_flg = "11"  else
@@ -141,6 +141,10 @@ begin
 	begin
 		if rising_edge(clk) then
 			inst_buf <= inst_i;
+			if stall = '1' then
+			else
+				cache_out_buf <= cache_out;
+			end if;
 			if stall = '1' then
 				inst_select <= "100";
 			elsif pc(20) = '1' then
@@ -220,7 +224,7 @@ begin
 	);
 	
 	ICACHE:cache port map(
-		clk
+		clk,sramclk
 		,pc(19 downto 0)
 		,DATAOUT
 		,cache_set
