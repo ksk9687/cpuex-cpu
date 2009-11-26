@@ -9,7 +9,17 @@ use unisim.vcomponents.all;
 entity FPU_TESTER is
   port (
     clkin  : in  std_logic;
-    ledout : out std_logic_vector(1 downto 0));
+    ledout : out std_logic_vector(1 downto 0);
+
+    		outdata0 : out std_logic_vector(7 downto 0);
+		outdata1 : out std_logic_vector(7 downto 0);
+		outdata2 : out std_logic_vector(7 downto 0);
+		outdata3 : out std_logic_vector(7 downto 0);
+		outdata4 : out std_logic_vector(7 downto 0);
+		outdata5 : out std_logic_vector(7 downto 0);
+		outdata6 : out std_logic_vector(7 downto 0);
+		outdata7 : out std_logic_vector(7 downto 0)
+    );
 end FPU_TESTER;
 
 
@@ -35,3 +45,18 @@ architecture STRUCTURE of FPU_TESTER is
       clkout2x270 : out std_logic;
       locked      : out std_logic);
   end component;
+
+  	component ledextd2
+		Port (
+		leddata   : in std_logic_vector(31 downto 0);
+		leddotdata: in std_logic_vector(7 downto 0);
+		outdata0 : out std_logic_vector(7 downto 0);
+		outdata1 : out std_logic_vector(7 downto 0);
+		outdata2 : out std_logic_vector(7 downto 0);
+		outdata3 : out std_logic_vector(7 downto 0);
+		outdata4 : out std_logic_vector(7 downto 0);
+		outdata5 : out std_logic_vector(7 downto 0);
+		outdata6 : out std_logic_vector(7 downto 0);
+		outdata7 : out std_logic_vector(7 downto 0)
+		);
+	end component;
