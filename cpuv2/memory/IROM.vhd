@@ -23,18 +23,18 @@ architecture arch of IROM is
     op_li & o"03" & o"03" & "00"&x"00A",--10
     
     op_jal & "00000"&"1"&x"00008",
-    op_led & o"03" & x"00000", 
+    op_led & o"06" & x"00000", 
     op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+     
     op_addi & o"02" & o"01" & "00"&x"000",
-    
     op_add & o"00" & o"01" & o"02" & x"00",
     op_store & o"00" & o"02" & o"00" & x"00",
-    op_load & o"00" & o"03" & o"00" & x"00",
-    op_jr & o"77" & o"00" & "00"&x"000",
+    op_store & o"00" & o"03" & o"20" & x"00",
     
+    op_load & o"00" & o"06" & o"00" & x"00",
+    op_jr & o"77" & o"00" & "00"&x"000",
     op_halt & o"00" & x"00000",
-    op_halt & o"00" & x"00000",
-    op_halt & o"00" & x"00000", 
     op_halt & o"00" & x"00000"
     );
     signal i : std_logic_vector(31 downto 0) := op_sleep&"00"&x"000000";

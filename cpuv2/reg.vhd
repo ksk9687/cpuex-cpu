@@ -50,12 +50,17 @@ begin
     
     reg_ok <= ok;
     
-    ok <=
-    '0' when (s1(6) = '1' and using(conv_integer(s1(5 downto 0))) = '1') else--RAW
-    '0' when (s2(6) = '1' and using(conv_integer(s2(5 downto 0))) = '1') else--RAW
-    '0' when (pd(6) = '1' and using(conv_integer(pd(5 downto 0))) = '1') else--WAW
-    '0' when (pcrflg(1) = '1' and cr_using = '1') else--CR RAW,WAW
-    '1';
+    ok <= not ((s1(6) and using(conv_integer(s1(5 downto 0))))
+    or (s2(6) and using(conv_integer(s2(5 downto 0))))
+    or (pd(6) and using(conv_integer(pd(5 downto 0))))
+    or (pcrflg(1) and cr_using));
+    
+--    ok <=
+--    '0' when (s1(6) = '1' and using(conv_integer(s1(5 downto 0))) = '1') else--RAW
+--    '0' when (s2(6) = '1' and using(conv_integer(s2(5 downto 0))) = '1') else--RAW
+--    '0' when (pd(6) = '1' and using(conv_integer(pd(5 downto 0))) = '1') else--WAW
+--    '0' when (pcrflg(1) = '1' and cr_using = '1') else--CR RAW,WAW
+--    '1';
     
     
     WRITE : process (clk,rst)
@@ -70,25 +75,21 @@ begin
 --		     	cr_using <= '0';
 --		     	cr_a <= "000";
 --	    	else
-		     	if dflg = '1' then
-		     		registers(conv_integer(d(5 downto 0))) <= data_d;
-		     		using(conv_integer(d(5 downto 0))) <= '0';
-		     	end if;
-		     	
-		     	if ok = '1' then
-		     		if pd(6) = '1' then
-		     			using(conv_integer(pd(5 downto 0))) <= '1';
-		     		end if;
-		     		if pcrflg = "11" then
-		     			cr_using <= '1';
-		     		end if;
-		     	end if;
-		     	
-		     	--Cr‚Ì‘‚«Š·‚¦
-		     	if crflg = "11" then
-		     		cr_a <= cr_d;
-		     		cr_using <= '0';
-		     	end if;
+	     	if dflg = '1' then
+	     		registers(conv_integer(d(5 downto 0))) <= data_d;
+	     		using(conv_integer(d(5 downto 0))) <= '0';
+	     	end if;
+	     	
+	     	if ok = '1' then
+	     		using(conv_integer(pd(5 downto 0))) <= pd(6);
+     			cr_using <= pcrflg(0);
+	     	end if;
+	     	
+	     	--Cr‚Ì‘‚«Š·‚¦
+	     	if crflg = "11" then
+	     		cr_a <= cr_d;
+	     		cr_using <= '0';
+	     	end if;
 --	     	end if;
      	end if;
      end process WRITE;
