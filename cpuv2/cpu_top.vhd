@@ -238,28 +238,32 @@ begin
 	RD : process(CLK)
 	begin
 		if rising_edge(clk) then
-			if stall_rd = '0' and flush = '0' then
-				unit_op_buf0 <= inst_b(31 downto 29);
-				sub_op_buf0 <= inst_b(28 downto 26);
-				reg_write_buf0 <= regwrite_b;
-				cr_flg_buf0 <= cr_flg_b;
-				jmp_taken <= jmp_taken_p;
-				jmp_not_taken <= jmp_not_taken_p;
-			else--STALL
-				unit_op_buf0 <= op_unit_sp;
-				sub_op_buf0 <= sp_op_nop;
-				reg_write_buf0 <= '0';
-				cr_flg_buf0 <= "00";
-				jmp_taken <= '0';
-				jmp_not_taken <= '0';
+			if stall_rd = '1' then--STALL
+			
+			else
+				if flush = '0' then
+					unit_op_buf0 <= inst_b(31 downto 29);
+					sub_op_buf0 <= inst_b(28 downto 26);
+					reg_write_buf0 <= regwrite_b;
+					cr_flg_buf0 <= cr_flg_b;
+					jmp_taken <= jmp_taken_p;
+					jmp_not_taken <= jmp_not_taken_p;
+				else-- flush
+					unit_op_buf0 <= op_unit_sp;
+					sub_op_buf0 <= sp_op_nop;
+					reg_write_buf0 <= '0';
+					cr_flg_buf0 <= "00";
+					jmp_taken <= '0';
+					jmp_not_taken <= '0';
+				end if;
+				mask <= reg_s1_b(2 downto 0);
+				ext_im_buf0 <= ext_im;
+				reg_d_buf0 <= reg_d_b;
+				data_s1 <= data_s1_p;
+				data_s2 <= data_s2_p;
+				cr <= cr_p;
+				pc_buf1 <= pc_buf0;
 			end if;
-			mask <= reg_s1_b(2 downto 0);
-			ext_im_buf0 <= ext_im;
-			reg_d_buf0 <= reg_d_b;
-			data_s1 <= data_s1_p;
-			data_s2 <= data_s2_p;
-			cr <= cr_p;
-			pc_buf1 <= pc_buf0;
 		end if;
 	end process RD;
 	
@@ -309,7 +313,7 @@ begin
 	"00" when others;
 	
 	with (unit_op_buf0&sub_op_buf0) select
-	ls_address_p <= data_s1(19 downto 0) + ext_im(19 downto 0) when op_store | op_load,
+	ls_address_p <= data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when op_store | op_load,
 	data_s1(19 downto 0) + data_s2(19 downto 0) when others;
 	 
 	ls_data_p <= data_s2 ;

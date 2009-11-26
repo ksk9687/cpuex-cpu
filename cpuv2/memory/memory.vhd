@@ -120,15 +120,19 @@ begin
 	'0';
 	
 	--データキャッシュアドレス
-	dcache_addr <= ls_addr_buf;
+	dcache_addr <= ls_addr_buf when ls_buf4 = "10" else--missload
+	ls_addr;
 	--データキャッシュデータ
 	dcache_in <= DATAOUT when ls_buf4 = "10" else--missload
-	store_data_buf;--Store
+	store_data;--Store
 	--データキャッシュセット　MissLoad,Store
-	dcache_set <= '1' when ls_buf4 = "10" or ls_buf0 = "11" else
+	dcache_set <= '1' when ls_buf4 = "10" or ls_flg = "11" else
 	'0';
-	dcache_read <= ls_flg(1) and (not ls_flg(0));
-	
+	dcache_read <= (ls_flg(1) and (not ls_flg(0))) or 
+	(ls_buf0(1) and (not ls_buf0(0))) or
+	(ls_buf1(1) and (not ls_buf1(0))) or
+	(ls_buf2(1) and (not ls_buf2(0)));
+
 	--SRAMアドレス
 	ADDR <= ls_addr_buf when (ls_buf0(1) = '1' and (dcache_hit = '0' or ls_buf0(0) = '1')) else
 	pc(19 downto 0);
@@ -239,7 +243,7 @@ begin
 	);
 	
 	
-	DCACHE0:dcache port map(
+	DCACHE0:baka_dcache port map(
 		clk,sramclk
 		,dcache_addr
 		,dcache_in
