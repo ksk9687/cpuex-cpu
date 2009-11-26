@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include "common.hpp"
 
 
@@ -74,14 +75,25 @@ struct op_t {
   {0, 2, {(func1_t)fadd_bit}, 3},
   {1, 2, {(func1_t)fsub_bit}, 3},
   {2, 2, {(func1_t)fmul_bit}, 3},
-  {3, 1, {(func1_t)finv_bit}, 4},
-  {4, 1, {(func1_t)fsqrt_bit}, 4},
+  {3, 1, {(func1_t)finv_bit}, 4}, // hazusitemo NG
+  {4, 1, {(func1_t)fsqrt_bit}, 4}, // hazusitemo NG
   {5, 2, {(func1_t)fcmp_bit}, 2},
-  {6, 1, {(func1_t)fabs_bit}, 1},
-  {7, 1, {(func1_t)fneg_bit}, 1},
+  {6, 1, {(func1_t)fabs_bit}, 1}, // OK
+  {7, 1, {(func1_t)fneg_bit}, 1}, // OK
 };
 int ops_n = sizeof(ops) / sizeof(ops[0]);
 
+
+char *op_name[] = {
+  "fadd",
+  "fsub",
+  "fmul",
+  "finv",
+  "fsqrt",
+  "fcmp",
+  "fabs",
+  "fneg",
+};
 
 
 /*******************************************************************************
@@ -113,6 +125,7 @@ int main(int argc, char **argv) {
   memset(op, 0, sizeof(bit32) * T);
   memset(chk, 0, sizeof(bool) * T);
 
+  srand((unsigned)time(NULL));
   for (int t = 0; t < T; t++) {
     int i = (rand() >> 8) % ops_n;
     int tt = t + ops[i].delay;
@@ -124,6 +137,8 @@ int main(int argc, char **argv) {
 
     op[t] = ops[i].code;
     chk[tt] = true;
+
+    fprintf(stderr, "%02x: %s\n", tt + 1, op_name[op[t]]);
 
     if (ops[i].argn == 1) {
       do {

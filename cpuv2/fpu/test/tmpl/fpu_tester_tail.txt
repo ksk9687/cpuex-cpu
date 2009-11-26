@@ -1,9 +1,15 @@
+
   signal clk, reset : std_logic;
 
   signal i : integer range 0 to n - 1 := 0;
   signal A, B, O, Q, Oout : std_logic_vector(31 downto 0);
   signal op : std_logic_vector(3 downto 0);
   signal chk : std_logic := '0';
+  signal locked : std_logic;
+  signal stop : boolean := false;
+  
+  signal extleddata : std_logic_vector(31 downto 0);
+  signal extleddotdata : std_logic_vector(7 downto 0);
   
 begin  -- STRUCTURE
 
@@ -12,22 +18,36 @@ begin  -- STRUCTURE
   
   clock_inst : clock port map (
     clkin     => clkin,
-    --clkout0   => clk,
-    --clkout90  => clk90,
-    --clkout180 => clk180,
-    --clkout270 => clk270,
-    clkout2x    => clk
-    --clkout2x180 => clk180,
-    --clkout2x270 => clk270,
-    --locked    => locked
+    clkout0   => open,
+    clkout90  => open,
+    clkout180 => open,
+    clkout270 => open,
+    clkout2x    => clk,
+    clkout2x180 => open,
+    clkout2x270 => open,
+    locked    => locked
     );  
 
   inst : FPU port map (clk => clk, op => op, A => A, B => B, O => Oout);
   
+  led_inst : ledextd2 port map (
+    extleddata,
+    extleddotdata,
+    outdata0,
+    outdata1,
+    outdata2,
+    outdata3,
+    outdata4,
+    outdata5,
+    outdata6,
+    outdata7
+    );
+  extleddata <= CONV_STD_LOGIC_VECTOR(i, 32);
+  extleddotdata <= "00000000";
+  
   process (clk, reset)
   begin  -- process
-    if reset = '1' then
-      i <= 0;
+    if reset = '1' or locked = '0' then
       ledout <= "00";
 
       A <= table_a(i);
@@ -37,10 +57,14 @@ begin  -- STRUCTURE
       chk <= table_chk(i);
       O <= Oout;
       
-    elsif clk'event and clk = '1' then
+      i <= 0;
+      stop <= false;
+      
+    elsif clk'event and clk = '1' and stop = false then
       -- チェック
       if (chk = '1' and O /= Q) then
         ledout(0) <= '1';
+        stop <= true;
       end if;
 
       A <= table_a(i);
@@ -54,6 +78,7 @@ begin  -- STRUCTURE
       if i + 1 = n then
         i <= 0;
         ledout(1) <= '1';    -- 終了
+        stop <= true;
       else
         i <= i + 1;
       end if;

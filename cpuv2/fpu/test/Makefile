@@ -1,6 +1,6 @@
 # テストケース数の設定
 SIM_TESTS = 100000
-FPGA_TESTS = 100
+FPGA_TESTS = 250
 
 # その他設定
 CC = g++
@@ -95,7 +95,7 @@ vhdl/fpu_tester_sim.vhd: bin/fpu_tester_gen
 
 vhdl/fpu_tester_fpga.vhd: bin/fpu_tester_gen
 	cat tmpl/fpu_tester_head.txt > vhdl/fpu_tester_fpga.vhd
-	bin/fpu_tester_gen $(FPGA_TESTS) >> vhdl/fpu_tester_fpga.vhd
+	bin/fpu_tester_gen $(FPGA_TESTS) >> vhdl/fpu_tester_fpga.vhd 2>fpu_tester_fpga_op.txt
 	cat tmpl/fpu_tester_tail.txt >> vhdl/fpu_tester_fpga.vhd
 
 
