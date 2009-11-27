@@ -41,12 +41,13 @@ begin
 	
 	-- レジスタに書き込むかどうか
 	with op select
-	 reg_write <=  '0' when  op_cmp | op_cmpi | op_fcmp | op_store | op_hswrite | op_jmp | op_jr | op_nop | op_halt |op_sleep| op_led,--書きこまない
+	 reg_write <=  '0' when  op_cmp | op_cmpi | op_fcmp | 
+	 op_store | op_hswrite | op_jmp | op_jr | op_nop | op_halt |op_sleep| op_led,--書きこまない
 	 '1' when others;
 	 
 	 --レジスタを読み込むかどうか
 	 with op select
-	 reg_s1_use <=  '0' when op_jmp | op_jal | op_cmpi | op_li | op_halt| op_nop|op_sleep,--読み込まない
+	 reg_s1_use <=  '0' when op_jmp | op_jal | op_li | op_halt| op_nop|op_sleep,--読み込まない
 	 '1' when others;
 	 --レジスタを読み込むかどうか その２
 	 with op select

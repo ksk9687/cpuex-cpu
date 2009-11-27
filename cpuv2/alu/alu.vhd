@@ -15,7 +15,7 @@ use IEEE.std_logic_unsigned.all;
 
 entity ALU is
   port (
-    clk  : in std_logic;
+    clk,stall  : in std_logic;
     op   : in std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
@@ -74,11 +74,14 @@ begin  -- STRUCTURE
   process (clk)
   begin  -- process
     if rising_edge(clk) then
-      tmpA2 <= tmpA1;
-      tmpB2 <= tmpB1;
-
-      AS <= A(31);
-      BS <= B(31);
+    	if stall = '1' then
+    	else
+	      tmpA2 <= tmpA1;
+	      tmpB2 <= tmpB1;
+	
+	      AS <= A(31);
+	      BS <= B(31);
+      	end if;
     end if;
   end process;
 

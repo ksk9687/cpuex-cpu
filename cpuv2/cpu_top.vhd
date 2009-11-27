@@ -230,7 +230,7 @@ begin
 	jmp_not_taken_p <= (((reg_s1_b(2) and cr_p(2)) or (reg_s1_b(1) and cr_p(1)) or (reg_s1_b(0) and cr_p(0)))) 
 	when inst_b(31 downto 26) = op_jmp else '0';
 	
-	jmp_addr <= reg_s1_b(3)&reg_s2_b&im when inst_b(31 downto 26) = op_jmp else
+	jmp_addr <= reg_s1_b(3)&reg_s2_b&inst_b(13 downto 0) when inst_b(31 downto 26) = op_jmp else
 	data_s1_p(20 downto 0);
 	
 	stall_rd <= not (reg_ok and lsu_ok);
@@ -238,32 +238,30 @@ begin
 	RD : process(CLK)
 	begin
 		if rising_edge(clk) then
-			if stall_rd = '1' then--STALL
+			if lsu_ok = '0' then
 			
-			else
-				if flush = '0' then
-					unit_op_buf0 <= inst_b(31 downto 29);
-					sub_op_buf0 <= inst_b(28 downto 26);
-					reg_write_buf0 <= regwrite_b;
-					cr_flg_buf0 <= cr_flg_b;
-					jmp_taken <= jmp_taken_p;
-					jmp_not_taken <= jmp_not_taken_p;
-				else-- flush
-					unit_op_buf0 <= op_unit_sp;
-					sub_op_buf0 <= sp_op_nop;
-					reg_write_buf0 <= '0';
-					cr_flg_buf0 <= "00";
-					jmp_taken <= '0';
-					jmp_not_taken <= '0';
-				end if;
-				mask <= reg_s1_b(2 downto 0);
-				ext_im_buf0 <= ext_im;
-				reg_d_buf0 <= reg_d_b;
-				data_s1 <= data_s1_p;
-				data_s2 <= data_s2_p;
-				cr <= cr_p;
-				pc_buf1 <= pc_buf0;
+			elsif stall_rd = '1' or flush = '1' then--STALL
+				unit_op_buf0 <= op_unit_sp;
+				sub_op_buf0 <= sp_op_nop;
+				reg_write_buf0 <= '0';
+				cr_flg_buf0 <= "00";
+				jmp_taken <= '0';
+				jmp_not_taken <= '0';
+			else-- flush
+				unit_op_buf0 <= inst_b(31 downto 29);
+				sub_op_buf0 <= inst_b(28 downto 26);
+				reg_write_buf0 <= regwrite_b;
+				cr_flg_buf0 <= cr_flg_b;
+				jmp_taken <= jmp_taken_p;
+				jmp_not_taken <= jmp_not_taken_p;
 			end if;
+			mask <= reg_s1_b(2 downto 0);
+			ext_im_buf0 <= ext_im;
+			reg_d_buf0 <= reg_d_b;
+			data_s1 <= data_s1_p;
+			data_s2 <= data_s2_p;
+			cr <= cr_p;
+			pc_buf1 <= pc_buf0;
 		end if;
 	end process RD;
 	
@@ -292,7 +290,7 @@ begin
 	end process LED_OUT;
 
 	ALU0 : alu port map (
-		clk,
+		clk,stall_ex,
 		sub_op_buf0,
 		data_s1,data_s2,
 		alu_out,alu_cmp
@@ -300,7 +298,7 @@ begin
 	
 	
 	ALU_IM0 : alu_im port map (
-		clk,
+		clk,stall_ex,
 		sub_op_buf0,
 		data_s1,ext_im_buf0,
 		alu_im_out,alui_cmp
@@ -404,7 +402,6 @@ begin
 					lsu_out_buf3 <= lsu_out;
 					alu_out_buf3 <= alu_out_buf2;
 					pc_buf4 <= pc_buf3;
-
 --			end if;
 		end if;
 	end process EX3;

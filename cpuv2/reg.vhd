@@ -66,7 +66,7 @@ begin
     WRITE : process (clk,rst)
      begin
      	if rst = '1'then
-     		using<= (others => '0');
+     		using <= (others => '0');
 	     	cr_using <= '0';
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
@@ -75,12 +75,12 @@ begin
 --		     	cr_using <= '0';
 --		     	cr_a <= "000";
 --	    	else
-	     	if dflg = '1' then
+	     	if dflg = '1'then
 	     		registers(conv_integer(d(5 downto 0))) <= data_d;
 	     		using(conv_integer(d(5 downto 0))) <= '0';
 	     	end if;
 	     	
-	     	if ok = '1' and stallx = '1' then
+	     	if ok = '1' and stallx = '1'and flush = '0' then
 	     		using(conv_integer(pd(5 downto 0))) <= pd(6);
      			cr_using <= pcrflg(0);
 	     	end if;

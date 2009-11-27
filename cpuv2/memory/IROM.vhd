@@ -18,17 +18,37 @@ architecture arch of IROM is
     type rom_t is array (0 to 31) of std_logic_vector (31 downto 0); 
     signal ROM : rom_t :=(
     op_li & o"00" & o"00" & "00"&x"000",--0
-    op_li & o"00" & o"01" & o"00" & x"37",
-    op_li & o"03" & o"03" & "00"&x"00A",--10
-    op_jal & "00000"&"1"&x"00008",
+    op_li & o"00" & o"01" & o"00" & x"0A",
+    op_li & o"00" & o"02" & o"00" & x"00",
+    op_li & o"00" & o"76" & o"00" & x"00",
     
-    op_led & o"06" & x"00000", 
-    op_halt & o"00" & x"00000", 
-    op_halt & o"00" & x"00000",
-    op_halt & o"00" & x"00000",
+    op_jal & "00000"&"1"&x"00008",--r1 = fib(r1);0100
+    op_led & o"01" & x"00000",--ledout(r1);0101
+    op_halt & o"00" & x"00000", --0110
+    op_halt & o"00" & x"00000",--0111
     
-    op_store & o"00" & o"01" & o"00" & x"01",
-    --op_store & o"00" & o"03" & o"20" & x"00",
+    op_cmpi & o"01" & o"00" & o"00" & x"01",--1000
+    op_jmp & "001"&"100" & x"00018",--if (r1 <= 0) then goto ret
+    op_addi & o"76" & o"76" & "00"&x"004",-- r62 += 4;
+    op_store & o"76" & o"76" &"11"&x"FFF",--1011
+
+    op_store & o"76" & o"01" &"11"&x"FFE",--
+    op_store & o"76" & o"77" &"11"&x"FFD",--
+    op_addi & o"01"  & o"01"  &"11"&x"FFF",-- r1 -= 1;
+    op_jal & "00000"&"1"&x"00008",--r1 = fib(r1);
+    
+    
+    op_store & o"76" & o"01" &"11"&x"FFC",--
+    op_load & o"76" & o"01" &"11"&x"FFE",--
+    op_addi & o"01" & o"01" & "11"&x"FFE",-- r1 -= 2;
+    op_jal & "00000"&"1"&x"00008",--r1 = fib(r1);
+   
+    op_load & o"76" & o"02" &"11"&x"FFC",--
+    op_load & o"76" & o"77" &"11"&x"FFD",--
+    op_add & o"01" & o"02" & o"01" & x"00",
+    op_addi & o"76" & o"76" & "11"&x"FFC",--
+    
+    op_jr & o"77" & o"00" & "00"&x"000",
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000",
@@ -36,27 +56,7 @@ architecture arch of IROM is
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000",
-    op_load & o"00" & o"06" & o"00" & x"01",
-    op_jr & o"77" & o"00" & "00"&x"000"
+    op_nop & o"00" & x"00000"
     );
     signal i : std_logic_vector(31 downto 0) := op_sleep&"00"&x"000000";
     

@@ -243,7 +243,7 @@ begin
 	);
 	
 	
-	DCACHE0:baka_dcache port map(
+	DCACHE0:dcache port map(
 		clk,sramclk
 		,dcache_addr
 		,dcache_in
