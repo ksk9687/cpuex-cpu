@@ -71,7 +71,7 @@ architecture synth of memory is
 	
 	signal RW : std_logic := '0';
 	signal DATAIN : std_logic_vector(31 downto 0) := (others => '0');
-	signal DATAOUT : std_logic_vector(31 downto 0) := (others => '0');
+	signal DATAOUT,ls_buf : std_logic_vector(31 downto 0) := (others => '0');
 	signal ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	
 	signal cache_out,cache_out_buf,store_data_buf : std_logic_vector(31 downto 0) := (others => '0');
@@ -80,10 +80,11 @@ architecture synth of memory is
 
 	signal dcache_out : std_logic_vector(31 downto 0) := (others => '0');
 	signal dcache_in : std_logic_vector(31 downto 0) := (others => '0');
-	signal dcache_hit : std_logic := '0';
-	signal dcache_set : std_logic := '0';
+	signal dcache_hit,dcache_hit_buf : std_logic := '0';
+	signal dcache_set,dcache_read : std_logic := '0';
 	signal dcache_addr : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_addr_buf : std_logic_vector(19 downto 0) := (others => '0');
+	signal ls_ok_p : std_logic := '1';
 		
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 
@@ -95,7 +96,7 @@ begin
 	inst <= inst_i;
 	with inst_select select
 	inst_i <= 
-	inst_buf when "100",
+	inst_buf when "100" | "101" | "110" | "111",
 	irom_inst when "000",
 	cache_out_buf when "001",
 	DATAOUT when "010",
@@ -109,26 +110,29 @@ begin
 
 	inst_ok <= '0' when inst_select = "011" else
 	'1';
-	
-	ls_ok <= 
-	dcache_hit when ls_buf0 = "10" else
-	not (ls_buf3(1) or ls_buf2(1) or ls_buf1(1));
+
+	ls_ok <= dcache_hit;
 	
 	load_data <= DATAOUT when ls_buf4 = "10" else
-	dcache_out;
+	ls_buf;
 	
 	cache_set <= '1' when i_mem_state = inst_w4 else
 	'0';
 	
 	--データキャッシュアドレス
-	dcache_addr <= ls_addr_buf;
+	dcache_addr <= ls_addr_buf when ls_buf4 = "10" else--missload
+	ls_addr;
 	--データキャッシュデータ
 	dcache_in <= DATAOUT when ls_buf4 = "10" else--missload
-	store_data_buf;--Store
+	store_data;--Store
 	--データキャッシュセット　MissLoad,Store
-	dcache_set <= '1' when ls_buf4 = "10" or ls_buf0 = "11" else
+	dcache_set <= '1' when ls_buf4 = "10" or ls_flg = "11" else
 	'0';
-	
+	dcache_read <= (ls_flg(1) and (not ls_flg(0))) or 
+	(ls_buf0(1) and (not ls_buf0(0))) or
+	(ls_buf1(1) and (not ls_buf1(0))) or
+	(ls_buf2(1) and (not ls_buf2(0)));
+
 	--SRAMアドレス
 	ADDR <= ls_addr_buf when (ls_buf0(1) = '1' and (dcache_hit = '0' or ls_buf0(0) = '1')) else
 	pc(19 downto 0);
@@ -140,27 +144,24 @@ begin
 	'1';
 	
 	
-	
 	process(clk)
 	begin
 		if rising_edge(clk) then
+			
 			inst_buf <= inst_i;
-			if stall = '1' then
-			else
-				cache_out_buf <= cache_out;
-			end if;
-			if stall = '1' then
-				inst_select <= "100";
-			elsif sleep = '1' then
-				inst_select <= "101";
+			cache_out_buf <= cache_out;
+			
+			inst_select(2) <= stall;
+			if sleep = '1' then
+				inst_select(1 downto 0) <= "11";
 			elsif pc(20) = '1' then
-				inst_select <= "000";
+				inst_select(1 downto 0) <= "00";
 			elsif cache_hit = '1' then
-				inst_select <= "001";
+				inst_select(1 downto 0) <= "01";
 			elsif i_mem_state = inst_w4 then
-				inst_select <= "010";
+				inst_select(1 downto 0) <= "10";
 			else
-				inst_select <= "000";
+				inst_select(1 downto 0) <= "11";
 			end if;
 		
 		end if;
@@ -192,9 +193,12 @@ begin
 	DMEM_STATE : process(clk)
 	begin
 		if rising_edge(clk) then
-			 ls_buf0 <= ls_flg;
-			  store_data_buf <= store_data;
-			 if (ls_flg = "10") then
+			--ls_ok <= ls_ok_p;
+			ls_buf <= dcache_out;
+			ls_buf0 <= ls_flg;
+			store_data_buf <= store_data;
+			  
+			if (ls_flg = "10") then
 			  ls_addr_buf <= ls_addr;
 			end if;
 			
@@ -238,11 +242,13 @@ begin
 		,cache_hit
 	);
 	
-	DCACHE0:dcache port map(
-		clk
+	
+	DCACHE0:baka_dcache port map(
+		clk,sramclk
 		,dcache_addr
 		,dcache_in
 		,dcache_set
+		,dcache_read
 		,dcache_out
 		,dcache_hit
 	);

@@ -48,13 +48,32 @@ end component;
 component dcache is
 	generic (
 		width : integer := 9;
-		depth : integer := 2048
+		depth : integer := 2048;
+		check_width : integer := 5
 	);
 	port  (
-		clk : in std_logic;
+		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
+		read_f : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end component;
+
+component baka_dcache is
+	generic (
+		width : integer := 9;
+		depth : integer := 2048;
+		check_width : integer := 5
+	);
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_f : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
 		hit : out std_logic
 	);
