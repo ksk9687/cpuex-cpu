@@ -212,7 +212,7 @@ begin
 	s2 <= reg_s2_use_b&reg_s2_b;
 	
 	REGISTERS : reg port map (
-		clk,rst,flush,
+		clk,rst,flush,lsu_ok,
 		reg_d_buf,pd,s1,s2,
 		regwrite_f,cr_flg_buf1,cr_flg_b,
 		cr_d,

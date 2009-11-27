@@ -198,7 +198,7 @@ begin
 			ls_buf0 <= ls_flg;
 			store_data_buf <= store_data;
 			  
-			if (ls_flg = "10") then
+			if (ls_flg /= "00") then
 			  ls_addr_buf <= ls_addr;
 			end if;
 			

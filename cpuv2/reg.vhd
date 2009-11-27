@@ -15,7 +15,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity reg is 
 port (
-    clk,rst,flush			: in	  std_logic;
+    clk,rst,flush,stallx			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;
@@ -80,7 +80,7 @@ begin
 	     		using(conv_integer(d(5 downto 0))) <= '0';
 	     	end if;
 	     	
-	     	if ok = '1' then
+	     	if ok = '1' and stallx = '1' then
 	     		using(conv_integer(pd(5 downto 0))) <= pd(6);
      			cr_using <= pcrflg(0);
 	     	end if;
