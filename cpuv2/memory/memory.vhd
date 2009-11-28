@@ -21,7 +21,6 @@ port (
     
     pc : in std_logic_vector(20 downto 0);
     inst : out std_logic_vector(31 downto 0);
-    inst_ok : out std_logic;
     
     ls_flg : in std_logic_vector(1 downto 0);
     ls_addr : in std_logic_vector(19 downto 0);
@@ -90,26 +89,27 @@ architecture synth of memory is
 
 	signal ls_buf0,ls_buf1,ls_buf2,ls_buf3,ls_buf4 : std_logic_vector(1 downto 0) := "00";
 	signal inst_select : std_logic_vector(2 downto 0) := (others => '0');
-		
+	
+	constant sleep_inst : std_logic_vector(31 downto 0):= op_sleep&"00"&x"000000";
 begin
-
+	
+	
 	inst <= inst_i;
-	with inst_select select
-	inst_i <= 
-	inst_buf when "100" | "101" | "110" | "111",
-	irom_inst when "000",
-	cache_out_buf when "001",
-	DATAOUT when "010",
-	op_sleep&"00"&x"000000" when others;
+	inst_i <= cache_out_buf when inst_select(1 downto 0) = "01" else
+	inst_buf;
+	
+--	with inst_select(1 downto 0) select
+--	inst <= 
+--	inst_buf when "11",
+--	irom_inst when "10",
+--	cache_out_buf when "00",
+--	op_sleep&"00"&x"000000" when others;
 	
 --	inst_ok <= 
 --	'1' when pc(20) = '1' else
 --	'1' when cache_hit = '1' else
 --	'1' when i_mem_state = inst_w4 else
 --	'0';
-
-	inst_ok <= '0' when inst_select = "011" else
-	'1';
 
 	ls_ok <= dcache_hit;
 	
@@ -148,21 +148,32 @@ begin
 	begin
 		if rising_edge(clk) then
 			
-			inst_buf <= inst_i;
 			cache_out_buf <= cache_out;
 			
-			inst_select(2) <= stall;
-			if sleep = '1' then
-				inst_select(1 downto 0) <= "11";
+			inst_select(1) <= stall or sleep or pc(20);
+			inst_select(0) <= cache_hit;
+			
+			if stall = '1' then
+				inst_buf <= inst_i;
+			elsif sleep = '1' then
+				inst_buf <= sleep_inst;
 			elsif pc(20) = '1' then
-				inst_select(1 downto 0) <= "00";
-			elsif cache_hit = '1' then
-				inst_select(1 downto 0) <= "01";
-			elsif i_mem_state = inst_w4 then
-				inst_select(1 downto 0) <= "10";
+				inst_buf <= irom_inst;
 			else
-				inst_select(1 downto 0) <= "11";
+				inst_buf <= sleep_inst;
 			end if;
+			
+--			if stall = '1' then
+--				inst_select(1 downto 0) <= "11";
+--			elsif sleep = '1' then
+--				inst_select(1 downto 0) <= "01";
+--			elsif pc(20) = '1' then
+--				inst_select(1 downto 0) <= "10";
+--			elsif cache_hit = '1' then
+--				inst_select(1 downto 0) <= "00";
+--			else
+--				inst_select(1 downto 0) <= "01";
+--			end if;
 		
 		end if;
 	end process;
@@ -214,7 +225,7 @@ begin
 	end process;
 	
 	IROM0:IROM port map(
-		clk
+		sramclk
 		,pc(19 downto 0)
 		,irom_inst
 	);

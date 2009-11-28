@@ -54,13 +54,7 @@ begin
     or (s2(6) and using(conv_integer(s2(5 downto 0))))
     or (pd(6) and using(conv_integer(pd(5 downto 0))))
     or (pcrflg(1) and cr_using));
-    
---    ok <=
---    '0' when (s1(6) = '1' and using(conv_integer(s1(5 downto 0))) = '1') else--RAW
---    '0' when (s2(6) = '1' and using(conv_integer(s2(5 downto 0))) = '1') else--RAW
---    '0' when (pd(6) = '1' and using(conv_integer(pd(5 downto 0))) = '1') else--WAW
---    '0' when (pcrflg(1) = '1' and cr_using = '1') else--CR RAW,WAW
---    '1';
+   
     
     
     WRITE : process (clk,rst)
@@ -70,11 +64,7 @@ begin
 	     	cr_using <= '0';
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
---	    	if flush = '1' then
---	     		using<= (others => '0');
---		     	cr_using <= '0';
---		     	cr_a <= "000";
---	    	else
+	    
 	     	if dflg = '1'then
 	     		registers(conv_integer(d(5 downto 0))) <= data_d;
 	     		using(conv_integer(d(5 downto 0))) <= '0';

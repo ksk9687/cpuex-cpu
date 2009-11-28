@@ -134,7 +134,6 @@ port (
     
     pc : in std_logic_vector(20 downto 0);
     inst : out std_logic_vector(31 downto 0);
-    inst_ok : out std_logic;
     
     ls_flg : in std_logic_vector(1 downto 0);
     ls_addr : in std_logic_vector(19 downto 0);

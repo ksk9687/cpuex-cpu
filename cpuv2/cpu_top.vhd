@@ -49,7 +49,7 @@ end cpu_top;
 architecture arch of cpu_top is	
    signal clk,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
    signal stall,flush,sleep,stall_b,stall_id,stall_rd,stall_ex: std_logic := '0';
-   signal inst_ok,lsu_ok,lsu_ok_t,reg_ok : std_logic := '0';
+   signal lsu_ok,lsu_ok_t,reg_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
@@ -118,7 +118,7 @@ begin
 
   MEMORY0 : memory port map (
    	clk,rst,clk,clk180,clk90,stall,sleep,
-   	pc,inst,inst_ok,
+   	pc,inst,
    	ls_f,ls_address(19 downto 0),ls_data,lsu_out,lsu_ok
 	,SRAMAA,SRAMIOA,SRAMIOPA
 	,SRAMRWA,SRAMBWA
@@ -129,9 +129,8 @@ begin
    );
    
 
-   flush <= '1' when jmp_taken = '1' else
-   '1' when (inst_b(31 downto 26) = op_jr) and (reg_ok = '1') else
-   '0';
+   flush <= reg_ok or jmp_taken when (inst_b(31 downto 26) = op_jr) else
+   jmp_taken;
 	
 	--ˆê–½—ß’âŽ~
 	sleep <= '1' when (inst(31 downto 26) = op_jal) else
@@ -159,6 +158,8 @@ begin
    		pc <= '1'&x"00000";
    elsif rising_edge(clk) then
         if stall = '1'then
+        	pc <= pc;
+			pc_p1 <= pc_p1;
         else
 			pc <= next_pc;
 			pc_p1 <= pc;
@@ -233,21 +234,19 @@ begin
 	jmp_addr <= reg_s1_b(3)&reg_s2_b&inst_b(13 downto 0) when inst_b(31 downto 26) = op_jmp else
 	data_s1_p(20 downto 0);
 	
-	stall_rd <= not (reg_ok and lsu_ok);
-
 	RD : process(CLK)
 	begin
 		if rising_edge(clk) then
 			if lsu_ok = '0' then
 			
-			elsif stall_rd = '1' or flush = '1' then--STALL
+			elsif reg_ok = '0' or flush = '1' then--flush
 				unit_op_buf0 <= op_unit_sp;
 				sub_op_buf0 <= sp_op_nop;
 				reg_write_buf0 <= '0';
 				cr_flg_buf0 <= "00";
 				jmp_taken <= '0';
 				jmp_not_taken <= '0';
-			else-- flush
+			else
 				unit_op_buf0 <= inst_b(31 downto 29);
 				sub_op_buf0 <= inst_b(28 downto 26);
 				reg_write_buf0 <= regwrite_b;
