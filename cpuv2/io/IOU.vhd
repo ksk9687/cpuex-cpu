@@ -3,109 +3,75 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
+library work;
+use work.instruction.all;
+use work.SuperScalarComponents.all; 
 
 entity IOU is
 	port  (
-		clk : in std_logic;
-		rst : in std_logic;
-		iou_op : in std_logic_vector(1 downto 0);
+		clk,clk50,rst,stall,enable : in std_logic;
+		iou_op : in std_logic_vector(2 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
-		readdata : out std_logic_vector(31 downto 0);
-		ok : out std_logic
+		no : in std_logic_vector(4 downto 0);
+		readdata : out std_logic_vector(31 downto 0)
 		
 		;USBWR : out  STD_LOGIC
 		;USBRDX : out  STD_LOGIC
-		
 		;USBTXEX : in  STD_LOGIC
 		;USBSIWU : out  STD_LOGIC
-		
 		;USBRXFX : in  STD_LOGIC
 		;USBRSTX : out  STD_LOGIC
-		
 		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
 	);
 end IOU;
 
 architecture arch of IOU is
-	component usbbufio
-		Port (
-			clk : in STD_LOGIC;
-			RST : in STD_LOGIC;
-			-- こちらを使用
-			USBBUF_RD : in STD_LOGIC;     -- read 制御:1にすると、バッファから1個消す
-			USBBUF_RData : out STD_LOGIC_VECTOR(7 downto 0);      -- read data
-			USBBUF_RC : out STD_LOGIC;    -- read 完了:1の時読んでよい
-			USBBUF_WD : in STD_LOGIC;     -- write 制御:1にすると、データを取り込む
-			USBBUF_WData : in STD_LOGIC_VECTOR(7 downto 0);       -- write data
-			USBBUF_WC : out STD_LOGIC;    -- write 完了:1の時書き込んでよい
-			--ledout : out STD_LOGIC_VECTOR(7 downto 0);
-			-- FT245BM 側につなぐ
-			USBRD : out  STD_LOGIC;
-			USBRXF : in  STD_LOGIC;
-			USBWR : out  STD_LOGIC;
-			USBTXE : in  STD_LOGIC;
-			USBSIWU : out  STD_LOGIC;
-			USBRST : out  STD_LOGIC;
-			USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
-		);
-	end component;
-	
-	
-	component usb2
-	Port (
-		CLK : in  STD_LOGIC
-		
-		;do : in STD_LOGIC
-		;read_write : in STD_LOGIC
-		;data_write : in STD_LOGIC_VECTOR (7 downto 0)
-		;data_read : out STD_LOGIC_VECTOR (7 downto 0)
-		
-		;status : out STD_LOGIC_VECTOR (2 downto 0)
-		
-		;USBWR : out  STD_LOGIC
-		;USBRDX : out  STD_LOGIC
-		
-		;USBTXEX : in  STD_LOGIC
-		;USBSIWU : out  STD_LOGIC
-		
-		;USBRXFX : in  STD_LOGIC
-		;USBRSTX : out  STD_LOGIC
-		
-		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
-		);
-end component;
-	signal data: std_logic_vector(7 downto 0);
-	signal status: std_logic_vector(2 downto 0);
-begin
-	
-	 
-	 
---   USB : usbbufio port map (
---   	clk,rst,
---   	read,readdata_out,read_end,
---   	write,writedata_buf,write_end,
---   	
---   	USBRD,USBRXF,USBWR,USBTXE,USBSIWU,USBD
---   );
+	constant usb: std_logic_vector := "00000";
+	constant rs232c: std_logic_vector := "00001";
+	constant nop: std_logic_vector := "11111";
+	constant error: std_logic_vector := x"0FFFFFFF";
 
---
---   usbbufio_inst : usbbufio port map(
---    clk,reset,
---    USBBUF_RD,USBBUF_RData,USBBUF_RC,USBBUF_WD,USBBUF_WData,USBBUF_WC,
---	 --ledout,
---    -- FT245BM 側につなぐ
---    USBRD,USBRXF,USBWR,USBTXE,USBRST,USBSIWU,USBD
---    );
---    
-   USB : usb2 port map (
-		CLK,
-		iou_op(1),iou_op(0),
-		writedata(7 downto 0),data,
-		status,
-		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRSTX,USBD
-		);
-	readdata <= x"00000"&"00"&status(2)&status(1)&data;
-	ok <= (not status(0)) and (not status(1));
+	signal usb_read,usb_read_end,usb_write,usb_write_end :std_logic := '0';
+	signal usb_readdata_out,usb_writedata_buf: std_logic_vector(7 downto 0);
+	signal iou_op_buf: std_logic_vector(2 downto 0);
+	signal no_buf: std_logic_vector(4 downto 0);
+	signal readdata_p,writedata_buf : std_logic_vector(31 downto 0):= (others => '0');
+begin
+	 
+	 --将来的にIO処理をWRステージにあわせる必要が出るかも。
+	 
+	 readdata_p <= 
+	 x"00000"&"000"&(not usb_read_end)&usb_readdata_out when (iou_op = iou_op_read) and (no = usb) else
+	 x"0000000"&"000"&(not usb_write_end) when (iou_op = iou_op_write) and (no = usb) else
+	 (others => '1');
+	  
+	 usb_read <= '1' when (iou_op_buf = iou_op_read) and (no_buf = usb) and (usb_read_end = '1') else
+	 '0';
+	 usb_write <= '1' when (iou_op_buf = iou_op_write) and (no_buf = usb) and (usb_write_end = '1') else
+	 '0';
+	 usb_writedata_buf <= writedata_buf(7 downto 0);
+	 	 
+ 	 process(clk)
+ 	 begin
+ 	 	if rising_edge(clk) then
+ 	 		if stall = '1' or enable = '0' then
+ 	 			no_buf<= nop;
+ 	 		else
+ 	 			readdata <= readdata_p;
+ 	 			writedata_buf <= writedata;
+ 	 			iou_op_buf <= iou_op;
+ 	 			no_buf<= no;
+ 	 		end if;
+ 	 	end if;
+ 	 end process;
+	 	 
+   USB0 : usbbufio port map (
+   	clk50,clk,rst,
+   	usb_read,usb_readdata_out,usb_read_end,
+   	usb_write,usb_writedata_buf,usb_write_end,
+   	
+   	USBRDX,USBRXFX,USBWR, USBTXEX,USBSIWU,USBRSTX,USBD
+   );
 	
 
 end arch;

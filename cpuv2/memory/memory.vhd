@@ -13,8 +13,8 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
 use work.instruction.all;
-
 use work.SuperScalarComponents.all; 
+
 entity memory is 
 port (
     clk,rst,sramcclk,sramclk,clkfast,stall,sleep	: in	  std_logic;

@@ -16,6 +16,7 @@ entity CLOCK is
     clkout2x180 : out std_logic;
     clkout2x270 : out std_logic;
     clkout4x	: out std_logic;
+    clkout1x	: out std_logic;
     locked      : out std_logic);
 end CLOCK;
 
@@ -33,6 +34,7 @@ architecture CLOCK of CLOCK is
   signal clk2x270 : std_logic;
   
   signal clk4x0   : std_logic;
+  signal clk1x0   : std_logic;
 
   signal bufg_clkfb   : std_logic;
   signal ibufg_clkin  : std_logic;
@@ -94,6 +96,7 @@ begin  -- CLOCK
       CLK180 => clk2x180,
       CLK270 => clk2x270,
       CLK2X  => clk4x0,
+      CLKDV  => clk1x0,
       LOCKED => locked1,
       RST    => rst1);
 
@@ -155,5 +158,9 @@ begin  -- CLOCK
     port map (
       I => clk4x0,
       O => clkout4x);
-      
+   
+  BUFG11 : BUFG
+    port map (
+      I => clk1x0,
+      O => clkout1x);   
 end CLOCK;

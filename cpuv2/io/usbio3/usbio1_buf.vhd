@@ -25,6 +25,7 @@ entity usbbufio is
            USBRD : out  STD_LOGIC;
            USBRXF : in  STD_LOGIC;
            USBWR : out  STD_LOGIC;
+           
            USBTXE : in  STD_LOGIC;
            USBSIWU : out  STD_LOGIC;
            USBRST : out  STD_LOGIC;
@@ -57,40 +58,40 @@ component usbio
            );
 end component;
 
-signal USBIO_RD : STD_LOGIC;
-signal USBIO_RData : STD_LOGIC_VECTOR(7 downto 0);
-signal USBIO_RC : STD_LOGIC;
-signal USBIO_WD : STD_LOGIC;
-signal USBIO_WData : STD_LOGIC_VECTOR(7 downto 0);
-signal USBIO_WC : STD_LOGIC;
-signal USBIO_CAN_READ : STD_LOGIC;    -- read 完全完了線
-signal USBIO_CAN_WRITE : STD_LOGIC;    -- write 完全完了線
-
-constant buflen : integer := 9;
-constant bufreadlen : integer := 4;
-type ram_type is array (511 downto 0) of STD_LOGIC_VECTOR(7 downto 0); -- retrieved from http://www.nahitech.com/nahitafu/fpgavhdl/bram/bram.html
-type read_ram_type is array (15 downto 0) of STD_LOGIC_VECTOR(7 downto 0); -- retrieved from http://www.nahitech.com/nahitafu/fpgavhdl/bram/bram.html
-
-signal readbuf : read_ram_type;
-signal readbuf_writeaddr : STD_LOGIC_VECTOR((bufreadlen-1) downto 0) := conv_std_logic_vector(0,bufreadlen);
-signal readbuf_readaddr : STD_LOGIC_VECTOR((bufreadlen-1) downto 0) := conv_std_logic_vector(0,bufreadlen);
---signal readdata : STD_LOGIC_VECTOR(7 downto 0);
-
-signal writebuf : ram_type;
-signal writebuf_writeaddr : STD_LOGIC_VECTOR((buflen-1) downto 0) := conv_std_logic_vector(0,buflen);
-signal writebuf_readaddr : STD_LOGIC_VECTOR((buflen-1) downto 0) := conv_std_logic_vector(0,buflen);
-signal writedata : STD_LOGIC_VECTOR(7 downto 0);
-signal writeflag : STD_LOGIC := '0';
-
-constant STATE_IDLE :integer range 2 downto 0 := 0;
-constant STATE_WAIT_READ :integer range 2 downto 0 := 1;
-constant STATE_WAIT_WRITE :integer range 2 downto 0 := 2;
-signal state : integer range 2 downto 0 := STATE_IDLE;
-
---signal testdata : STD_LOGIC_VECTOR(7 downto 0);
-
-signal lastRC : STD_LOGIC := '1';
-signal lastWC : STD_LOGIC := '1';
+	signal USBIO_RD : STD_LOGIC;
+	signal USBIO_RData : STD_LOGIC_VECTOR(7 downto 0);
+	signal USBIO_RC : STD_LOGIC;
+	signal USBIO_WD : STD_LOGIC;
+	signal USBIO_WData : STD_LOGIC_VECTOR(7 downto 0);
+	signal USBIO_WC : STD_LOGIC;
+	signal USBIO_CAN_READ : STD_LOGIC;    -- read 完全完了線
+	signal USBIO_CAN_WRITE : STD_LOGIC;    -- write 完全完了線
+	
+	constant buflen : integer := 9;
+	constant bufreadlen : integer := 4;
+	type ram_type is array (511 downto 0) of STD_LOGIC_VECTOR(7 downto 0); -- retrieved from http://www.nahitech.com/nahitafu/fpgavhdl/bram/bram.html
+	type read_ram_type is array (15 downto 0) of STD_LOGIC_VECTOR(7 downto 0); -- retrieved from http://www.nahitech.com/nahitafu/fpgavhdl/bram/bram.html
+	
+	signal readbuf : read_ram_type;
+	signal readbuf_writeaddr : STD_LOGIC_VECTOR((bufreadlen-1) downto 0) := conv_std_logic_vector(0,bufreadlen);
+	signal readbuf_readaddr : STD_LOGIC_VECTOR((bufreadlen-1) downto 0) := conv_std_logic_vector(0,bufreadlen);
+	--signal readdata : STD_LOGIC_VECTOR(7 downto 0);
+	
+	signal writebuf : ram_type;
+	signal writebuf_writeaddr : STD_LOGIC_VECTOR((buflen-1) downto 0) := conv_std_logic_vector(0,buflen);
+	signal writebuf_readaddr : STD_LOGIC_VECTOR((buflen-1) downto 0) := conv_std_logic_vector(0,buflen);
+	signal writedata : STD_LOGIC_VECTOR(7 downto 0);
+	signal writeflag : STD_LOGIC := '0';
+	
+	constant STATE_IDLE :integer range 2 downto 0 := 0;
+	constant STATE_WAIT_READ :integer range 2 downto 0 := 1;
+	constant STATE_WAIT_WRITE :integer range 2 downto 0 := 2;
+	signal state : integer range 2 downto 0 := STATE_IDLE;
+	
+	--signal testdata : STD_LOGIC_VECTOR(7 downto 0);
+	
+	signal lastRC : STD_LOGIC := '1';
+	signal lastWC : STD_LOGIC := '1';
 
 
 begin

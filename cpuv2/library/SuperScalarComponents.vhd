@@ -49,7 +49,7 @@ component dcache is
 	generic (
 		width : integer := 9;
 		depth : integer := 2048;
-		check_width : integer := 5
+		check_width : integer := 2
 	);
 	port  (
 		clk,clkfast : in std_logic;
@@ -92,6 +92,7 @@ component CLOCK is
     clkout2x180 : out std_logic;
     clkout2x270 : out std_logic;
     clkout4x	: out std_logic;
+    clkout1x	: out std_logic;
     locked      : out std_logic);
 end component;
 
@@ -115,6 +116,25 @@ component dff is
     Port (CLK,RST : in  STD_LOGIC;
           D : in  STD_LOGIC;
           Q : out  STD_LOGIC);
+end component;
+
+
+component IOU is
+	port  (
+		clk,clk50,rst,stall,enable : in std_logic;
+		iou_op : in std_logic_vector(2 downto 0);
+		writedata : in std_logic_vector(31 downto 0);
+		no : in std_logic_vector(4 downto 0);
+		readdata : out std_logic_vector(31 downto 0)
+		
+		;USBWR : out  STD_LOGIC
+		;USBRDX : out  STD_LOGIC
+		;USBTXEX : in  STD_LOGIC
+		;USBSIWU : out  STD_LOGIC
+		;USBRXFX : in  STD_LOGIC
+		;USBRSTX : out  STD_LOGIC
+		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
+	);
 end component;
 
 
@@ -219,6 +239,31 @@ component sram_controller is
 		;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
 		;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
 	);
+end component;
+
+
+component usbbufio is
+    Port (
+           clk50 : in STD_LOGIC;
+           clk : in STD_LOGIC;
+           RST : in STD_LOGIC;
+           -- こちらを使用
+           USBBUF_RD : in STD_LOGIC;     -- read 制御:1にすると、バッファから1個消す
+           USBBUF_RData : out STD_LOGIC_VECTOR(7 downto 0);      -- read data
+           USBBUF_RC : out STD_LOGIC;    -- read 完了:1の時読んでよい
+           USBBUF_WD : in STD_LOGIC;     -- write 制御:1にすると、データを取り込む
+           USBBUF_WData : in STD_LOGIC_VECTOR(7 downto 0);       -- write data
+           USBBUF_WC : out STD_LOGIC;    -- write 完了:1の時書き込んでよい
+           --ledout : out STD_LOGIC_VECTOR(7 downto 0);
+           -- FT245BM 側につなぐ
+           USBRD : out  STD_LOGIC;
+           USBRXF : in  STD_LOGIC;
+           USBWR : out  STD_LOGIC;
+           USBTXE : in  STD_LOGIC;
+           USBSIWU : out  STD_LOGIC;
+           USBRST : out  STD_LOGIC;
+           USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
+         );
 end component;
 
 end package;

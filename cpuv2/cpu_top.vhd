@@ -47,7 +47,7 @@ entity cpu_top is
 end cpu_top;
 
 architecture arch of cpu_top is	
-   signal clk,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
+   signal clk,clk50,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
    signal stall,flush,sleep,stall_b,stall_id,stall_rd,stall_ex: std_logic := '0';
    signal lsu_ok,lsu_ok_t,reg_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
@@ -74,7 +74,10 @@ architecture arch of cpu_top is
 	--ALUI
 	signal alu_im_out,alu_im_out_buf1 :std_logic_vector(31 downto 0) := (others=>'0');
 	signal alui_cmp :std_logic_vector(2 downto 0) := "000";
-	--pipeline crtl
+	--IO
+	signal iou_out,iou_out_buf1,iou_out_buf2,iou_out_buf3 : std_logic_vector(31 downto 0) := (others=>'0');
+	signal iou_enable :std_logic:='0';
+	--pipeline ctrl
 	signal unit_op_buf0,unit_op_buf1,unit_op_buf2,unit_op_buf3 :std_logic_vector(2 downto 0) := (others=>'0');
 	signal sub_op_buf0,sub_op_buf1,sub_op_buf2,sub_op_buf3 :std_logic_vector(2 downto 0) := (others=>'0');
 	signal reg_write_buf0,reg_write_buf1,reg_write_buf2,reg_write_buf3:std_logic := '0';
@@ -86,15 +89,7 @@ architecture arch of cpu_top is
    	signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
    signal jmp_taken,jmp_not_taken,predict_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
 begin
-	USBWR <= '0';
-	USBRDX <= '0';
-	USBSIWU <= '0';
-	USBRST <= '0';
-	USBD <= (others => 'Z');
-
-
   	ROC0 : ROC port map (O => rst);
-  	
 	CLOCK0 : CLOCK port map (
   		clkin     => CLKIN,
     	clkout2x    => clk,
@@ -102,6 +97,7 @@ begin
 		clkout2x180 => clk180,
 		clkout2x270 => clk270,
 		clkout4x => clk2x,
+		clkout1x => clk50,
   		locked    => locked0);
   	
   BP0 : branchPredictor port map (
@@ -137,11 +133,6 @@ begin
 	'0';
 	
    stall <= (not flush) and (not (reg_ok and lsu_ok));
-   
-   
-   
-
-   
    
    next_pc <= 
    pc + '1' when jmp_taken = '1' else
@@ -237,9 +228,9 @@ begin
 	RD : process(CLK)
 	begin
 		if rising_edge(clk) then
-			if lsu_ok = '0' then
+			if lsu_ok = '0' then--stall
 			
-			elsif reg_ok = '0' or flush = '1' then--flush
+			elsif reg_ok = '0' or flush = '1' then--nop
 				unit_op_buf0 <= op_unit_sp;
 				sub_op_buf0 <= sp_op_nop;
 				reg_write_buf0 <= '0';
@@ -301,6 +292,15 @@ begin
 		sub_op_buf0,
 		data_s1,ext_im_buf0,
 		alu_im_out,alui_cmp
+	);
+	
+	iou_enable<= '1' when unit_op_buf0 = op_unit_iou else '0';
+	IOU0 : IOU port map (
+		clk,clk50,rst,stall_ex,iou_enable,
+		sub_op_buf0,
+		data_s1,ext_im_buf0(4 downto 0),
+		iou_out,
+		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRST,USBD
 	);
 	
     --LOAD,Store
@@ -369,6 +369,8 @@ begin
 					pc_buf3 <= pc_buf2;
 					if unit_op_buf1 = op_unit_alu then
 						alu_out_buf2 <= alu_out_buf1;
+					elsif unit_op_buf1 = op_unit_iou then
+						alu_out_buf2 <= iou_out;
 					else
 						alu_out_buf2 <= alu_im_out_buf1;
 					end if;
@@ -397,7 +399,7 @@ begin
 					unit_op_buf3 <= unit_op_buf2;
 					sub_op_buf3 <= sub_op_buf2;
 				end if;
-					reg_d_buf3 <= reg_d_buf2;	
+					reg_d_buf3 <= reg_d_buf2;
 					lsu_out_buf3 <= lsu_out;
 					alu_out_buf3 <= alu_out_buf2;
 					pc_buf4 <= pc_buf3;
@@ -417,17 +419,13 @@ begin
 	 --fpu_cmp when op_unit_fpu,
 	 alu_cmp when others;
 	 
-	--@TODO バイパスしたい
 	reg_d_buf <= reg_d_buf3;
 	regwrite_f <= reg_write_buf3;
 	
 	with unit_op_buf3 select
-	 data_d <= alu_out_buf3 when op_unit_alu | op_unit_alui,
-	 lsu_out_buf3 when op_unit_lsu,
+	 data_d <= lsu_out_buf3 when op_unit_lsu,
 	 "00000000000"&pc_buf4 when op_unit_jmp,
 	 --fpu_out when op_unit_fpu,
-	 --iou_out when op_unit_iou, 
-	 --fpu_out when op_un,
 	 alu_out_buf3 when others;
 	
 		
