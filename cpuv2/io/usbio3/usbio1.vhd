@@ -72,7 +72,6 @@ begin
 	 WAIT_AFT_WR_H   when (intstate = 6) else
 	 WAIT_AFT_WR_L   when (intstate = 7) else
 	 WAIT_AFT_WRITE;
-	 
   USBSIWU<='1';
   USBIO_CAN_READ <= state(6);
   USBIO_CAN_WRITE <= state(5);
