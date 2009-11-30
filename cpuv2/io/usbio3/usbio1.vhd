@@ -72,6 +72,7 @@ begin
 	 WAIT_AFT_WR_H   when (intstate = 6) else
 	 WAIT_AFT_WR_L   when (intstate = 7) else
 	 WAIT_AFT_WRITE;
+	 
   USBSIWU<='1';
   USBIO_CAN_READ <= state(6);
   USBIO_CAN_WRITE <= state(5);
@@ -87,40 +88,40 @@ begin
     if rst = '1' then                   -- asynchronous reset
       rdata<="00000000";                -- dummy
       timecounter <= 0;
-		intstate <= 0;
-      intstate<=0;
+	  intstate <= 0;
+      intstate@<=@0;
     elsif clk'event and clk = '1' then  -- rising clock edge
       case intstate is
         when 0 =>
           if USBIO_RD = '1' then
             if USBRXF = '1' then
-              timecounter<=0;
-              intstate<=1;
+              timecounter <= 0;
+              intstate <= 1;
             else
-              timecounter<=1;
-              intstate<=2;
+              timecounter <= 1;
+              intstate <= 2;
             end if;
           elsif USBIO_WD = '1' then
             if USBTXE = '1' then
               wdata <= USBIO_WData;
-              timecounter<=0;
-              intstate<=5;
-				else
+              timecounter <= 0;
+              intstate <= 5;
+			else
               wdata <= USBIO_WData;
-              timecounter<=1;
-              intstate<=6;
-				end if;
-			 else
+              timecounter <= 1;
+              intstate <= 6;
+			end if;
+		  else
             timecounter <= 0;
             intstate <= 0;
           end if;
         when 1 =>
           if USBRXF = '1' then
-            timecounter<=0;
-            intstate<=1;
+            timecounter <= 0;
+            intstate <= 1;
           else
-            timecounter<=1;
-            intstate<=2;
+            timecounter <=1 ;
+            intstate <= 2;
           end if;
         when 2 =>
           if timecounter = 2 then       -- T1
@@ -132,14 +133,8 @@ begin
             intstate<=2;
           end if;
         when 3 =>
-          --if timecounter = 1 then     -- T2
             timecounter<=1;
             intstate<=4;
-          --else
-            --rdata<=rdata;
-            --timecounter<=timecounter+1;
-            --state<=3;
-          --end if;
         when 4 =>
           if timecounter = 2 then       -- T3
             timecounter <= 0;
@@ -165,23 +160,8 @@ begin
             intstate <= 6;
           end if;
         when 7 =>
-          --if timecounter = 1 then     -- T5
             timecounter <= 1;
             intstate <= 8;
-          --else
-            --rdata<=rdata;
-            --timecounter <= timecounter + 1;
-            --state <= 7;
-          --end if;
---        when WAIT_AFT_WRITE =>
-          --if timecounter = 1 then     -- T6
---            timecounter <= 0;
---            state <= WAIT_INST;
-          --else
-            --rdata<=rdata;
-            --timecounter <= timecounter + 1;
-            --state <= WAIT_AFT_WRITE;
-          --end if;
         when others =>                  --8
             timecounter <= 0;
             intstate <= 0;

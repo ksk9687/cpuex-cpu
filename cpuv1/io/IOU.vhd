@@ -96,7 +96,7 @@ begin
 --    -- FT245BM ‘¤‚É‚Â‚È‚®
 --    USBRD,USBRXF,USBWR,USBTXE,USBRST,USBSIWU,USBD
 --    );
---    
+
    USB : usb2 port map (
 		CLK,
 		iou_op(1),iou_op(0),

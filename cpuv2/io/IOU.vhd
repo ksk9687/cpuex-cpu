@@ -31,23 +31,23 @@ architecture arch of IOU is
 	constant nop: std_logic_vector := "11111";
 	constant error: std_logic_vector := x"0FFFFFFF";
 
-	signal usb_read,usb_read_end,usb_write,usb_write_end :std_logic := '0';
+	signal usb_read,usb_read_end,usb_write,usb_write_end,usb_read_p,usb_write_p :std_logic := '0';
 	signal usb_readdata_out,usb_writedata_buf: std_logic_vector(7 downto 0);
 	signal iou_op_buf: std_logic_vector(2 downto 0);
 	signal no_buf: std_logic_vector(4 downto 0);
 	signal readdata_p,writedata_buf : std_logic_vector(31 downto 0):= (others => '0');
 begin
 	 
-	 --将来的にIO処理をWRステージにあわせる必要が出るかも。
+	 --将来的にIO処理をWRステージにあわせる必要があるかも。
 	 
-	 readdata_p <= 
+	 readdata <= 
 	 x"00000"&"000"&(not usb_read_end)&usb_readdata_out when (iou_op = iou_op_read) and (no = usb) else
 	 x"0000000"&"000"&(not usb_write_end) when (iou_op = iou_op_write) and (no = usb) else
 	 (others => '1');
 	  
-	 usb_read <= '1' when (iou_op_buf = iou_op_read) and (no_buf = usb) and (usb_read_end = '1') else
+	 usb_read_p <= '1' when (iou_op = iou_op_read) and (no = usb) and (usb_read_end = '1') else
 	 '0';
-	 usb_write <= '1' when (iou_op_buf = iou_op_write) and (no_buf = usb) and (usb_write_end = '1') else
+	 usb_write_p <= '1' when (iou_op = iou_op_write) and (no = usb) and (usb_write_end = '1') else
 	 '0';
 	 usb_writedata_buf <= writedata_buf(7 downto 0);
 	 	 
@@ -55,9 +55,12 @@ begin
  	 begin
  	 	if rising_edge(clk) then
  	 		if stall = '1' or enable = '0' then
- 	 			no_buf<= nop;
+ 	 			no_buf <= nop;
+ 	 			usb_read <= '0';
+ 	 			usb_write <= '0';
  	 		else
- 	 			readdata <= readdata_p;
+ 	 			usb_read <= usb_read_p;
+ 	 			usb_write <= usb_write_p;
  	 			writedata_buf <= writedata;
  	 			iou_op_buf <= iou_op;
  	 			no_buf<= no;
