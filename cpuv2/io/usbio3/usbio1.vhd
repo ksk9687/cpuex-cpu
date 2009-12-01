@@ -88,7 +88,7 @@ begin
       rdata<="00000000";                -- dummy
       timecounter <= 0;
 	  intstate <= 0;
-      intstate@<=@0;
+      intstate <= 0;
     elsif clk'event and clk = '1' then  -- rising clock edge
       case intstate is
         when 0 =>

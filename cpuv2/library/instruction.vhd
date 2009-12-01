@@ -37,8 +37,9 @@ package instruction is
    constant op_finv :	std_logic_vector(5 downto 0) := o"23";
    constant op_fsqrt:	std_logic_vector(5 downto 0) := o"24";
    constant op_fcmp	:	std_logic_vector(5 downto 0) := o"25";
-   constant op_fabs	:	std_logic_vector(5 downto 0) := o"26";
-   constant op_fneg	:	std_logic_vector(5 downto 0) := o"27";
+   
+   constant op_fabs	:	std_logic_vector(5 downto 0) := o"06";
+   constant op_fneg	:	std_logic_vector(5 downto 0) := o"07";
    
    constant op_load :	std_logic_vector(5 downto 0) := o"30";
    constant op_store:	std_logic_vector(5 downto 0) := o"31";
@@ -46,7 +47,7 @@ package instruction is
    
    constant op_hsread :	std_logic_vector(5 downto 0) := o"40";
    constant op_hswrite :std_logic_vector(5 downto 0) := o"41";
-   constant op_mv :		std_logic_vector(5 downto 0) := o"42";
+   constant op_mv :		std_logic_vector(5 downto 0) := o"05";
    
    constant op_read	:	std_logic_vector(5 downto 0) := o"50";
    constant op_write:	std_logic_vector(5 downto 0) := o"51";
@@ -65,6 +66,9 @@ package instruction is
    constant alui_op_addi	:	std_logic_vector(2 downto 0) := o"1";
    constant alui_op_sll		:	std_logic_vector(2 downto 0) := o"2";
    constant alui_op_cmpi	:	std_logic_vector(2 downto 0) := o"3";
+   constant alui_op_mv	:	std_logic_vector(2 downto 0) 	 := o"5";
+   constant alui_op_fabs	:	std_logic_vector(2 downto 0) := o"6";
+   constant alui_op_fneg	:	std_logic_vector(2 downto 0) := o"7";
    
 	constant alu_op_add	: std_logic_vector(2 downto 0) := o"0";
 	constant alu_op_sub	: std_logic_vector(2 downto 0) := o"1";

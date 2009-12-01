@@ -40,7 +40,7 @@ begin
 	 
 	 --将来的にIO処理をWRステージにあわせる必要があるかも。
 	 
-	 readdata <= 
+	 readdata_p <= 
 	 x"00000"&"000"&(not usb_read_end)&usb_readdata_out when (iou_op = iou_op_read) and (no = usb) else
 	 x"0000000"&"000"&(not usb_write_end) when (iou_op = iou_op_write) and (no = usb) else
 	 (others => '1');
@@ -59,6 +59,7 @@ begin
  	 			usb_read <= '0';
  	 			usb_write <= '0';
  	 		else
+ 	 			readdata <= readdata_p;
  	 			usb_read <= usb_read_p;
  	 			usb_write <= usb_write_p;
  	 			writedata_buf <= writedata;

@@ -294,7 +294,7 @@ begin
 		alu_im_out,alui_cmp
 	);
 	
-	iou_enable<= '1' when unit_op_buf0 = op_unit_iou else '0';
+	iou_enable <= '1' when unit_op_buf0 = op_unit_iou else '0';
 	IOU0 : IOU port map (
 		clk,clk50,rst,stall_ex,iou_enable,
 		sub_op_buf0,

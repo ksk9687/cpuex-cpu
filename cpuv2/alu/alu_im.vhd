@@ -32,6 +32,9 @@ begin  -- STRUCTURE
   O <=	A + B when alui_op_addi,
   		SHL(A, B) when alui_op_sll,
   		B when alui_op_li,
+  		A when alui_op_mv,
+  		'0'&A(30 downto 0) when alui_op_fabs,
+  		(not A(31))&A(30 downto 0) when alui_op_fneg,
 		"11111111111111111111111111111111" when others;
   -----------------------------------------------------------------------------
   -- ”äŠr

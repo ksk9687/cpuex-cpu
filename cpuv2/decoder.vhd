@@ -35,7 +35,7 @@ begin
 	--書き込みレジスタの指定
 	with op select
 	reg_d <= "111111" when op_jal, --JALではr63のみ
-	inst(19 downto 14) when op_load | op_mv |
+	inst(19 downto 14) when op_load | op_mv | op_fabs | op_fneg |
 	 op_addi | op_sll | op_li | op_read | op_write | op_hsread ,--Rt
 	inst(13 downto 8) when others;--Rd
 	
@@ -47,12 +47,14 @@ begin
 	 
 	 --レジスタを読み込むかどうか
 	 with op select
-	 reg_s1_use <=  '0' when op_read | op_jmp | op_jal | op_li | op_halt| op_nop|op_sleep,--読み込まない
+	 reg_s1_use <=  '0' when op_read | op_jmp | op_jal | op_li | op_halt| op_nop | op_sleep,--読み込まない
 	 '1' when others;
 	 --レジスタを読み込むかどうか その２
 	 with op select
-	 reg_s2_use <=  '0' when op_write | op_read | op_load |op_jmp | op_jal| op_jr | op_led | op_cmpi 
-	 | op_addi | op_li | op_sleep | op_halt | op_nop,--読み込まない
+	 reg_s2_use <=  '0' when op_write | op_read | op_load |
+	 op_jmp | op_jal| op_jr | op_led | op_cmpi 
+	 | op_addi | op_li | op_mv | op_fneg | op_fabs
+	 | op_sleep | op_halt | op_nop,--読み込まない
 	 '1' when others;
 	 
 	 --コンディションレジスタを使うか
