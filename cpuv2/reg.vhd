@@ -64,7 +64,6 @@ begin
 	     	cr_using <= '0';
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
-	    
 	     	if dflg = '1'then
 	     		registers(conv_integer(d(5 downto 0))) <= data_d;
 	     		using(conv_integer(d(5 downto 0))) <= '0';

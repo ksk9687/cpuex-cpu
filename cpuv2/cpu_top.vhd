@@ -138,7 +138,7 @@ begin
    pc + '1' when jmp_taken = '1' else
    jmp_addr when inst_b(31 downto 26) = op_jr else
    inst(20 downto 0) when (inst(31 downto 26) = op_jal) else
-   pc when (inst(31 downto 26) = op_halt) else
+   pc_p1 when (inst(31 downto 26) = op_halt) else
    pc when (jmp_not_taken_p = '1') else
    jmp_addr when jmp_taken_p = '1' else
    pc + '1';
@@ -153,7 +153,11 @@ begin
 			pc_p1 <= pc_p1;
         else
 			pc <= next_pc;
-			pc_p1 <= pc;
+			if (inst(31 downto 26) = op_halt) then
+				pc_p1 <= pc_p1;
+			else
+				pc_p1 <= pc;
+			end if;
 		end if;
    	end if;
    end process PC0;

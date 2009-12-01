@@ -91,6 +91,7 @@ architecture synth of memory is
 	signal inst_select : std_logic_vector(2 downto 0) := (others => '0');
 	
 	constant sleep_inst : std_logic_vector(31 downto 0):= op_sleep&"00"&x"000000";
+	constant halt_inst : std_logic_vector(31 downto 0):= op_halt&"00"&x"000000";
 begin
 	
 	
@@ -160,7 +161,7 @@ begin
 			elsif pc(20) = '1' then
 				inst_buf <= irom_inst;
 			else
-				inst_buf <= sleep_inst;
+				inst_buf <= halt_inst;
 			end if;
 			
 --			if stall = '1' then

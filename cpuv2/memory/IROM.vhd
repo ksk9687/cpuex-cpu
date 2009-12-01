@@ -15,27 +15,90 @@ entity IROM is
 end IROM;
 
 architecture arch of IROM is
-    type rom_t is array (0 to 15) of std_logic_vector (31 downto 0); 
+    type rom_t is array (0 to 63) of std_logic_vector (31 downto 0); 
     signal ROM : rom_t :=(
+    op_li  & o"00" & o"00" &"00"&x"000",
+    op_li  & o"00" & o"10" &"00"&x"000",
+    op_li  & o"00" & o"11" &"00"&x"000",
+    op_li  & o"00" & o"12" &"00"&x"000",
+    
+    op_li  & o"00" & o"13" &"00"&x"0AA",
+    op_jal& "00" & x"100010",
+    op_mv & o"01" & o"14" &"00"&x"000",--ÉãÅ[ÉvÇÃâÒêî
+    op_cmpi & o"14" & o"00" &"00"&x"000",
+    
+    op_jmp & "001"&"100" & x"0000E",--if <= 0
+    op_jal& "00" & x"100010",
+    op_store & o"10" & o"01" &"00"&x"000",
+    op_addi  & o"10" & o"10" &"00"&x"001",
+    
+    op_addi  & o"14" & o"14" &"11"&x"FFF",
+    op_jmp & "001"&"100" & x"00007",--if <= 0
+    op_write & o"13" & o"13" &"00"&x"000",
+    op_jr& o"00" & o"00" &"00"&x"000",
+    
+    
     op_read & o"00" & o"02" &"00"&x"000",--
     op_cmpi & o"02" & o"00" &"00"&x"100",--
-    op_jmp & "001"&"001" & x"00000",--if (r2 >= 0x100) then goto 
-    op_write & o"02" & o"03" &"00"&x"000",--
+    op_jmp & "001"&"001" & x"00010",--if (r2 >= 0x100) then goto 
+    op_read & o"00" & o"03" &"00"&x"000",--
     
-    op_cmpi & o"03" & o"00" &"00"&x"001",--
-    op_jmp & "001"&"001" & x"00003",
-    op_led & o"02" & x"00000",
-    op_jmp & "001"&"000" & x"00000",
+    op_cmpi & o"03" & o"00" &"00"&x"100",--
+    op_jmp & "001"&"001" & x"00013",--if (r3 >= 0x100) then goto
+    op_read & o"00" & o"04" &"00"&x"000",--
+    op_cmpi & o"04" & o"00" &"00"&x"100",--
+  
+    op_jmp & "001"&"001" & x"00016",--if (r4 >= 0x100) then goto 
+    op_read & o"00" & o"05" &"00"&x"000",--
+    op_cmpi & o"05" & o"00" &"00"&x"100",--
+    op_jmp & "001"&"001" & x"00019",--if (r5 >= 0x100) then goto 
     
+	op_sll & o"02" & o"02" &"00"&x"018",--
+	op_sll & o"03" & o"03" &"00"&x"010",--
+    op_sll & o"04" & o"04" &"00"&x"008",--
+    op_li  & o"01" & o"01" &"00"&x"000",--
+    
+    
+    op_add & o"02" & o"01" & o"01" & x"00",
+    op_add & o"03" & o"01" & o"01" & x"00",
+    op_add & o"04" & o"01" & o"01" & x"00",
+    op_add & o"05" & o"01" & o"01" & x"00",
+    
+    op_jr & o"00" & x"00000",
     op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    op_halt & o"00" & x"00000" ,
+    
     op_halt & o"00" & x"00000", 
     op_halt & o"00" & x"00000",
     op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
     
     op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
     op_halt & o"00" & x"00000", 
     op_halt & o"00" & x"00000",
-    op_halt & o"00" & x"00000" 
+    
+    
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000",
+    op_halt & o"00" & x"00000", 
+    op_halt & o"00" & x"00000"
     );
     signal i : std_logic_vector(31 downto 0) := op_sleep&"00"&x"000000";
     
@@ -45,7 +108,7 @@ begin
 	process(clk)
 	begin
 		if rising_edge(clk) then
-			i <= ROM(conv_integer(pc(3 downto 0)));
+			i <= ROM(conv_integer(pc(5 downto 0)));
 		end if;
 	end process;
 	
@@ -123,3 +186,24 @@ end arch;
 --    op_nop & o"00" & x"00000",
 --    op_nop & o"00" & x"00000"
 --    );
+
+--echo back
+--    op_read & o"00" & o"02" &"00"&x"000",--
+--    op_cmpi & o"02" & o"00" &"00"&x"100",--
+--    op_jmp & "001"&"001" & x"00000",--if (r2 >= 0x100) then goto 
+--    op_write & o"02" & o"03" &"00"&x"000",--
+--    
+--    op_cmpi & o"03" & o"00" &"00"&x"001",--
+--    op_jmp & "001"&"001" & x"00003",
+--    op_led & o"02" & x"00000",
+--    op_jmp & "001"&"000" & x"00000",
+--    
+--    op_halt & o"00" & x"00000", 
+--    op_halt & o"00" & x"00000", 
+--    op_halt & o"00" & x"00000",
+--    op_halt & o"00" & x"00000", 
+--    
+--    op_halt & o"00" & x"00000", 
+--    op_halt & o"00" & x"00000", 
+--    op_halt & o"00" & x"00000",
+--    op_halt & o"00" & x"00000" 
