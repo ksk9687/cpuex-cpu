@@ -55,6 +55,9 @@ architecture arch of cpu_top is
    --Inst
    signal next_pc,pc,jmp_addr,pc_p1,next_pc_p1,pc_buf0,pc_buf1,pc_buf2,pc_buf3,pc_buf4 : std_logic_vector(20 downto 0) := '1'&x"00000";
    signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
+   signal write_inst_data,read_inst_data : std_logic_vector(49 downto 0) := (others=>'0');
+   signal write_inst_im : std_logic_vector(20 downto 0) := (others=>'0');
+   
    --LS
    signal ls_f,ls_f_p : std_logic_vector(1 downto 0) := (others=>'0');
    signal lsu_out,lsu_out_buf2,lsu_out_buf3,ls_data,ls_data_p :std_logic_vector(31 downto 0) := (others=>'0');
@@ -129,7 +132,7 @@ begin
    jmp_taken;
 	
 	--ˆê–½—ß’â~
-	sleep <= '1' when (inst(31 downto 26) = op_jal) else
+	sleep <= '1' when write_inst_ok = '0' else
 	'0';
 	
    stall <= (not flush) and (not (reg_ok and lsu_ok));
@@ -137,10 +140,10 @@ begin
    next_pc <= 
    pc + '1' when jmp_taken = '1' else
    jmp_addr when inst_b(31 downto 26) = op_jr else
+   jmp_addr when jmp_taken_p = '1' else
    inst(20 downto 0) when (inst(31 downto 26) = op_jal) else
    pc_p1 when (inst(31 downto 26) = op_halt) else
-   pc when (jmp_not_taken_p = '1') else
-   jmp_addr when jmp_taken_p = '1' else
+ --  pc + '1' when (jmp_not_taken_p = '1') else
    pc + '1';
    
    PC0:process(clk,rst)
@@ -153,7 +156,9 @@ begin
 			pc_p1 <= pc_p1;
         else
 			pc <= next_pc;
-			if (inst(31 downto 26) = op_halt) then
+			if (inst_b(31 downto 26) = op_jr) then
+				pc_p1 <= next_pc;
+			elsif (inst(31 downto 26) = op_halt) then
 				pc_p1 <= pc_p1;
 			else
 				pc_p1 <= pc;
@@ -174,59 +179,58 @@ begin
    	reg_s1_use,reg_s2_use,
    	regwrite,cr_flg
    );
+   with inst(31 downto 26) select
+    write_inst_im <= pc when op_jal,
+    inst(23)&inst(19 downto 0) when op_jmp,
+    inst(20 downto 0) when others;
+    
+   write_inst_data <=  inst(31 downto 26) & regwrite&reg_d & reg_s1_use&reg_s1 & reg_s2_use&reg_s2 & cr_flg & write_inst_im;
    
-    stall_id <= not (reg_ok and lsu_ok);
+   IB0 : instructionBufferport map (
+   	clk,rst,flush
+   	write_inst_ok,read_inst_ok,
+   	write_inst,stall_id,
+	write_inst_data,read_inst_data
+   );
+   
+    stall_id <= (reg_ok and lsu_ok);
 
-  	IF_ID : process(CLK)
-	begin
-		if rising_edge(clk) then
-			if flush = '1' then
-				inst_b <= op_nop & "00"&x"000000";
-				regwrite_b <= '0';
-				cr_flg_b <= "00";
-			elsif stall_id = '0' then
-				inst_b <= inst;
-				reg_d_b <= reg_d;
-				reg_s1_b <= reg_s1;
-				reg_s2_b <= reg_s2;
-				reg_s1_use_b <= reg_s1_use;
-				reg_s2_use_b <= reg_s2_use;
-				regwrite_b <= regwrite;
-				cr_flg_b <= cr_flg;
-				pc_buf0 <= pc;
-			end if;
-		end if;
-	end process IF_ID;
+
 	----------------------------------
 	-- 
 	-- RD
 	-- 
 	----------------------------------
 	
-	pd <= regwrite_b&reg_d_b;
+	pd <= read_inst_data();
 	s1 <= reg_s1_use_b&reg_s1_b;
 	s2 <= reg_s2_use_b&reg_s2_b;
 	
 	REGISTERS : reg port map (
 		clk,rst,flush,lsu_ok,
-		reg_d_buf,pd,s1,s2,
-		regwrite_f,cr_flg_buf1,cr_flg_b,
+		reg_d_buf,
+		read_inst_data(43 downto 37),
+		read_inst_data(36 downto 30),
+		read_inst_data(29 downto 23),
+		regwrite_f,
+		cr_flg_buf1,
+		read_inst_data(22 downto 21),
 		cr_d,
 		data_d,
 		data_s1_p,data_s2_p,
 		cr_p,reg_ok
 	);
 	
-	ext_im <= "00"&x"0000"&inst_b(13 downto 0) when inst_b(31 downto 26) = alui_op_li else
-	sign_extention(inst_b(13 downto 0));
+	ext_im <= "00"&x"0000"&read_inst_data(13 downto 0) when read_inst_data(49 downto 44) = alui_op_li else
+	sign_extention(read_inst_data(13 downto 0));
 
 	
-	jmp_taken_p <= not (((reg_s1_b(2) and cr_p(2)) or (reg_s1_b(1) and cr_p(1)) or (reg_s1_b(0) and cr_p(0)))) 
-	when inst_b(31 downto 26) = op_jmp else '0';
-	jmp_not_taken_p <= (((reg_s1_b(2) and cr_p(2)) or (reg_s1_b(1) and cr_p(1)) or (reg_s1_b(0) and cr_p(0)))) 
-	when inst_b(31 downto 26) = op_jmp else '0';
+	jmp_taken_p <= not (((read_inst_data(32) and cr_p(2)) or (read_inst_data(31) and cr_p(1)) or (read_inst_data(30) and cr_p(0)))) 
+	when read_inst_data(49 downto 44) = op_jmp else '0';
+	jmp_not_taken_p <= (((read_inst_data(32) and cr_p(2)) or (read_inst_data(31) and cr_p(1)) or (read_inst_data(30) and cr_p(0)))) 
+	when read_inst_data(49 downto 44) = op_jmp else '0';
 	
-	jmp_addr <= reg_s1_b(3)&reg_s2_b&inst_b(13 downto 0) when inst_b(31 downto 26) = op_jmp else
+	jmp_addr <= read_inst_data(20 downto 0) when read_inst_data(49 downto 44) = op_jmp else
 	data_s1_p(20 downto 0);
 	
 	RD : process(CLK)
@@ -242,20 +246,19 @@ begin
 				jmp_taken <= '0';
 				jmp_not_taken <= '0';
 			else
-				unit_op_buf0 <= inst_b(31 downto 29);
-				sub_op_buf0 <= inst_b(28 downto 26);
-				reg_write_buf0 <= regwrite_b;
-				cr_flg_buf0 <= cr_flg_b;
+				unit_op_buf0 <= read_inst_data(49 downto 47);
+				sub_op_buf0 <= read_inst_data(46 downto 44);
+				reg_write_buf0 <= read_inst_data(43);
+				cr_flg_buf0 <= read_inst_data(22 downto 21);
 				jmp_taken <= jmp_taken_p;
 				jmp_not_taken <= jmp_not_taken_p;
 			end if;
-			mask <= reg_s1_b(2 downto 0);
+			mask <= read_inst_data(32 downto 30);
 			ext_im_buf0 <= ext_im;
-			reg_d_buf0 <= reg_d_b;
+			reg_d_buf0 <= read_inst_data(42 downto 37);
 			data_s1 <= data_s1_p;
 			data_s2 <= data_s2_p;
 			cr <= cr_p;
-			pc_buf1 <= pc_buf0;
 		end if;
 	end process RD;
 	
@@ -339,7 +342,7 @@ begin
 					ls_address <= ls_address_p;
 					ls_data <= ls_data_p;
 					
-					pc_buf2 <= pc_buf1;
+					pc_buf1 <= ext_im_buf0(20 downto 0);
 					unit_op_buf1 <= unit_op_buf0;
 					sub_op_buf1 <= sub_op_buf0;
 					reg_d_buf1 <= reg_d_buf0;

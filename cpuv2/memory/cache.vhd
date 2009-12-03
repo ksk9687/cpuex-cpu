@@ -9,6 +9,7 @@ entity cache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
@@ -36,8 +37,8 @@ begin
 	process (clk)
 	begin
 	    if rising_edge(clk) then
-	        if set = '1' and address(19 downto 14) = "000000" then
-	           cache(conv_integer(address(11 downto 0))) <= '1'&address(13 downto 12);
+	        if set = '1' and set_addr(19 downto 14) = "000000" then
+	           cache(conv_integer(set_addr(11 downto 0))) <= '1'&set_addr(13 downto 12);
 	        end if;
 	    end if;
 	end process;
@@ -46,7 +47,7 @@ begin
 	begin
 	    if rising_edge(clkfast) then
 	        if set = '1' then
-	            cache_data(conv_integer(address(11 downto 0))) <= set_data;
+	            cache_data(conv_integer(set_addr(11 downto 0))) <= set_data;
 	        end if;
 	        read <= cache_data(conv_integer(address(11 downto 0)));
 	    end if;

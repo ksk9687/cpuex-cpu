@@ -97,7 +97,7 @@ begin
 		if rising_edge(SRAMCLKMA0'DELAYED(tCD)) then
 			--â∫à èoóÕ
 			if rw_buf01 = '1' then
-				SRAMIOA(15 downto 0) <= data_buf01(15 downto 1) & '1';
+				SRAMIOA(15 downto 0) <= data_buf01(15 downto 0);
 			else
 				SRAMIOA(15 downto 0) <=(others => 'Z');
 			end if;

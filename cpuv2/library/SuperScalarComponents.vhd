@@ -38,6 +38,7 @@ component cache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
@@ -259,6 +260,7 @@ component usbbufio is
            USBRD : out  STD_LOGIC;
            USBRXF : in  STD_LOGIC;
            USBWR : out  STD_LOGIC;
+           
            USBTXE : in  STD_LOGIC;
            USBSIWU : out  STD_LOGIC;
            USBRST : out  STD_LOGIC;
