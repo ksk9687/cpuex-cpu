@@ -18,8 +18,8 @@ architecture arch of branchPredictor is
 begin
 
 	--!TODO 分岐予測のロジックを作る。
-	--現在は常に分岐と見せかけてストール
-	taken <= '1';
+	--現在は常に分岐しないと予測
+	taken <= '0';
 
 end arch;
 

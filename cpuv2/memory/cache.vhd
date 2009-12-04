@@ -22,24 +22,29 @@ architecture arch of cache is
     type cache_tag_type is array (0 to 4095) of std_logic_vector (2 downto 0);--2 + 1
     type cache_data_type is array (0 to 4095) of std_logic_vector (31 downto 0); --32
     
-   signal tag : std_logic_vector(2 downto 0) := '0'&"00";
+   signal tag,tag_p : std_logic_vector(2 downto 0) := '0'&"00";
    signal cache : cache_tag_type := (others => '0'&"00");
    signal cache_data : cache_data_type;
    
+    signal address_buf : std_logic_vector(13 downto 0) := (others => '0');
     signal read_addr : std_logic_vector(11 downto 0) := (others => '0');
     signal read : std_logic_vector(31 downto 0) := (others => '0');
+    signal hit_p,hit_zero_add : std_logic := '0';
 begin
 	read_data <= read;
 	
-	tag <= cache(conv_integer(address(11 downto 0)));
-	hit <= tag(2) when tag(1 downto 0) = address(13 downto 12) and address(19 downto 14) = "000000" else '0';
+	tag_p <= cache(conv_integer(address(11 downto 0)));
+	hit <= tag(2) when tag(1 downto 0) = address_buf(13 downto 12) else '0';
+	
 	
 	process (clk)
 	begin
 	    if rising_edge(clk) then
-	        if set = '1' and set_addr(19 downto 14) = "000000" then
+	        if set = '1' then
 	           cache(conv_integer(set_addr(11 downto 0))) <= '1'&set_addr(13 downto 12);
 	        end if;
+	        tag <= tag_p;
+	        address_buf <= address(13 downto 0);
 	    end if;
 	end process;
 	

@@ -120,6 +120,17 @@ component dff is
 end component;
 
 
+component instructionBuffer is
+	port  (
+		clk,rst,flush : in std_logic;        -- input clock, xx MHz.
+		read ,write: in std_logic;
+		readok,writeok: out std_logic;
+		readdata : out std_logic_vector(49 downto 0);
+		writedata: in std_logic_vector(49 downto 0)
+	);
+end component;
+
+
 component IOU is
 	port  (
 		clk,clk50,rst,stall,enable : in std_logic;
@@ -155,6 +166,7 @@ port (
     
     pc : in std_logic_vector(20 downto 0);
     inst : out std_logic_vector(31 downto 0);
+    inst_ok : out std_logic;
     
     ls_flg : in std_logic_vector(1 downto 0);
     ls_addr : in std_logic_vector(19 downto 0);
@@ -212,10 +224,14 @@ component sram_controller is
 		CLK : in STD_LOGIC
 		;SRAMCLK : in STD_LOGIC
 		
+		;i_d    : in  std_logic_vector(1 downto 0)
 		;ADDR    : in  std_logic_vector(19 downto 0)
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
 		;RW      : in  std_logic
+		
+		;i_d_buf    : out  std_logic_vector(1 downto 0)
+		;ADDRBUF    : out  std_logic_vector(19 downto 0)
 		
 		--SRAM
 		;SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--ƒAƒhƒŒƒX

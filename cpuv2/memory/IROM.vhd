@@ -58,7 +58,7 @@ architecture arch of IROM is
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000"
     );
-    signal i : std_logic_vector(31 downto 0) := op_sleep&"00"&x"000000";
+    signal i : std_logic_vector(31 downto 0) := op_nop&"00"&x"000000";
     
 begin
 --	inst <= ROM(conv_integer(pc(3 downto 0)));

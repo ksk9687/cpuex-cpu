@@ -16,10 +16,14 @@ entity sram_controller is
 		CLK : in STD_LOGIC
 		;SRAMCLK : in STD_LOGIC
 		
+		;i_d    : in  std_logic_vector(1 downto 0)
 		;ADDR    : in  std_logic_vector(19 downto 0)
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
 		;RW      : in  std_logic
+		
+		;i_d_buf    : out  std_logic_vector(1 downto 0)
+		;ADDRBUF    : out  std_logic_vector(19 downto 0)
 		
 		--SRAM
 		;SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
@@ -55,6 +59,9 @@ architecture Behavioral of sram_controller is
   signal rw_buf1 :  std_logic := '0';
   signal rw_buf2 :  std_logic := '0';
   
+  signal i_d_buf0,i_d_buf1,i_d_buf2,i_d_buf3 : std_logic_vector(1 downto 0) := "00";
+  signal ADDR_BUF0,ADDR_BUF1,ADDR_BUF2,ADDR_BUF3 : std_logic_vector(19 downto 0) := (others => '0');
+  
   signal state :std_logic := '0';
   signal data_out : std_logic_vector(31 downto 0) := (others => '0');
   
@@ -89,21 +96,12 @@ begin
 	SRAMIOPA <= "0000" when rw_buf2 = '0' and clk = '1' else
 	(others => 'Z');
 
+	i_d_buf <= i_d_buf3;
+	ADDRBUF <= ADDR_BUF3;
+
   process (clk)
   begin
     if clk'event and clk = '1' then
-    	state <= '1';
---      if rw_buf1 = '0' then
---        --Write
---		--2clock後にデータを渡す
---        SRAMIOA  <= data_buf1;
---        SRAMIOPA <=br_xor(data_buf1(31 downto 24))&br_xor(data_buf1(23 downto 16))&br_xor(data_buf1(15 downto 8))&br_xor(data_buf1(7 downto 0));
---      else
---        -- Read
---        SRAMIOA  <= (others => 'Z');
---        SRAMIOPA <= (others => 'Z');
---      end if;
-
       SRAMAA  <= ADDR;
       SRAMRWA <= RW;
 
@@ -115,8 +113,19 @@ begin
       data_buf0    <= DATAIN;
       data_buf1    <= data_buf0;
       data_buf2    <= data_buf1;
+      
+      i_d_buf0 <= i_d;
+      i_d_buf1 <= i_d_buf0;
+      i_d_buf2 <= i_d_buf1;
+      i_d_buf3 <= i_d_buf2;
+      
+      ADDR_BUF0 <= ADDR;
+      ADDR_BUF1 <= ADDR_BUF0;
+      ADDR_BUF2 <= ADDR_BUF1;
+      ADDR_BUF3 <= ADDR_BUF2;
+      
 	  
-	   DATAOUT <= data_out;
+	  DATAOUT <= data_out;
 	end if;
   end process;
  
