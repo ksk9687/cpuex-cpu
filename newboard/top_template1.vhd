@@ -216,7 +216,7 @@ architecture Behavioral of top_template is
 
 
 begin
-  core_inst : sram_ft1_core port map(
+  core_inst : core_template port map(
     leddata,
     leddotdata,
     sramreadmode,
