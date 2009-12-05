@@ -90,7 +90,7 @@ architecture synth of memory is
 
 	signal ls_buf0,ls_buf1,ls_buf2,ls_buf3,ls_buf4 : std_logic_vector(1 downto 0) := "00";
 	signal inst_select : std_logic_vector(2 downto 0) := (others => '0');
-	signal i_halt : std_logic := '0';
+	signal i_mem_req,i_halt : std_logic := '0';
 	
 	signal i_d_out,i_d_in : std_logic_vector(1 downto 0) := "00";
 	
@@ -140,10 +140,8 @@ begin
 	RW <= '0' when ls_buf0 = "11" else
 	'1';
 	
-	i_d_in <= 
-	"01" when (ls_buf0(1) = '1') and (dcache_hit = '0')  else
-	"10" when i_mem_state = inst_w1 else
-	"00";
+	i_d_in(1) <= i_mem_req;
+	i_d_in(0) <= ls_buf0(1) and (not dcache_hit);
 	
 	process(clk)
 	begin
@@ -154,28 +152,29 @@ begin
 		end if;
 	end process;
 
+	--Iキャッシュミスかつ(DキャッシュミスまたはStoreでない)
+	i_mem_req <= (not pc(20)) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
 	
-	IMEM_STATE : process(clk)
-	begin
-		if rising_edge(clk) then
-		case i_mem_state is
-			when idle =>
-				if (pc(20) = '1') or (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1')) then--Loadキャッシュミス or Store
-					i_mem_state <= idle;
-				elsif cache_hit = '0' then--Instメモリアクセス要求があり、キャッシュミス
-					i_mem_state <= inst_w1;
-				else
-					i_mem_state <= idle;
-				end if;
-			when inst_w1 => i_mem_state <= inst_w2;
-			when inst_w2 => i_mem_state <= inst_w3;
-			when inst_w3 => i_mem_state <= inst_w4;
-			when inst_w4 => i_mem_state <= inst_w5;
-			when inst_w5 => i_mem_state <= idle;
-			when others => i_mem_state <= idle;
-		end case;
-		end if;
-	end process;
+--	IMEM_STATE : process(clk)
+--	begin
+--		if rising_edge(clk) then
+--		case i_mem_state is
+--			when idle =>
+--				if (pc(20) = '1') or (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1')) then--Loadキャッシュミス or Store
+--					i_mem_state <= idle;
+--				elsif cache_hit = '0' then--Instメモリアクセス要求があり、キャッシュミス
+--					i_mem_state <= inst_w1;
+--				else
+--					i_mem_state <= idle;
+--				end if;
+--			when inst_w1 => i_mem_state <= inst_w2;
+--			when inst_w2 => i_mem_state <= inst_w3;
+--			when inst_w3 => i_mem_state <= inst_w4;
+--			when inst_w4 => i_mem_state <= idle;
+--			when others => i_mem_state <= idle;
+--		end case;
+--		end if;
+--	end process;
 
 
 	DMEM_STATE : process(clk)

@@ -143,7 +143,8 @@ begin
    PC0:process(clk,rst)
    begin
 	   if (rst = '1')then
-	   		pc <= '0'&x"FFFFF";
+	   		pc <= '1'&x"00000";
+	   		pc_p1 <= '1'&x"00001";
 	   elsif rising_edge(clk) then
 	   		jmp_flg <= jmp_flg_p;
 	   		jmp_addr_pc <= jmp_addr_next;
@@ -259,15 +260,15 @@ begin
 	LED_OUT :process(clk)
 	begin
 		if rising_edge(clk) then
-			if stall_ex = '1' then
-				
+			if sub_op_buf0 = iou_op_ledi then
+				led_buf1 <= ext_im_buf0(7 downto 0);
 			else
 				led_buf1 <= data_s1(7 downto 0);
 			end if;
 			led_buf2 <= led_buf1;
 			led_buf3 <= led_buf2;
 			
-			if (unit_op_buf3 = op_unit_iou) and (sub_op_buf3 = iou_op_led) then
+			if (unit_op_buf3 = op_unit_iou) and (sub_op_buf3(2 downto 1) = iou_op_led(2 downto 1)) then
 				ledout <= not led_buf3;
 			end if;
 		end if;

@@ -52,6 +52,7 @@ package instruction is
    constant op_read	:	std_logic_vector(5 downto 0) := o"50";
    constant op_write:	std_logic_vector(5 downto 0) := o"51";
    constant op_led	:	std_logic_vector(5 downto 0) := o"52";
+   constant op_ledi	:	std_logic_vector(5 downto 0) := o"53";
    
    constant op_nop	:	std_logic_vector(5 downto 0) := o"60";
    constant op_halt	:	std_logic_vector(5 downto 0) := o"61";
@@ -77,6 +78,8 @@ package instruction is
 	constant iou_op_read	: std_logic_vector(2 downto 0) := o"0";
 	constant iou_op_write	: std_logic_vector(2 downto 0) := o"1";
 	constant iou_op_led	: std_logic_vector(2 downto 0) := o"2";
+	constant iou_op_ledi	: std_logic_vector(2 downto 0) := o"3";
+	
 	
 	constant sp_op_nop	: std_logic_vector(2 downto 0) := o"0";
 
