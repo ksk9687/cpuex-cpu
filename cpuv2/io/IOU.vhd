@@ -45,9 +45,9 @@ begin
 	 x"0000000"&"000"&(not usb_write_end) when (iou_op = iou_op_write) and (no = usb) else
 	 (others => '1');
 	  
-	 usb_read_p <= '1' when (iou_op = iou_op_read) and (no = usb) and (usb_read_end = '1') else
+	 usb_read_p <= '1' and enable when (iou_op = iou_op_read) and (no = usb) and (usb_read_end = '1') else
 	 '0';
-	 usb_write_p <= '1' when (iou_op = iou_op_write) and (no = usb) and (usb_write_end = '1') else
+	 usb_write_p <= '1' and enable when (iou_op = iou_op_write) and (no = usb) and (usb_write_end = '1') else
 	 '0';
 	 usb_writedata_buf <= writedata_buf(7 downto 0);
 	 	 

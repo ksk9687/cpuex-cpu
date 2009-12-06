@@ -123,7 +123,7 @@ begin
 	store_data;--Store
 
 	--データキャッシュセット　MissLoad,Store
-	dcache_set <= i_d_out(0) or ls_flg(0);
+	dcache_set <= i_d_out(0) or (ls_flg(0));
 	
 	dcache_read <= (ls_flg(1) and (not ls_flg(0))) or 
 	(ls_buf0(1) and (not ls_buf0(0))) or

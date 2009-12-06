@@ -160,6 +160,26 @@ component IROM is
 end component;
 
 
+component lsu is
+	port  (
+		clk,rst,read,write,load_ok : in std_logic;
+		op : in std_logic_vector(2 downto 0);
+    	lsu_ok,lsu_full,lsu_may_full : out std_logic;--
+    	
+    	ls_addr_in : in std_logic_vector(19 downto 0);--
+    	ls_addr_out : out std_logic_vector(19 downto 0);--
+    	
+    	ls_flg : out std_logic_vector(1 downto 0);--
+    	reg_d : out std_logic_vector(5 downto 0);
+    	
+    	lsu_in : in std_logic_vector(31 downto 0);--
+    	lsu_out : out std_logic_vector(31 downto 0);--
+    	load_data : in std_logic_vector(31 downto 0);--
+    	store_data : out std_logic_vector(31 downto 0)--
+	);
+end component;
+
+
 component memory is 
 port (
     clk,rst,sramcclk,sramclk,clkfast,stall,sleep	: in	  std_logic;

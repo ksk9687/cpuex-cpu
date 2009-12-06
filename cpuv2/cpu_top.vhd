@@ -60,13 +60,14 @@ architecture arch of cpu_top is
    
    --LS
    signal ls_f,ls_f_p : std_logic_vector(1 downto 0) := (others=>'0');
-   signal lsu_out,lsu_out_buf2,lsu_out_buf3,ls_data,ls_data_p :std_logic_vector(31 downto 0) := (others=>'0');
+   signal lsu_out,lsu_in,lsu_out_buf3,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
    signal ls_address,ls_address_p :std_logic_vector(19 downto 0) := (others=>'0');
-   
+   signal lsu_read,lsu_write,lsu_load_ok,lsu_full,lsu_may_full : std_logic := '0';
+  
    --register
    signal pd,s1,s2 :std_logic_vector(6 downto 0) := (others=>'0'); 
    signal cr,cr_d,cr_p: std_logic_vector(2 downto 0) := "000";
-   signal reg_d,reg_d_b,reg_d_buf,reg_s1,reg_s1_b,reg_s2,reg_s2_b :std_logic_vector(5 downto 0) := (others=>'0');
+   signal reg_d,ls_reg_d,reg_d_b,reg_d_buf,reg_s1,reg_s1_b,reg_s2,reg_s2_b :std_logic_vector(5 downto 0) := (others=>'0');
    signal reg_s1_use,reg_s2_use,regwrite,reg_s1_use_b,reg_s2_use_b,regwrite_b,regwrite_f :std_logic := '0';
    signal dflg,cr_flg,cr_flg_b,pcr_flg : std_logic_vector(1 downto 0) := (others=>'0');
    signal data_d : std_logic_vector(31 downto 0) := (others=>'0');
@@ -118,7 +119,7 @@ begin
   MEMORY0 : memory port map (
    	clk,rst,clk,clk180,clk90,stall,sleep,
    	next_pc,inst,inst_ok,
-   	ls_f,ls_address(19 downto 0),ls_data,lsu_out,lsu_ok
+   	ls_f,ls_address,store_data,load_data,lsu_ok
 	,SRAMAA,SRAMIOA,SRAMIOPA
 	,SRAMRWA,SRAMBWA
 	,SRAMCLKMA0,SRAMCLKMA1
@@ -134,7 +135,7 @@ begin
    jmp_addr_next <= jmp_addr when (jmp_taken = '1') or (jr = '1') else
    inst(20 downto 0);
    
-   jmp_flg_p <= jmp_taken or jr when (inst(31 downto 26) /= op_jal) else '1';
+   jmp_flg_p <= jmp_taken or jr when (inst(31 downto 26) /= op_jal) else (not jmp_flg);
    
    next_pc <= jmp_addr_pc when jmp_flg = '1' else
    pc when (write_inst_ok = '0') or inst_ok = '0' or (inst(31 downto 26) = op_halt) else
@@ -179,7 +180,8 @@ begin
 	  read_inst_data,write_inst_data
    );
    
-    stall_id <= (reg_ok and lsu_ok);
+   --TODO •ÏX
+    stall_id <= (reg_ok and (not lsu_may_full));
 
 
 	----------------------------------
@@ -220,9 +222,7 @@ begin
 	RD : process(CLK)
 	begin
 		if rising_edge(clk) then
-			if lsu_ok = '0' then--stall
-			
-			elsif reg_ok = '0' or flush = '1' then--nop
+			if reg_ok = '0' or flush = '1' then--nop
 				unit_op_buf0 <= op_unit_sp;
 				sub_op_buf0 <= sp_op_nop;
 				reg_write_buf0 <= '0';
@@ -265,11 +265,9 @@ begin
 			else
 				led_buf1 <= data_s1(7 downto 0);
 			end if;
-			led_buf2 <= led_buf1;
-			led_buf3 <= led_buf2;
 			
-			if (unit_op_buf3 = op_unit_iou) and (sub_op_buf3(2 downto 1) = iou_op_led(2 downto 1)) then
-				ledout <= not led_buf3;
+			if (unit_op_buf1 = op_unit_iou) and (sub_op_buf1(2 downto 1) = iou_op_led(2 downto 1)) then
+				ledout <= not led_buf1;
 			end if;
 		end if;
 	end process LED_OUT;
@@ -298,48 +296,41 @@ begin
 		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRST,USBD
 	);
 	
-    --LOAD,Store
-	with (unit_op_buf0&sub_op_buf0) select
-	ls_f_p <= "11" when op_store,
-	"10" when op_load | op_loadr,
-	"00" when others;
 	
 	with (unit_op_buf0&sub_op_buf0) select
 	ls_address_p <= data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when op_store | op_load,
 	data_s1(19 downto 0) + data_s2(19 downto 0) when others;
-	 
-	ls_data_p <= data_s2 ;
 		
-    stall_ex <= not lsu_ok;
+	with (unit_op_buf0&sub_op_buf0) select
+	lsu_in <= data_s2 when op_store,
+	x"000000"&"00"&reg_d_buf0 when others; 		
+	
+    lsu_write <= '1' when unit_op_buf0 = op_unit_lsu else '0';
+	LSU0 : LSU port map (
+		clk,rst,lsu_read,lsu_write,lsu_ok,
+		sub_op_buf0,
+    	lsu_load_ok,lsu_full,lsu_may_full,
+    	ls_address_p,ls_address,
+    	ls_f,ls_reg_d,lsu_in,lsu_out,load_data,store_data
+	);
+	
 	
 	EX1 : process(CLK)
 	begin
 		if rising_edge(clk) then
---			if flush = '1' then
---				unit_op_buf1 <= op_unit_sp;
---				sub_op_buf1 <= sp_op_nop;
---				reg_d_buf1 <= "000000";
---				reg_write_buf1 <= '0';
---				cr_flg_buf1 <= "00";
---			else
-
-				if stall_ex = '1' then
-				
-				else
-					ls_f <= ls_f_p;
-					ls_address <= ls_address_p;
-					ls_data <= ls_data_p;
-					
-					pc_buf1 <= pc_buf0;
-					unit_op_buf1 <= unit_op_buf0;
-					sub_op_buf1 <= sub_op_buf0;
-					reg_d_buf1 <= reg_d_buf0;
-					cr_flg_buf1 <= cr_flg_buf0;
-					reg_write_buf1 <= reg_write_buf0;
-					alu_out_buf1 <= alu_out;
-					alu_im_out_buf1 <= alu_im_out;
-				end if;
---			end if;
+			pc_buf1 <= pc_buf0;
+			unit_op_buf1 <= unit_op_buf0;
+			sub_op_buf1 <= sub_op_buf0;
+			reg_d_buf1 <= reg_d_buf0;
+			cr_flg_buf1 <= cr_flg_buf0;
+			if unit_op_buf0 = op_unit_lsu then
+				reg_write_buf1 <= '0';
+			else
+				reg_write_buf1 <= reg_write_buf0;
+			end if;
+			
+			alu_out_buf1 <= alu_out;
+			alu_im_out_buf1 <= alu_im_out;
 		end if;
 	end process EX1;
 	
@@ -348,57 +339,39 @@ begin
 	EX2 : process(CLK)
 	begin
 		if rising_edge(clk) then
---			if flush = '1' then
---				unit_op_buf2 <= op_unit_sp;
---				sub_op_buf2 <= sp_op_nop;
---				reg_d_buf2 <= "000000";
---				reg_write_buf2 <= '0';
---			else 
-				if stall_ex = '1' then
-				
-				else
-					unit_op_buf2 <= unit_op_buf1;
-					sub_op_buf2 <= sub_op_buf1;
-					reg_d_buf2 <= reg_d_buf1;
-					reg_write_buf2 <= reg_write_buf1;
-					pc_buf2 <= pc_buf1;
-					if unit_op_buf1 = op_unit_alu then
-						alu_out_buf2 <= alu_out_buf1;
-					elsif unit_op_buf1 = op_unit_iou then
-						alu_out_buf2 <= iou_out;
-					else
-						alu_out_buf2 <= alu_im_out_buf1;
-					end if;
-				end if;
---			end if;
+			unit_op_buf2 <= unit_op_buf1;
+			sub_op_buf2 <= sub_op_buf1;
+			reg_d_buf2 <= reg_d_buf1;
+			reg_write_buf2 <= reg_write_buf1;
+			pc_buf2 <= pc_buf1;
+			if unit_op_buf1 = op_unit_alu then
+				alu_out_buf2 <= alu_out_buf1;
+			elsif unit_op_buf1 = op_unit_iou then
+				alu_out_buf2 <= iou_out;
+			else
+				alu_out_buf2 <= alu_im_out_buf1;
+			end if;
 		end if;
 	end process EX2;
 	
+	lsu_read <= lsu_load_ok and (not reg_write_buf2);
 	
 	EX3 : process(CLK)
 	begin
 		if rising_edge(clk) then
---			if flush = '1' then
---				unit_op_buf3 <= op_unit_sp;
---				sub_op_buf3 <= sp_op_nop;
---				reg_d_buf3 <= "000000";
---				reg_write_buf3 <= '0';
---			else
-
-				if stall_ex = '1' then
-					reg_write_buf3 <= '0';
-					unit_op_buf3 <= op_unit_sp;
-					sub_op_buf3 <= sp_op_nop;
-				else
-					reg_write_buf3 <= reg_write_buf2;
-					unit_op_buf3 <= unit_op_buf2;
-					sub_op_buf3 <= sub_op_buf2;
-				end if;
-					reg_d_buf3 <= reg_d_buf2;
-					lsu_out_buf3 <= lsu_out;
-					alu_out_buf3 <= alu_out_buf2;
-					pc_buf3 <= pc_buf2;
---			end if;
+			if (lsu_load_ok = '1') and (reg_write_buf2 = '0') then
+				reg_write_buf3 <= '1';
+				unit_op_buf3 <= op_unit_alu;
+				alu_out_buf3 <= lsu_out;
+				reg_d_buf3 <= ls_reg_d;
+			else
+				reg_write_buf3 <= reg_write_buf2;
+				unit_op_buf3 <= unit_op_buf2;
+				alu_out_buf3 <= alu_out_buf2;
+				reg_d_buf3 <= reg_d_buf2;
+			end if;
+			sub_op_buf3 <= sub_op_buf2;
+			pc_buf3 <= pc_buf2;
 		end if;
 	end process EX3;
 	
@@ -413,6 +386,8 @@ begin
 	 cr_d <= alui_cmp when op_unit_alui,
 	 --fpu_cmp when op_unit_fpu,
 	 alu_cmp when others;
+	 
+	 
 	 
 	reg_d_buf <= reg_d_buf3;
 	regwrite_f <= reg_write_buf3;
