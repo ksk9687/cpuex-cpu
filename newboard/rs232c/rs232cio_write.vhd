@@ -19,6 +19,7 @@ entity rs232cio_write is
     );
   Port (
     CLK : in STD_LOGIC;
+--    BUFCLK : in STD_LOGIC;
     RST : in STD_LOGIC;
     -- Ç±ÇøÇÁë§ÇégÇ§
     RSIO_WD : in STD_LOGIC;     -- write êßå‰ê¸
@@ -82,53 +83,58 @@ begin
       databitpos <= 0;
       bufreadpos <= conv_std_logic_vector(0,buflenlog);
       bufwritepos <= conv_std_logic_vector(0,buflenlog);
-    elsif clk'event and clk = '1' then  -- rising clock edge
-      if RSIO_WD = '1' then
-        if writeenable = '1' then
-          bufwritepos <= bufwritepos + conv_std_logic_vector(1,buflenlog);
-          writebuf(conv_integer(bufwritepos)) <= RSIO_WData;
-        else
-          bufwritepos <= bufwritepos;
+    else
+      if clk'event and clk = '1' then  -- rising clock edge
+--      if bufclk'event and bufclk = '1' then  -- rising clock edge
+        if RSIO_WD = '1' then
+          if writeenable = '1' then
+            bufwritepos <= bufwritepos + conv_std_logic_vector(1,buflenlog);
+            writebuf(conv_integer(bufwritepos)) <= RSIO_WData;
+          else
+            bufwritepos <= bufwritepos;
+          end if;
         end if;
-      end if;
-      case state is
-        when STATE_WAITDATA =>
-          timecounter <= 0;
-          databitpos <= 0;
-          if writeflag = '1' then
-            writedata <= writebuf(conv_integer(bufreadpos));
-            bufreadpos <= bufreadpos + conv_std_logic_vector(1,buflenlog);
-            state <= STATE_WRITING;
-          else
-            state <= STATE_WAITDATA;
-          end if;
-        when STATE_WRITING =>
-          if timecounter = BITLENTH then
-            timecounter <= 0;
-            if databitpos = TOTALLENTH then
-              databitpos <= 0;
-              state <= STATE_AFT_STOP;
-            else
-              databitpos <= databitpos + 1;
-              state <= STATE_WRITING;
-            end if;
-          else
-            timecounter <= timecounter + 1;
-            databitpos <= databitpos;
-            state <= STATE_WRITING;
-          end if;
-        when STATE_AFT_STOP =>
-          if timecounter = (NULLAFTSTOP - 1) then
+--      end if;
+--      if clk'event and clk = '1' then  -- rising clock edge
+        case state is
+          when STATE_WAITDATA =>
             timecounter <= 0;
             databitpos <= 0;
-            state <= STATE_WAITDATA;
-          else
-            timecounter <= timecounter + 1;
-            databitpos <= databitpos;
-            state <= STATE_AFT_STOP;
-          end if;
-        when others =>null;
-      end case;
+            if writeflag = '1' then
+              writedata <= writebuf(conv_integer(bufreadpos));
+              bufreadpos <= bufreadpos + conv_std_logic_vector(1,buflenlog);
+              state <= STATE_WRITING;
+            else
+              state <= STATE_WAITDATA;
+            end if;
+          when STATE_WRITING =>
+            if timecounter = BITLENTH then
+              timecounter <= 0;
+              if databitpos = TOTALLENTH then
+                databitpos <= 0;
+                state <= STATE_AFT_STOP;
+              else
+                databitpos <= databitpos + 1;
+                state <= STATE_WRITING;
+              end if;
+            else
+              timecounter <= timecounter + 1;
+              databitpos <= databitpos;
+              state <= STATE_WRITING;
+            end if;
+          when STATE_AFT_STOP =>
+            if timecounter = (NULLAFTSTOP - 1) then
+              timecounter <= 0;
+              databitpos <= 0;
+              state <= STATE_WAITDATA;
+            else
+              timecounter <= timecounter + 1;
+              databitpos <= databitpos;
+              state <= STATE_AFT_STOP;
+            end if;
+          when others =>null;
+        end case;
+      end if;
     end if;
   end process;
 end Behavioral;

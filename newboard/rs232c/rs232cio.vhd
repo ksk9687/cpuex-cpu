@@ -3,14 +3,10 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
----- Uncomment the following library declaration if instantiating
----- any Xilinx primitives in this code.
---library UNISIM;
---use UNISIM.VComponents.all;
-
 entity rs232cio is
   generic (
     READBITLEN    : integer := 1160;    -- 1bitにかかるクロックより少し大きい値
+    READPADBITLEN : integer := 100;     -- データの採取間隔
     MERGINLEN     : integer := 10;      -- データの読み込み開始の余白
     STOPBACK      : integer := 50;     -- STOPBITをどれぐらい待たないか
     READBUFLENLOG : integer := 4;      -- バッファの大きさ
@@ -21,6 +17,7 @@ entity rs232cio is
     );
   Port (
     CLK : in STD_LOGIC;
+--    BUFCLK : in STD_LOGIC;
     RST : in STD_LOGIC;
     -- こちら側を使う
     RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -41,11 +38,13 @@ architecture Behavioral of rs232cio is
   component rs232cio_read
     generic (
       READBITLEN    : integer ;    -- 1bitにかかるクロックより少し大きい値
+      READPADBITLEN : integer ;    -- データの採取間隔
       MERGINLEN     : integer ;      -- データの読み込み開始の余白
       STOPBACK      : integer ;     -- STOPBITをどれぐらい待たないか
       READBUFLENLOG : integer );      -- バッファの大きさ
     Port (
       CLK : in STD_LOGIC;
+--      BUFCLK : in STD_LOGIC;
       RST : in STD_LOGIC;
       -- こちら側を使う
       RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -64,6 +63,7 @@ architecture Behavioral of rs232cio is
       );
     Port (
       CLK : in STD_LOGIC;
+--      BUFCLK : in STD_LOGIC;
       RST : in STD_LOGIC;
       -- こちら側を使う
       RSIO_WD : in STD_LOGIC;     -- write 制御線
@@ -77,11 +77,13 @@ begin
   RSREAD: rs232cio_read
     generic map (
       READBITLEN    => READBITLEN,
+      READPADBITLEN => READPADBITLEN,
       MERGINLEN     => MERGINLEN,
       STOPBACK      => STOPBACK,
       READBUFLENLOG => READBUFLENLOG)
     port map (
       CLK,
+--      BUFCLK,
       RST,
       RSIO_RD,
       RSIO_RData,
@@ -96,6 +98,7 @@ begin
       WRITEBUFLENLOG => WRITEBUFLENLOG)
     port map (
       CLK,
+--      BUFCLK,
       RST,
       RSIO_WD,
       RSIO_WData,
