@@ -53,10 +53,10 @@ architecture arch of cpu_top is
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
-   signal jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_buf0,pc_buf1,pc_buf2,pc_buf3,pc_buf4 : std_logic_vector(20 downto 0) := '1'&x"00000";
+   signal jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_buf0,pc_buf1,pc_buf2,pc_buf3,pc_buf4 : std_logic_vector(14 downto 0) := "100"&x"000";
    signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
-   signal write_inst_data,read_inst_data : std_logic_vector(49 downto 0) := (others=>'0');
-   signal write_inst_im : std_logic_vector(20 downto 0) := (others=>'0');
+   signal write_inst_data,read_inst_data : std_logic_vector(43 downto 0) := (others=>'0');
+   signal write_inst_im : std_logic_vector(14 downto 0) := (others=>'0');
    
    --LS
    signal ls_f,ls_f_p : std_logic_vector(1 downto 0) := (others=>'0');
@@ -106,7 +106,7 @@ begin
   	
   BP0 : branchPredictor port map (
   	clk,rst,
-  	pc(19 downto 0),inst(13 downto 0),
+  	pc(13 downto 0),inst(13 downto 0),
   	predict_taken
   );
   
@@ -133,24 +133,31 @@ begin
    ib_write <= inst_ok and (not jmp_flg);
 	
    jmp_addr_next <= jmp_addr when (jmp_taken = '1') or (jr = '1') else
-   inst(20 downto 0);
+   inst(14 downto 0);
    
    jmp_flg_p <= jmp_taken or jr when (inst(31 downto 26) /= op_jal) else (not jmp_flg);
    
-   next_pc <= jmp_addr_pc when jmp_flg = '1' else
-   pc when (write_inst_ok = '0') or inst_ok = '0' or (inst(31 downto 26) = op_halt) else
+   next_pc <= pc when (write_inst_ok = '0') or inst_ok = '0' or ((inst(31 downto 29) = op_halt(5 downto 3)) and (inst(26) = op_halt(0))) else
    pc_p1;
+   
+   next_pc_p1 <= pc(14)&(pc(13 downto 0) + '1') when (write_inst_ok = '0') or inst_ok = '0' or ((inst(31 downto 29) = op_halt(5 downto 3)) and (inst(26) = op_halt(0))) else
+   pc_p1(14)&(pc_p1(13 downto 0) + '1');
    
    PC0:process(clk,rst)
    begin
 	   if (rst = '1')then
-	   		pc <= '1'&x"00000";
-	   		pc_p1 <= '1'&x"00001";
+	   		pc <= "100"&x"000";
+	   		pc_p1 <= "100"&x"001";
+	   		jmp_flg <= '0';
 	   elsif rising_edge(clk) then
 	   		jmp_flg <= jmp_flg_p;
-	   		jmp_addr_pc <= jmp_addr_next;
-			pc <= next_pc;
-			pc_p1 <= next_pc + '1';
+			if jmp_flg_p = '1' then
+				pc <= jmp_addr_next;
+				pc_p1 <= jmp_addr_next;
+			else
+				pc <= next_pc;
+				pc_p1 <= next_pc + '1';
+			end if;
 	   end if;
    end process PC0;
    
@@ -168,10 +175,10 @@ begin
    );
    with inst(31 downto 26) select
     write_inst_im <= pc + '1' when op_jal,
-    inst(23)&inst(19 downto 0) when op_jmp,
-    inst(20 downto 0) when others;
+    inst(23)&inst(13 downto 0) when op_jmp,
+    inst(14 downto 0) when others;
     
-   write_inst_data <=  inst(31 downto 26) & regwrite&reg_d & reg_s1_use&reg_s1 & reg_s2_use&reg_s2 & cr_flg & write_inst_im;
+   write_inst_data <=  inst(31 downto 26) & regwrite&reg_d & reg_s1_use&reg_s1 & reg_s2_use&reg_s2 & cr_flg &write_inst_im;
    
    IB0 : instructionBuffer port map (
    	clk,rst,flush,
@@ -191,33 +198,33 @@ begin
 	----------------------------------
 	
 	REGISTERS : reg port map (
-		clk,rst,flush,lsu_ok,
+		clk,rst,flush,lsu_may_full,
 		reg_d_buf,
-		read_inst_data(43 downto 37),
-		read_inst_data(36 downto 30),
-		read_inst_data(29 downto 23),
+		read_inst_data(37 downto 31),
+		read_inst_data(30 downto 24),
+		read_inst_data(23 downto 17),
 		regwrite_f,
 		cr_flg_buf1,
-		read_inst_data(22 downto 21),
+		read_inst_data(16 downto 15),
 		cr_d,
 		data_d,
 		data_s1_p,data_s2_p,
 		cr_p,reg_ok
 	);
 	
-	ext_im <= "00"&x"0000"&read_inst_data(13 downto 0) when read_inst_data(49 downto 44) = alui_op_li else
+	ext_im <= "00"&x"0000"&read_inst_data(13 downto 0) when read_inst_data(43 downto 38) = alui_op_li else
 	sign_extention(read_inst_data(13 downto 0));
 
 	
-	jmp_taken_p <= not (((read_inst_data(32) and cr_p(2)) or (read_inst_data(31) and cr_p(1)) or (read_inst_data(30) and cr_p(0)))) 
-	when read_inst_data(49 downto 44) = op_jmp else '0';
-	jmp_not_taken_p <= (((read_inst_data(32) and cr_p(2)) or (read_inst_data(31) and cr_p(1)) or (read_inst_data(30) and cr_p(0)))) 
-	when read_inst_data(49 downto 44) = op_jmp else '0';
+	jmp_taken_p <= not (((read_inst_data(26) and cr_p(2)) or (read_inst_data(25) and cr_p(1)) or (read_inst_data(24) and cr_p(0)))) 
+	when read_inst_data(43 downto 38) = op_jmp else '0';
+	jmp_not_taken_p <= (((read_inst_data(26) and cr_p(2)) or (read_inst_data(25) and cr_p(1)) or (read_inst_data(24) and cr_p(0)))) 
+	when read_inst_data(43 downto 38) = op_jmp else '0';
 	
-	jmp_addr_p <= read_inst_data(20 downto 0) when read_inst_data(49 downto 44) = op_jmp else
-	data_s1_p(20 downto 0);
+	jmp_addr_p <= read_inst_data(14 downto 0) when read_inst_data(43 downto 38) = op_jmp else
+	data_s1_p(14 downto 0);
 	
-	jr_p <= '1' when read_inst_data(49 downto 44) = op_jr else '0';
+	jr_p <= '1' when read_inst_data(43 downto 38) = op_jr else '0';
 	
 	RD : process(CLK)
 	begin
@@ -231,22 +238,22 @@ begin
 				jmp_not_taken <= '0';
 				jr <= '0';
 			else
-				unit_op_buf0 <= read_inst_data(49 downto 47);
-				sub_op_buf0 <= read_inst_data(46 downto 44);
-				reg_write_buf0 <= read_inst_data(43);
-				cr_flg_buf0 <= read_inst_data(22 downto 21);
+				unit_op_buf0 <= read_inst_data(43 downto 41);
+				sub_op_buf0 <= read_inst_data(40 downto 38);
+				reg_write_buf0 <= read_inst_data(37);
+				cr_flg_buf0 <= read_inst_data(16 downto 15);
 				jmp_taken <= jmp_taken_p;
 				jmp_not_taken <= jmp_not_taken_p;
 				jr <= jr_p;
 			end if;
 			jmp_addr <= jmp_addr_p;
-			mask <= read_inst_data(32 downto 30);
+			mask <= read_inst_data(26 downto 24);
 			ext_im_buf0 <= ext_im;
-			reg_d_buf0 <= read_inst_data(42 downto 37);
+			reg_d_buf0 <= read_inst_data(36 downto 31);
 			data_s1 <= data_s1_p;
 			data_s2 <= data_s2_p;
 			cr <= cr_p;
-			pc_buf0 <= read_inst_data(20 downto 0);
+			pc_buf0 <= read_inst_data(14 downto 0);
 		end if;
 	end process RD;
 	
@@ -358,7 +365,14 @@ begin
 	
 	EX3 : process(CLK)
 	begin
-		if rising_edge(clk) then
+		if rst = '1' then
+			reg_write_buf3 <= '0';
+			unit_op_buf3 <= (others=> '0');
+			alu_out_buf3 <= (others=> '0');
+			reg_d_buf3 <= (others=> '0');
+			sub_op_buf3 <= (others=> '0');
+			pc_buf3 <= (others=> '0');
+		elsif rising_edge(clk) then
 			if (lsu_load_ok = '1') and (reg_write_buf2 = '0') then
 				reg_write_buf3 <= '1';
 				unit_op_buf3 <= op_unit_alu;
@@ -394,7 +408,7 @@ begin
 	
 	with unit_op_buf3 select
 	 data_d <= lsu_out_buf3 when op_unit_lsu,
-	 "00000000000"&pc_buf3 when op_unit_jmp,
+	 x"0000"&'0'&pc_buf3 when op_unit_jmp,
 	 --fpu_out when op_unit_fpu,
 	 alu_out_buf3 when others;
 	

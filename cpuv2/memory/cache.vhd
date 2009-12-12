@@ -8,8 +8,8 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(19 downto 0);
-		set_addr: in std_logic_vector(19 downto 0);
+		address: in std_logic_vector(13 downto 0);
+		set_addr: in std_logic_vector(13 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
@@ -79,6 +79,7 @@ entity dcache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_f : in std_logic;
@@ -105,7 +106,7 @@ architecture arch of dcache is
     signal address_buf : std_logic_vector(19 downto 0) := (others => '0');
 begin
 	read_data <= read;
-	hit <= (read_f_buf) or (cmp_buf(0) and cmp_buf(1) and cmp_buf(2) and cmp_buf(3) and cmp_buf(4));
+	hit <= (not read_f) or (cmp(0) and cmp(1) and cmp(2) and cmp(3) and cmp(4));
 	 
 	--hit_p <= (entry(width)) ;
 	
@@ -132,9 +133,9 @@ begin
 	begin
 	    if rising_edge(clkfast) then
 	        if set = '1' then
-	            cache(conv_integer(address((19 - width) downto 0))) <= '1'&address(19 downto (20 - width));
+	            cache(conv_integer(set_addr((19 - width) downto 0))) <= '1'&set_addr(19 downto (20 - width));
 	        end if;
-				entry <= cache(conv_integer(address((19 - width) downto 0)));
+				entry <= cache(conv_integer(set_addr((19 - width) downto 0)));
 	    end if;
 	end process;
 	
@@ -142,9 +143,9 @@ begin
 	begin
 	    if rising_edge(clkfast) then
 	        if set = '1' then
-	            cache_data(conv_integer(address((19 - width) downto 0))) <= set_data;
+	            cache_data(conv_integer(set_addr((19 - width) downto 0))) <= set_data;
 	        end if;
-	        read <= cache_data(conv_integer(address((19 - width)downto 0)));
+	        read <= cache_data(conv_integer(set_addr((19 - width)downto 0)));
 	    end if;
 	end process;
 end arch;
@@ -165,6 +166,7 @@ entity baka_dcache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_f : in std_logic;
@@ -184,20 +186,24 @@ architecture arch of baka_dcache is
    signal cache_data : cache_data_type;
    
     signal entry,entry_buf : std_logic_vector(width downto 0) := (others => '0');
-    signal read_addr : std_logic_vector((width - 1) downto 0) := (others => '0');
-    signal read : std_logic_vector(31 downto 0) := (others => '0');
+    signal read_addr : std_logic_vector((width - 1) downto 0) := (others => '1');
+    signal read,data_buf : std_logic_vector(31 downto 0) := (others => '0');
     signal hit_buf,hit_p,read_f_buf : std_logic := '0';
-    signal address_buf : std_logic_vector(19 downto 0) := (others => '0');
+    signal address_buf : std_logic_vector(19 downto 0) := (others => '1');
 begin
-	read_data <= (others => '0');
-	hit <= read_f_buf;
+	read_data <= data_buf;
+	hit_p <= '1' when address = address_buf else '0';
 
-	--hit <= '0';
-	-- 
+	
 	process (clk)
 	begin
 	    if rising_edge(clk) then
 	    	read_f_buf <= not read_f;
+	    	hit <= hit_p;
+	    	if (set = '1') then
+	    		address_buf <= set_addr;
+	    		data_buf <= set_data;
+	    	end if;
 	    end if;
 	end process;
 end arch;

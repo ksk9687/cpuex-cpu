@@ -27,7 +27,7 @@ end component;
 component branchPredictor is
 	port  (
 		clk,rst :in std_logic;
-		pc : in std_logic_vector(19 downto 0);
+		pc : in std_logic_vector(13 downto 0);
 		im : in std_logic_vector(13 downto 0);
 		taken : out std_logic
 	);
@@ -37,8 +37,8 @@ end component;
 component cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(19 downto 0);
-		set_addr: in std_logic_vector(19 downto 0);
+		address: in std_logic_vector(13 downto 0);
+		set_addr: in std_logic_vector(13 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
@@ -55,6 +55,7 @@ component dcache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_f : in std_logic;
@@ -72,6 +73,7 @@ component baka_dcache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_f : in std_logic;
@@ -125,8 +127,8 @@ component instructionBuffer is
 		clk,rst,flush : in std_logic;        -- input clock, xx MHz.
 		read ,write: in std_logic;
 		readok,writeok: out std_logic;
-		readdata : out std_logic_vector(49 downto 0);
-		writedata: in std_logic_vector(49 downto 0)
+		readdata : out std_logic_vector(43 downto 0);
+		writedata: in std_logic_vector(43 downto 0)
 	);
 end component;
 
@@ -153,7 +155,7 @@ end component;
 component IROM is
 	port  (
 		clk : in std_logic;
-		pc : in std_logic_vector(19 downto 0);
+		pc : in std_logic_vector(13 downto 0);
 		
 		inst : out std_logic_vector(31 downto 0)
 	);
@@ -184,7 +186,7 @@ component memory is
 port (
     clk,rst,sramcclk,sramclk,clkfast,stall,sleep	: in	  std_logic;
     
-    pc : in std_logic_vector(20 downto 0);
+    pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
     inst_ok : out std_logic;
     
@@ -222,7 +224,7 @@ end component;
 
 component reg is 
 port (
-    clk,rst,flush,stallx			: in	  std_logic;
+    clk,rst,flush,stall			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;

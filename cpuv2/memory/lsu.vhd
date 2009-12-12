@@ -29,40 +29,40 @@ entity lsu is
 end lsu;
 
 architecture arch of lsu is
-	type ram_t is array (0 to 7) of std_logic_vector (53 downto 0);
+	type ram_t is array (0 to 15) of std_logic_vector (53 downto 0);
 	 signal RAM : ram_t := (others => (others => '0'));
 	 
 	 signal read_pointer :std_logic_vector(2 downto 0) := (others => '0');
 	 signal write_pointer :std_logic_vector(2 downto 0) := (others => '0');
 	 signal writeok_in,empty,readok_in,load_end,load_end_p,lsu_ok_in :std_logic := '0';
 	 signal buf : std_logic_vector(31 downto 0) := (others => '0');
-	 signal writedata : std_logic_vector(53 downto 0) := (others => '0');
+	 signal writedata,readdata : std_logic_vector(53 downto 0) := (others => '0');
 
 begin
 	lsu_full <= not writeok_in;
 	writeok_in <= '0' when read_pointer = write_pointer + '1' else '1';
 	lsu_may_full <= '1' when read_pointer = write_pointer + "10" else '0';
 	
-	lsu_ok <= (not empty) and lsu_ok_in and (not RAM(conv_integer(read_pointer))(52));
+	lsu_ok <= (not empty) and lsu_ok_in and (not readdata(52));
 	
 	--空か
 	empty <= '1' when read_pointer = write_pointer else '0';
 	--読み込み位置にあるレコードを消してもよいか。
-	lsu_ok_in <= load_end when RAM(conv_integer(read_pointer))(53 downto 52) = "10" else '1';
+	lsu_ok_in <= load_end when readdata(53 downto 52) = "10" else '1';
 	
-	reg_d <= RAM(conv_integer(read_pointer))(25 downto 20);
+	reg_d <= readdata(25 downto 20);
 	lsu_out <= buf;
-	ls_flg(1) <= (RAM(conv_integer(read_pointer))(53) and (not empty));
-	ls_flg(0) <= RAM(conv_integer(read_pointer))(52) and (not empty);
-	store_data <= RAM(conv_integer(read_pointer))(51 downto 20);
-	ls_addr_out <= RAM(conv_integer(read_pointer))(19 downto 0);
+	ls_flg(1) <= (readdata(53) and (not empty));
+	ls_flg(0) <= readdata(52) and (not empty);
+	store_data <= readdata(51 downto 20);
+	ls_addr_out <= readdata(19 downto 0);
 	
 	writedata(19 downto 0) <= ls_addr_in;
 	writedata(51 downto 20) <= lsu_in;
 	writedata(52) <= '1' when op = op_store(2 downto 0) else '0'; 
 	writedata(53) <= write;
 
-
+	readdata <= RAM(conv_integer(read_pointer));
 
 	process(clk,rst)
 	begin
@@ -78,11 +78,11 @@ begin
 				write_pointer <= write_pointer + '1';
 			end if;
 			
-			if (((read = '1') or (RAM(conv_integer(read_pointer))(53 downto 52) /= "10")) and (empty = '0')) then
+			if (((read = '1') or (readdata(53 downto 52) /= "10")) and (empty = '0')) then
 				read_pointer <= read_pointer + '1';
 			end if;
 
-			if ((read = '1') or (RAM(conv_integer(read_pointer))(53 downto 52) /= "10")) then
+			if ((read = '1') or (readdata(53 downto 52) /= "10")) then
 				load_end <= '0';
 				load_end_p <= '0';
 			elsif (write = '1') and (writeok_in = '1') and (empty = '1') then

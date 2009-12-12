@@ -19,7 +19,7 @@ entity memory is
 port (
     clk,rst,sramcclk,sramclk,clkfast,stall,sleep	: in	  std_logic;
     
-    pc : in std_logic_vector(20 downto 0);
+    pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
     inst_ok : out std_logic;
     
@@ -72,7 +72,7 @@ architecture synth of memory is
 	signal RW : std_logic := '0';
 	signal DATAIN : std_logic_vector(31 downto 0) := (others => '0');
 	signal DATAOUT,ls_buf : std_logic_vector(31 downto 0) := (others => '0');
-	signal pc_buf,set_addr,ADDR,addr_out : std_logic_vector(19 downto 0) := (others => '0');
+	signal pc_buf,set_addr : std_logic_vector(13 downto 0) := (others => '0');
 	
 	signal cache_out,cache_out_buf,store_data_buf : std_logic_vector(31 downto 0) := (others => '0');
 	signal cache_hit,cache_hit_b : std_logic := '0';
@@ -82,7 +82,7 @@ architecture synth of memory is
 	signal dcache_in : std_logic_vector(31 downto 0) := (others => '0');
 	signal dcache_hit,dcache_hit_buf : std_logic := '0';
 	signal dcache_set,dcache_read : std_logic := '0';
-	signal dcache_addr : std_logic_vector(19 downto 0) := (others => '0');
+	signal dcache_addr,addr_out,d_set_addr,ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_addr_buf : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_ok_p : std_logic := '1';
 		
@@ -110,13 +110,14 @@ begin
 	ls_ok <= dcache_hit;
 	
 	load_data <= DATAOUT when ls_buf4 = "10" else
-	ls_buf;
+	dcache_out;
 	
 	cache_set <= i_d_out(1);
-	set_addr <= addr_out;
+	set_addr <= addr_out(13 downto 0);
+	
 	
 	--データキャッシュアドレス
-	dcache_addr <= addr_out when ls_buf4 = "10" else--missload
+	d_set_addr <= addr_out when ls_buf4 = "10" else--missload
 	ls_addr;
 	--データキャッシュデータ
 	dcache_in <= DATAOUT when ls_buf4 = "10" else--missload
@@ -132,7 +133,7 @@ begin
 
 	--SRAMアドレス
 	ADDR <= ls_addr_buf when (ls_buf0(1) = '1' and (dcache_hit = '0' or ls_buf0(0) = '1')) else
-	pc_buf;
+	"000000"&pc_buf;
 	--SRAM書き込みデータ
 	DATAIN <= store_data_buf when ls_buf0 = "11" else
 	(others => '0');
@@ -146,14 +147,14 @@ begin
 	process(clk)
 	begin
 		if rising_edge(clk) then
-			pc_buf <= pc(19 downto 0);
-			inst_select(1) <= pc(20);
+			pc_buf <= pc(13 downto 0);
+			inst_select(1) <= pc(14);
 			inst_select(0) <= cache_hit;
 		end if;
 	end process;
 
 	--Iキャッシュミスかつ(DキャッシュミスまたはStoreでない)
-	i_mem_req <= (not pc(20)) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
+	i_mem_req <= (not pc(14)) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
 	
 --	IMEM_STATE : process(clk)
 --	begin
@@ -181,7 +182,6 @@ begin
 	begin
 		if rising_edge(clk) then
 			--ls_ok <= ls_ok_p;
-			ls_buf <= dcache_out;
 			ls_buf0 <= ls_flg;
 			store_data_buf <= store_data;
 			  
@@ -202,7 +202,7 @@ begin
 	
 	IROM0:IROM port map(
 		clk
-		,pc(19 downto 0)
+		,pc(13 downto 0)
 		,irom_inst
 	);
 	SRAMC : sram_controller port map(
@@ -224,7 +224,7 @@ begin
 	
 	ICACHE:cache port map(
 		clk,clk
-		,pc(19 downto 0)
+		,pc(13 downto 0)
 		,set_addr
 		,DATAOUT
 		,cache_set
@@ -234,8 +234,9 @@ begin
 	
 	
 	DCACHE0:dcache port map(
-		clk,sramclk
-		,dcache_addr
+		clk,clk
+		,ls_addr
+		,d_set_addr
 		,dcache_in
 		,dcache_set
 		,dcache_read

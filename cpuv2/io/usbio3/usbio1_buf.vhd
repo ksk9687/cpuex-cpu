@@ -121,12 +121,12 @@ begin
   --ledout <= not testdata;
   --ledout <= not(USBIO_CAN_WRITE & USBIO_CAN_READ & USBTXE & writeflag & USBRXF & conv_std_logic_vector(state,2)&"0");
 
-  USBBUF_RData <= "00000000" when ((readbuf_readaddr = readbuf_writeaddr) or (rst='1')) else readbuf(conv_integer(readbuf_readaddr));
-  USBBUF_RC <= '0' when ((readbuf_readaddr = readbuf_writeaddr) or (rst='1')) else '1';
-  --writedata <= "00000000" when (writebuf_readaddr = writebuf_writeaddr) else writebuf(conv_integer(writebuf_readaddr));
+  USBBUF_RData <= "00000000" when ((readbuf_readaddr = readbuf_writeaddr)) else
+  readbuf(conv_integer(readbuf_readaddr));
+  USBBUF_RC <= '0' when ((readbuf_readaddr = readbuf_writeaddr)) else '1';
   writedata <= writebuf(conv_integer(writebuf_readaddr));
   writeflag <= '0' when (writebuf_readaddr = writebuf_writeaddr) else '1';
-  USBBUF_WC <= '0' when ((writebuf_readaddr = (writebuf_writeaddr + '1') ) or (rst='1')) else '1';
+  USBBUF_WC <= '0' when ((writebuf_readaddr = (writebuf_writeaddr + '1') )) else '1';
 
   USBIO_RD <= '1' when (state = STATE_WAIT_READ) else '0' ;
   USBIO_WD <= '1' when (state = STATE_WAIT_WRITE) else '0' ;
@@ -138,27 +138,27 @@ begin
     if rst = '1' then                 -- asynchronous reset (active low)
       lastRC<='1';
       lastWC<='1';
-      readbuf_readaddr<=conv_std_logic_vector(0,bufreadlen);
-      readbuf_writeaddr<=conv_std_logic_vector(0,bufreadlen);
-      writebuf_readaddr<=conv_std_logic_vector(0,buflen);
-      writebuf_writeaddr<=conv_std_logic_vector(0,buflen);
+      readbuf_readaddr <= (others=>'0');
+      readbuf_writeaddr<=(others=>'0');
+      writebuf_readaddr<=(others=>'0');
+      writebuf_writeaddr<=(others=>'0');
       state<=STATE_IDLE;
-        --testdata <= "00000000";
     else
-      if clk'event and clk = '1' then  -- rising clock edge
+    if clk'event and clk = '1' then  -- rising clock edge
         if USBBUF_RD = '1' then
           if readbuf_readaddr /= readbuf_writeaddr then
             readbuf_readaddr <= readbuf_readaddr + '1';
           end if;
         end if;
         if USBBUF_WD ='1' then
-          if writebuf_readaddr /= (writebuf_writeaddr + conv_std_logic_vector(1,buflen)) then
+          if writebuf_readaddr /= (writebuf_writeaddr + '1') then
             writebuf(conv_integer(writebuf_writeaddr)) <= USBBUF_WData;
             writebuf_writeaddr <= writebuf_writeaddr + '1';
           end if;
         end if;
       end if;
-      if clk50'event and clk50 = '1' then  -- rising clock edge
+      
+     if clk50'event and clk50 = '1' then  -- rising clock edge
         lastRC<=USBIO_RC;
         lastWC<=USBIO_WC;
         case state is

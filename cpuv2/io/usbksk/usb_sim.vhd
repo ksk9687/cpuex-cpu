@@ -76,7 +76,7 @@ x"00" ,x"00" ,x"00" ,x"1F"
 
 ,x"07" ,x"EF" ,x"BF" ,x"FD" 
 ,x"EB" ,x"F0" ,x"00" ,x"00" 
-,x"00" ,x"00" ,x"00" ,x"0A" 
+,x"00" ,x"00" ,x"00" ,x"02" 
 ,x"00" ,x"00" ,x"00" ,x"00"
 );
     signal pointer : std_logic_vector(6 downto 0) := "1111111";

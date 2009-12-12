@@ -7,7 +7,7 @@ use ieee.std_logic_unsigned.all;
 entity branchPredictor is
 	port  (
 		clk,rst :in std_logic;
-		pc : in std_logic_vector(19 downto 0);
+		pc : in std_logic_vector(13 downto 0);
 		im : in std_logic_vector(13 downto 0);
 		taken : out std_logic
 	);
