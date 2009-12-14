@@ -62,7 +62,7 @@ architecture Behavioral of sram_controller is
   signal i_d_buf0,i_d_buf1,i_d_buf2,i_d_buf3 : std_logic_vector(1 downto 0) := "00";
   signal ADDR_BUF0,ADDR_BUF1,ADDR_BUF2,ADDR_BUF3 : std_logic_vector(19 downto 0) := (others => '0');
   
-  signal state :std_logic := '0';
+  signal state,clk1,clk2 :std_logic := '0';
   signal data_out : std_logic_vector(31 downto 0) := (others => '0');
   
   --xor計算　パリティ用
@@ -90,18 +90,41 @@ begin
   SRAMCEA2X  <= '0';
   SRAMBWA    <= "0000";
 
-	SRAMIOA <= data_buf2 when rw_buf2 = '0' and clk = '1' else
+	SRAMIOA <= data_buf2 when rw_buf2 = '0' and clk1 /= clk2 else
 	(others => 'Z');
 	
-	SRAMIOPA <= "0000" when rw_buf2 = '0' and clk = '1' else
+	SRAMIOPA <= "0000" when rw_buf2 = '0' and clk1 /= clk2 else
 	(others => 'Z');
+	
+--	SRAMIOA <= data_buf2 when rw_buf2 = '0' else
+--	(others => 'Z');
+--	
+--	SRAMIOPA <= "0000" when rw_buf2 = '0'  else
+--	(others => 'Z');
+	
 
 	i_d_buf <= i_d_buf3;
 	ADDRBUF <= ADDR_BUF3;
 
   process (clk)
   begin
-    if clk'event and clk = '1' then
+  if rising_edge(clk) then
+    	clk1 <= not clk2;
+  end if;
+  end process;
+  
+  process (sramclk)
+  begin
+  if rising_edge(sramclk) then
+    	clk2 <= clk1;
+  end if;
+  end process;
+    
+
+
+  process (clk)
+  begin
+    if rising_edge(clk) then
       SRAMAA  <= ADDR;
       SRAMRWA <= RW;
 
@@ -133,7 +156,7 @@ begin
   --sramに与えるクロックに合わせてsramの出力を保存
   process (sramclk)
   begin
-    if sramclk'event and sramclk = '1' then
+    if rising_edge(sramclk) then
 		data_out <= SRAMIOA;
 		
 		--DATAOUT <= SRAMIOA;

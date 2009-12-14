@@ -17,7 +17,7 @@ use work.SuperScalarComponents.all;
 
 entity memory is 
 port (
-    clk,rst,sramcclk,sramclk,clkfast,stall,sleep	: in	  std_logic;
+    clk,rst,sramcclk,sramclk,clkfast	: in	  std_logic;
     
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
@@ -155,33 +155,12 @@ begin
 
 	--Iキャッシュミスかつ(DキャッシュミスまたはStoreでない)
 	i_mem_req <= (not pc(14)) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
-	
---	IMEM_STATE : process(clk)
---	begin
---		if rising_edge(clk) then
---		case i_mem_state is
---			when idle =>
---				if (pc(20) = '1') or (ls_flg(1) = '1' and (dcache_hit = '0' or ls_flg(0) = '1')) then--Loadキャッシュミス or Store
---					i_mem_state <= idle;
---				elsif cache_hit = '0' then--Instメモリアクセス要求があり、キャッシュミス
---					i_mem_state <= inst_w1;
---				else
---					i_mem_state <= idle;
---				end if;
---			when inst_w1 => i_mem_state <= inst_w2;
---			when inst_w2 => i_mem_state <= inst_w3;
---			when inst_w3 => i_mem_state <= inst_w4;
---			when inst_w4 => i_mem_state <= idle;
---			when others => i_mem_state <= idle;
---		end case;
---		end if;
---	end process;
+
 
 
 	DMEM_STATE : process(clk)
 	begin
 		if rising_edge(clk) then
-			--ls_ok <= ls_ok_p;
 			ls_buf0 <= ls_flg;
 			store_data_buf <= store_data;
 			  

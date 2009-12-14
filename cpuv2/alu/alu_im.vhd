@@ -8,7 +8,7 @@ use work.instruction.all;
 
 entity ALU_IM is
   port (
- 	clk,stall : in std_logic;
+ 	clk : in std_logic;
     op : in std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
@@ -31,11 +31,10 @@ begin  -- STRUCTURE
   with op select
   O <=	A + B when alui_op_addi,
   		SHL(A, B) when alui_op_sll,
-  		B when alui_op_li,
   		A when alui_op_mv,
   		'0'&A(30 downto 0) when alui_op_fabs,
   		(not A(31))&A(30 downto 0) when alui_op_fneg,
-		"11111111111111111111111111111111" when others;
+		B when others;
   -----------------------------------------------------------------------------
   -- ”äŠr
   -----------------------------------------------------------------------------
@@ -59,14 +58,11 @@ begin  -- STRUCTURE
   process (clk)
   begin  -- process
     if rising_edge(clk) then
-    	if stall = '1' then
-    	else
 	      tmpA2 <= tmpA1;
 	      tmpB2 <= tmpB1;
 	
 	      AS <= A(31);
 	      BS <= B(31);
-	     end if;
      -- O <= Ob;
     end if;
   end process;

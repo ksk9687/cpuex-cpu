@@ -6,7 +6,7 @@ package SuperScalarComponents is
 
 component ALU is
   port (
-    clk,stall  : in std_logic;
+    clk  : in std_logic;
     op   : in std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
@@ -16,7 +16,7 @@ end component;
 
 component ALU_IM is
   port (
- 	clk,stall : in std_logic;
+ 	clk : in std_logic;
     op : in std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
@@ -135,7 +135,7 @@ end component;
 
 component IOU is
 	port  (
-		clk,clk50,rst,stall,enable : in std_logic;
+		clk,clk50,rst,enable : in std_logic;
 		iou_op : in std_logic_vector(2 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		no : in std_logic_vector(4 downto 0);
@@ -184,7 +184,7 @@ end component;
 
 component memory is 
 port (
-    clk,rst,sramcclk,sramclk,clkfast,stall,sleep	: in	  std_logic;
+    clk,rst,sramcclk,sramclk,clkfast	: in	  std_logic;
     
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);

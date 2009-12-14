@@ -83,7 +83,7 @@ architecture arch of IROM is
     op_led & o"13" & o"13" &"00"&x"000",
     
     
-    op_write & o"13" & o"15" &"00"&x"000", 
+    op_write & o"13" & o"15" &"00"&x"001", 
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000", 
     op_nop & o"00" & x"00000",
@@ -104,22 +104,22 @@ architecture arch of IROM is
     op_jr& o"00" & o"00" &"00"&x"000",
     
     
-    op_read & o"00" & o"02" &"00"&x"000",--
+    op_read & o"00" & o"02" &"00"&x"001",--
     op_cmpi & o"02" & o"00" &"00"&x"100",--
     op_jmp & "001"&"001" & x"00020",--if (r2 >= 0x100) then goto 
     op_ledi & o"21" & o"21" &"00"&x"001",
     
-    op_read & o"00" & o"03" &"00"&x"000",--
+    op_read & o"00" & o"03" &"00"&x"001",--
     op_cmpi & o"03" & o"00" &"00"&x"100",--
     op_jmp & "001"&"001" & x"00024",--if (r3 >= 0x100) then goto
     op_ledi & o"21" & o"21" &"00"&x"002",
     
-    op_read & o"00" & o"04" &"00"&x"000",--
+    op_read & o"00" & o"04" &"00"&x"001",--
     op_cmpi & o"04" & o"00" &"00"&x"100",--
     op_jmp & "001"&"001" & x"00028",--if (r4 >= 0x100) then goto 
     op_ledi & o"21" & o"21" &"00"&x"003",
     
-    op_read & o"00" & o"05" &"00"&x"000",--
+    op_read & o"00" & o"05" &"00"&x"001",--
     op_cmpi & o"05" & o"00" &"00"&x"100",--
     op_jmp & "001"&"001" & x"0002C",--if (r5 >= 0x100) then goto 
     op_ledi & o"21" & o"21" &"00"&x"004",

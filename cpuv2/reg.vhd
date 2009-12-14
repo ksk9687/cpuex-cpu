@@ -72,16 +72,15 @@ begin
 	     	if ok = '1' and stall = '0' and flush = '0' and pd(6) = '1' then
 	     		using(conv_integer(pd(5 downto 0))) <= '1';
 	     	end if;
-	     	
-	     	if ok = '1' and stall = '0' and flush = '0' and pcrflg(0) = '1' then
-     			cr_using <= '1';
-	     	end if;
-	     	
 	     	--Cr‚Ì‘‚«Š·‚¦
 	     	if crflg = "11" then
 	     		cr_a <= cr_d;
 	     		cr_using <= '0';
+	     	elsif ok = '1' and stall = '0' and flush = '0' and pcrflg(0) = '1' then
+     			cr_using <= '1';
 	     	end if;
+	     	
+	     	
 --	     	end if;
      	end if;
      end process WRITE;

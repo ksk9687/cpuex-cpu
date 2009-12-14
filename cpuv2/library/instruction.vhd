@@ -42,8 +42,8 @@ package instruction is
    constant op_fneg	:	std_logic_vector(5 downto 0) := o"07";
    
    constant op_load :	std_logic_vector(5 downto 0) := o"30";
-   constant op_store:	std_logic_vector(5 downto 0) := o"31";
-   constant op_loadr :	std_logic_vector(5 downto 0) := o"32";
+   constant op_store:	std_logic_vector(5 downto 0) := o"32";
+   constant op_loadr :	std_logic_vector(5 downto 0) := o"31";
    
    constant op_hsread :	std_logic_vector(5 downto 0) := o"40";
    constant op_hswrite :std_logic_vector(5 downto 0) := o"41";

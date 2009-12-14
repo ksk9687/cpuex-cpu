@@ -31,9 +31,9 @@ architecture arch of cache is
     signal read : std_logic_vector(31 downto 0) := (others => '0');
     signal hit_p,hit_zero_add : std_logic := '0';
 begin
-	read_data <= read;
+	read_data <= cache_data(conv_integer(address_buf(11 downto 0)));
 	
-	tag_p <= cache(conv_integer(address(11 downto 0)));
+	tag <= cache(conv_integer(address_buf(11 downto 0)));
 	hit <= tag(2) when tag(1 downto 0) = address_buf(13 downto 12) else '0';
 	
 	
@@ -43,18 +43,16 @@ begin
 	        if set = '1' then
 	           cache(conv_integer(set_addr(11 downto 0))) <= '1'&set_addr(13 downto 12);
 	        end if;
-	        tag <= tag_p;
 	        address_buf <= address(13 downto 0);
 	    end if;
 	end process;
 	
-	process (clkfast)
+	process (clk)
 	begin
-	    if rising_edge(clkfast) then
+	    if rising_edge(clk) then
 	        if set = '1' then
 	            cache_data(conv_integer(set_addr(11 downto 0))) <= set_data;
 	        end if;
-	        read <= cache_data(conv_integer(address(11 downto 0)));
 	    end if;
 	end process;
 	
@@ -105,47 +103,42 @@ architecture arch of dcache is
     signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
     signal address_buf : std_logic_vector(19 downto 0) := (others => '0');
 begin
-	read_data <= read;
-	hit <= (not read_f) or (cmp(0) and cmp(1) and cmp(2) and cmp(3) and cmp(4));
+	read_data <= cache_data(conv_integer(address_buf((19 - width)downto 0)));
+	hit <= (not read_f_buf) or (cmp(0) and cmp(1) and cmp(2) and cmp(3) and cmp(4));
 	 
-	--hit_p <= (entry(width)) ;
 	
-	cmp(0) <= not( (entry(0) xor address(11)) or (entry(1) xor address(12)) );
-	cmp(1) <= not( (entry(2) xor address(13)) or (entry(3) xor address(14)) );
-	cmp(2) <= not( (entry(4) xor address(15)) or (entry(5) xor address(16)) );
-	cmp(3) <= not( (entry(6) xor address(17)) or (entry(7) xor address(18)) );
-	cmp(4) <= (not (entry(8) xor address(19))) and entry(9);
+	cmp(0) <= not( (entry(0) xor address_buf(11)) or (entry(1) xor address_buf(12)) );
+	cmp(1) <= not( (entry(2) xor address_buf(13)) or (entry(3) xor address_buf(14)) );
+	cmp(2) <= not( (entry(4) xor address_buf(15)) or (entry(5) xor address_buf(16)) );
+	cmp(3) <= not( (entry(6) xor address_buf(17)) or (entry(7) xor address_buf(18)) );
+	cmp(4) <= (not (entry(8) xor address_buf(19))) and entry(9);
 
-	--hit <= '0';
-	-- 
+	entry <= cache(conv_integer(address_buf((19 - width) downto 0)));
+
+
 	process (clk)
 	begin
 	    if rising_edge(clk) then
-	    	read_f_buf <= not read_f;
-	    	entry_buf <= entry;
-	    	--hit_buf <= hit_p;
-	    	cmp_buf <= cmp;
-	    	address_buf <= address;
+	        address_buf <= address;
+	        read_f_buf <= read_f;
 	    end if;
 	end process;
 	
-	process (clkfast)
+	process (clk)
 	begin
-	    if rising_edge(clkfast) then
+	    if rising_edge(clk) then
 	        if set = '1' then
 	            cache(conv_integer(set_addr((19 - width) downto 0))) <= '1'&set_addr(19 downto (20 - width));
 	        end if;
-				entry <= cache(conv_integer(set_addr((19 - width) downto 0)));
 	    end if;
 	end process;
 	
-	process (clkfast)
+	process (clk)
 	begin
-	    if rising_edge(clkfast) then
+	    if rising_edge(clk) then
 	        if set = '1' then
 	            cache_data(conv_integer(set_addr((19 - width) downto 0))) <= set_data;
 	        end if;
-	        read <= cache_data(conv_integer(set_addr((19 - width)downto 0)));
 	    end if;
 	end process;
 end arch;

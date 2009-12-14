@@ -9,7 +9,7 @@ use work.SuperScalarComponents.all;
 
 entity IOU is
 	port  (
-		clk,clk50,rst,stall,enable : in std_logic;
+		clk,clk50,rst,enable : in std_logic;
 		iou_op : in std_logic_vector(2 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		no : in std_logic_vector(4 downto 0);
@@ -26,8 +26,8 @@ entity IOU is
 end IOU;
 
 architecture arch of IOU is
-	constant usb: std_logic_vector := "00000";
-	constant rs232c: std_logic_vector := "00001";
+	constant usb: std_logic_vector := "00001";
+	constant rs232c: std_logic_vector := "00010";
 	constant nop: std_logic_vector := "11111";
 	constant error: std_logic_vector := x"0FFFFFFF";
 
@@ -54,8 +54,7 @@ begin
  	 process(clk)
  	 begin
  	 	if rising_edge(clk) then
- 	 		if stall = '1' or enable = '0' then
- 	 			no_buf <= nop;
+ 	 		if enable = '0' then
  	 			usb_read <= '0';
  	 			usb_write <= '0';
  	 		else
@@ -63,8 +62,6 @@ begin
  	 			usb_read <= usb_read_p;
  	 			usb_write <= usb_write_p;
  	 			writedata_buf <= writedata;
- 	 			iou_op_buf <= iou_op;
- 	 			no_buf<= no;
  	 		end if;
  	 	end if;
  	 end process;
