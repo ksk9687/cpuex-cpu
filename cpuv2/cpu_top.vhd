@@ -81,6 +81,9 @@ architecture arch of cpu_top is
 	--IO
 	signal iou_out,iou_out_buf1,iou_out_buf2,iou_out_buf3 : std_logic_vector(31 downto 0) := (others=>'0');
 	signal iou_enable :std_logic:='0';
+	--FPU
+	signal fpu_out : std_logic_vector(31 downto 0) := (others=>'0');
+	signal fpu_cmp :std_logic_vector(2 downto 0) := "000";
 	--pipeline ctrl
 	signal unit_op_buf0,unit_op_buf1,unit_op_buf2,unit_op_buf3 :std_logic_vector(2 downto 0) := (others=>'0');
 	signal sub_op_buf0,sub_op_buf1,sub_op_buf2,sub_op_buf3 :std_logic_vector(2 downto 0) := (others=>'0');
@@ -307,6 +310,12 @@ begin
 		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRST,USBD
 	);
 	
+	FPU0 : FPU port map (
+	    clk,sub_op_buf0,
+	    data_s1,data_s2,
+	    fpu_out,fpu_cmp
+    );
+	
 	
 	with (unit_op_buf0&sub_op_buf0) select
 	ls_address_p <= data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when op_store | op_load,
@@ -402,7 +411,7 @@ begin
 	--コンディションレジスタ
 	with unit_op_buf1 select
 	 cr_d <= alui_cmp when op_unit_alui,
-	 --fpu_cmp when op_unit_fpu,
+	 fpu_cmp when op_unit_fpu,
 	 alu_cmp when others;
 	 
 	 
@@ -412,7 +421,7 @@ begin
 	
 	with unit_op_buf3 select
 	 data_d <= lsu_out_buf3 when op_unit_lsu,
-	 --fpu_out when op_unit_fpu,
+	 fpu_out when op_unit_fpu,
 	 alu_out_buf3 when others;
 	
 		

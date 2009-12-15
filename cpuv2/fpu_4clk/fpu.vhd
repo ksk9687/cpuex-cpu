@@ -13,7 +13,7 @@ entity FPU is
 
   port (
     clk  : in  std_logic;
-    op   : in  std_logic_vector(3 downto 0);
+    op   : in  std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
     cmp  : out std_logic_vector(2 downto 0));
@@ -23,12 +23,12 @@ end FPU;
 
 architecture STRUCTURE of FPU is
 
-  constant fpu_op_fadd :  std_logic_vector := "0000";
-  constant fpu_op_fsub :  std_logic_vector := "0001";
-  constant fpu_op_fmul :  std_logic_vector := "0010";
-  constant fpu_op_finv :  std_logic_vector := "0011";
-  constant fpu_op_fsqrt : std_logic_vector := "0100";
-  constant fpu_op_fcmp :  std_logic_vector := "0101";
+  constant fpu_op_fadd :  std_logic_vector := "000";
+  constant fpu_op_fsub :  std_logic_vector := "001";
+  constant fpu_op_fmul :  std_logic_vector := "010";
+  constant fpu_op_finv :  std_logic_vector := "011";
+  constant fpu_op_fsqrt : std_logic_vector := "100";
+  constant fpu_op_fcmp :  std_logic_vector := "101";
 
   
   component FP_ADD
@@ -71,7 +71,7 @@ architecture STRUCTURE of FPU is
   signal B_ADD : std_logic_vector(31 downto 0);
 
   -- op を保存
-  subtype vec4 is std_logic_vector(3 downto 0);
+  subtype vec4 is std_logic_vector(2 downto 0);
   type queue_t is array (0 to 2) of vec4;
   signal op_queue : queue_t;
 
@@ -91,7 +91,8 @@ begin  -- STRUCTURE
   cmp <= O_CMP;
 
   -- マルチサイクルのもの、何がでてくるかなー！？
-  with op_queue(0) select O <= 
+  with op_queue(0) select
+  O <= 
     O_ADD when fpu_op_fadd,
     O_ADD when fpu_op_fsub,
     O_MUL when fpu_op_fmul,

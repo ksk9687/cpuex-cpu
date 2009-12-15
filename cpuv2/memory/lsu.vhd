@@ -87,7 +87,7 @@ begin
 				load_end_p <= '0';
 			elsif (write = '1') and (writeok_in = '1') and (empty = '1') then
 				load_end <= '0';
-				load_end_p <= '0';		
+				load_end_p <= '0';	
 			elsif (load_ok = '1') and (load_end_p = '1') then
 				load_end <= '1';
 			else

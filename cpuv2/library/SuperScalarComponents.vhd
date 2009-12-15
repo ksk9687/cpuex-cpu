@@ -122,6 +122,18 @@ component dff is
 end component;
 
 
+component FPU is
+
+  port (
+    clk  : in  std_logic;
+    op   : in  std_logic_vector(2 downto 0);
+    A, B : in  std_logic_vector(31 downto 0);
+    O    : out std_logic_vector(31 downto 0);
+    cmp  : out std_logic_vector(2 downto 0));
+
+end component;
+
+
 component instructionBuffer is
 	port  (
 		clk,rst,flush : in std_logic;        -- input clock, xx MHz.
