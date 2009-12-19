@@ -53,14 +53,14 @@ architecture arch of cpu_top is
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
-   signal jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1,pc_buf2,pc_buf3,pc_buf4 : std_logic_vector(14 downto 0) := "100"&x"000";
+   signal jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1 : std_logic_vector(14 downto 0) := "100"&x"000";
    signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
    signal write_inst_data,read_inst_data : std_logic_vector(43 downto 0) := (others=>'0');
    signal write_inst_im : std_logic_vector(14 downto 0) := (others=>'0');
    
    --LS
    signal ls_f,ls_f_p : std_logic_vector(1 downto 0) := (others=>'0');
-   signal lsu_out,lsu_in,lsu_out_buf3,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
+   signal lsu_out,lsu_in,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
    signal ls_address,ls_address_p :std_logic_vector(19 downto 0) := (others=>'0');
    signal lsu_read,lsu_write,lsu_load_ok,lsu_full,lsu_may_full : std_logic := '0';
   
@@ -73,25 +73,25 @@ architecture arch of cpu_top is
    signal data_d : std_logic_vector(31 downto 0) := (others=>'0');
    
 	--ALU
-	signal alu_out,alu_out_buf1,alu_out_buf2,alu_out_buf3 :std_logic_vector(31 downto 0) := (others=>'0');
+	signal alu_out,alu_out_buf1,alu_out_buf2,alu_out_buf3,alu_out_buf4 :std_logic_vector(31 downto 0) := (others=>'0');
 	signal alu_cmp :std_logic_vector(2 downto 0) := "000";
 	--ALUI
 	signal alu_im_out,alu_im_out_buf1 :std_logic_vector(31 downto 0) := (others=>'0');
 	signal alui_cmp :std_logic_vector(2 downto 0) := "000";
 	--IO
-	signal iou_out,iou_out_buf1,iou_out_buf2,iou_out_buf3 : std_logic_vector(31 downto 0) := (others=>'0');
+	signal iou_out : std_logic_vector(31 downto 0) := (others=>'0');
 	signal iou_enable :std_logic:='0';
 	--FPU
 	signal fpu_out : std_logic_vector(31 downto 0) := (others=>'0');
 	signal fpu_cmp :std_logic_vector(2 downto 0) := "000";
 	--pipeline ctrl
-	signal unit_op_buf0,unit_op_buf1,unit_op_buf2,unit_op_buf3 :std_logic_vector(2 downto 0) := (others=>'0');
-	signal sub_op_buf0,sub_op_buf1,sub_op_buf2,sub_op_buf3 :std_logic_vector(2 downto 0) := (others=>'0');
-	signal reg_write_buf0,reg_write_buf1,reg_write_buf2,reg_write_buf3:std_logic := '0';
-	signal cr_flg_buf0,cr_flg_buf1,cr_flg_buf2,cr_flg_buf3 : std_logic_vector(1 downto 0) := (others=>'0');
+	signal unit_op_buf0,unit_op_buf1,unit_op_buf2,unit_op_buf3,unit_op_buf4 :std_logic_vector(2 downto 0) := (others=>'0');
+	signal sub_op_buf0,sub_op_buf1,sub_op_buf2,sub_op_buf3,sub_op_buf4 :std_logic_vector(2 downto 0) := (others=>'0');
+	signal reg_write_buf0,reg_write_buf1,reg_write_buf2,reg_write_buf3,reg_write_buf4:std_logic := '0';
+	signal cr_flg_buf0,cr_flg_buf1 : std_logic_vector(1 downto 0) := (others=>'0');
 	signal mask : std_logic_vector(2 downto 0) := (others=>'1');
 	signal im_buf0,ext_im_buf0 :std_logic_vector(31 downto 0) := (others=>'0');
-	signal reg_d_buf0,reg_d_buf1,reg_d_buf2,reg_d_buf3:std_logic_vector(5 downto 0) := (others=>'0');
+	signal reg_d_buf0,reg_d_buf1,reg_d_buf2,reg_d_buf3,reg_d_buf4:std_logic_vector(5 downto 0) := (others=>'0');
 			
    	signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
    signal ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr,jr_p,jmp_taken,jmp_not_taken,predict_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
@@ -354,8 +354,6 @@ begin
 		end if;
 	end process EX1;
 	
-	
-	
 	EX2 : process(CLK)
 	begin
 		if rising_edge(clk) then
@@ -376,9 +374,8 @@ begin
 		end if;
 	end process EX2;
 	
-	lsu_read <= lsu_load_ok and (not reg_write_buf2);
 	
-	EX3 : process(CLK)
+	EX3 : process(CLK,rst)
 	begin
 		if rst = '1' then
 			reg_write_buf3 <= '0';
@@ -387,20 +384,43 @@ begin
 			reg_d_buf3 <= (others=> '0');
 			sub_op_buf3 <= (others=> '0');
 		elsif rising_edge(clk) then
-			if (lsu_load_ok = '1') and (reg_write_buf2 = '0') then
-				reg_write_buf3 <= '1';
-				unit_op_buf3 <= op_unit_alu;
-				alu_out_buf3 <= lsu_out;
-				reg_d_buf3 <= ls_reg_d;
-			else
-				reg_write_buf3 <= reg_write_buf2;
-				unit_op_buf3 <= unit_op_buf2;
-				alu_out_buf3 <= alu_out_buf2;
-				reg_d_buf3 <= reg_d_buf2;
-			end if;
+			reg_write_buf3 <= reg_write_buf2;
+			unit_op_buf3 <= unit_op_buf2;
+			alu_out_buf3 <= alu_out_buf2;
+			reg_d_buf3 <= reg_d_buf2;
 			sub_op_buf3 <= sub_op_buf2;
 		end if;
 	end process EX3;
+	
+	lsu_read <= lsu_load_ok and (not reg_write_buf3);
+	
+	EX4 : process(CLK,rst)
+	begin
+		if rst = '1' then
+			reg_write_buf4 <= '0';
+			unit_op_buf4 <= (others=> '0');
+			alu_out_buf4 <= (others=> '0');
+			reg_d_buf4 <= (others=> '0');
+			sub_op_buf4 <= (others=> '0');
+		elsif rising_edge(clk) then
+			if (lsu_load_ok = '1') and (reg_write_buf3 = '0') then
+				reg_write_buf4 <= '1';
+				alu_out_buf4 <= lsu_out;
+				reg_d_buf4 <= ls_reg_d;
+			else
+				if unit_op_buf3 = op_unit_fpu then
+					alu_out_buf4 <= fpu_out;
+				else
+					alu_out_buf4 <= alu_out_buf3;
+				end if;
+					reg_write_buf4 <= reg_write_buf3;
+					reg_d_buf4 <= reg_d_buf3;
+			end if;
+			
+			unit_op_buf4 <= unit_op_buf3;
+			sub_op_buf4 <= sub_op_buf3;
+		end if;
+	end process EX4;
 	
 	----------------------------------
 	-- 
@@ -416,14 +436,9 @@ begin
 	 
 	 
 	 
-	reg_d_buf <= reg_d_buf3;
-	regwrite_f <= reg_write_buf3;
-	
-	with unit_op_buf3 select
-	 data_d <= lsu_out_buf3 when op_unit_lsu,
-	 fpu_out when op_unit_fpu,
-	 alu_out_buf3 when others;
-	
+	reg_d_buf <= reg_d_buf4;
+	regwrite_f <= reg_write_buf4;
+	data_d <= alu_out_buf4;
 		
 	
 

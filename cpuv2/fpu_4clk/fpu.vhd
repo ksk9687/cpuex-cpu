@@ -97,8 +97,7 @@ begin  -- STRUCTURE
     O_ADD when fpu_op_fsub,
     O_MUL when fpu_op_fmul,
     O_INV when fpu_op_finv,
-    O_SQRT when fpu_op_fsqrt,
-    "11111111111111111111111111111111" when others;
+    O_SQRT when others;
 
   -- op ‚ðŠo‚¦‚È‚«‚á
   process (clk)

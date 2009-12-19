@@ -47,7 +47,7 @@ architecture STRUCTURE of FP_MUL is
   signal OM2 : std_logic_vector(22 downto 0);
   signal OE4 : std_logic_vector(7 downto 0);
 
-
+	signal ZERO,ZERO_1 : std_logic := '0';
 begin  -- STRUCTURE
 
   -----------------------------------------------------------------------------
@@ -55,10 +55,17 @@ begin  -- STRUCTURE
   -----------------------------------------------------------------------------
 
   -- 仮数部を分解
-  AH <= '1' & A(22 downto 12) when A(30 downto 23) /= 0 else "000000000000";
-  AL <= A(11 downto 0)        when A(30 downto 23) /= 0 else "000000000000";
-  BH <= '1' & B(22 downto 12) when B(30 downto 23) /= 0 else "000000000000";
-  BL <= B(11 downto 0)        when B(30 downto 23) /= 0 else "000000000000";
+  AH <= '1' & A(22 downto 12);
+  AL <= A(11 downto 0);
+  BH <= '1' & B(22 downto 12);
+  BL <= B(11 downto 0);
+  
+--  AH <= '1' & A(22 downto 12) when A(30 downto 23) /= 0 else "000000000000";
+--  AL <= A(11 downto 0)        when A(30 downto 23) /= 0 else "000000000000";
+--  BH <= '1' & B(22 downto 12) when B(30 downto 23) /= 0 else "000000000000";
+--  BL <= B(11 downto 0)        when B(30 downto 23) /= 0 else "000000000000";
+  
+  ZERO <= '1' when (A(30 downto 23) /= 0) or (B(30 downto 23) /= 0) else '0';
   
   process(clk)
   begin
@@ -75,6 +82,8 @@ begin  -- STRUCTURE
       end if;
 
       OS1 <= A(31) xor B(31);
+      
+      ZERO_1 <= ZERO;
     end if;
   end process;
 
@@ -88,9 +97,17 @@ begin  -- STRUCTURE
     if rising_edge(clk) then
       -- 前のクロックではじめた乗算が 6 ns 弱消費しやがる！
       -- OMM3 <= ('0' & OMM1(23 downto 11)) + ('0' & OMM2(23 downto 11));
-      OMM1_2 <= OMM1(23 downto 11);
-      OMM2_2 <= OMM2(23 downto 11);
-      OMH2 <= OMH1;
+      if ZERO_1 = '0' then
+      	OMM1_2 <= OMM1(23 downto 11);
+      	OMM2_2 <= OMM2(23 downto 11);
+      	OMH2 <= OMH1;
+      else
+      	OMM1_2 <= (others => '0');
+      	OMM2_2 <= (others => '0');
+      	OMH2 <= (others => '0');
+      	
+      end if;
+      
       OE2 <= OE1;
       OS2 <= OS1;
     end if;
