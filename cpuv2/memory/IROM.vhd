@@ -83,24 +83,24 @@ architecture arch of IROM is
     op_led & o"13" & o"13" &"00"&x"000",
     
     
-    op_write & o"13" & o"15" &"00"&x"001", 
+    op_write & o"13" & o"15" &"00"&x"001", --write 0xaa
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000", 
     op_nop & o"00" & x"00000",
 
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000", 
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000", 
+	op_load & o"00" & o"15" &"00"&x"000",
+    op_nop & o"00" & x"00000",--op_write & o"15" & o"15" &"00"&x"001", 
+	op_load & o"00" & o"15" &"00"&x"001",
+    op_nop & o"00" & x"00000",--op_write & o"15" & o"15" &"00"&x"001", 
 
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000", 
-    op_nop & o"00" & x"00000",
-    op_nop & o"00" & x"00000", 
+	op_load & o"00" & o"15" &"00"&x"002",
+    op_nop & o"00" & x"00000",--op_write & o"15" & o"15" &"00"&x"001", 
+	op_load & o"00" & o"15" &"00"&x"003",
+    op_nop & o"00" & x"00000",--op_write & o"15" & o"15" &"00"&x"001", 
     
     op_nop & o"00" & x"00000",
     op_nop & o"00" & x"00000", 
-    op_nop & o"00" & x"00000",
+    op_nop & o"00" & x"00000",--op_write & o"00" & o"15" &"00"&x"001", 
     op_jr& o"00" & o"00" &"00"&x"000",
     
     

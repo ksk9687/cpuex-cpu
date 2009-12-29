@@ -30,22 +30,27 @@ architecture arch of instructionBuffer is
 begin
 
 	readdata_in <= RAM(conv_integer(read_pointer));
-
+	--op
 	readdata(43 downto 38) <= readdata_in(43 downto 38) when readok_in = '1' else
 	nop_out(43 downto 38);
+	--Rd
 	readdata(37) <= readdata_in(37) and readok_in;
 	readdata(36 downto 31) <= readdata_in(36 downto 31);
+	--Rs1
 	readdata(30) <= readdata_in(30) and readok_in;
 	readdata(29 downto 24) <= readdata_in(29 downto 24);
+	--Rs2
 	readdata(23) <= readdata_in(23) and readok_in;
 	readdata(22 downto 17) <= readdata_in(22 downto 17);
+	--Cr
 	readdata(16) <= readdata_in(16) and readok_in;
 	readdata(15) <= readdata_in(15) and readok_in;
+	--Im
 	readdata(14 downto 0) <= readdata_in(14 downto 0);
 	
 	
 	writeok <= writeok_in;
-	writeok_in <= '0' when read_pointer = write_pointer + '1' else '1';
+	writeok_in <= '0' when read_pointer = (write_pointer + '1') else '1';
 	readok <= readok_in;
 	readok_in <= '0' when read_pointer = write_pointer else '1';
 

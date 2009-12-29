@@ -43,8 +43,8 @@ entity sram_model is
 end sram_model;
 
 architecture Behavioral of sram_model is
-	type data_ram_type is array (0 to 1023) of std_logic_vector (7 downto 0); 
-	type p_ram_type is array (0 to 1023) of std_logic; 
+	type data_ram_type is array (0 to 65535) of std_logic_vector (7 downto 0); 
+	type p_ram_type is array (0 to 65535) of std_logic; 
 	
 	--‚P‚Â–Ú‚ÌSRAM—p
 	--‰ºˆÊ8bit+1bit
@@ -183,22 +183,22 @@ begin
 			bw_buf01 <= bw_buf00;
 			
 			--Read
-			data_buf00(7 downto 0) <= RAM00(conv_integer(SRAMAA(9 downto 0)));
-			data_buf00(15 downto 8) <= RAM01(conv_integer(SRAMAA(9 downto 0)));
-			data_buf00(16) <= RAMP00(conv_integer(SRAMAA(9 downto 0)));
-			data_buf00(17) <= RAMP01(conv_integer(SRAMAA(9 downto 0)));
+			data_buf00(7 downto 0) <= RAM00(conv_integer(SRAMAA(15 downto 0)));
+			data_buf00(15 downto 8) <= RAM01(conv_integer(SRAMAA(15 downto 0)));
+			data_buf00(16) <= RAMP00(conv_integer(SRAMAA(15 downto 0)));
+			data_buf00(17) <= RAMP01(conv_integer(SRAMAA(15 downto 0)));
 			data_buf01 <= data_buf00;
 			
 			--Write
 			--‰ºˆÊ8bit
 			if rw_buf01 = '0' and bw_buf01(0) = '0' then
-				RAM00(conv_integer(ad_buf01(9 downto 0))) <= SRAMIOA(7 downto 0);
-				RAMP00(conv_integer(ad_buf01(9 downto 0))) <= SRAMIOPA(0);
+				RAM00(conv_integer(ad_buf01(15 downto 0))) <= SRAMIOA(7 downto 0);
+				RAMP00(conv_integer(ad_buf01(15 downto 0))) <= SRAMIOPA(0);
 			end if;
 			--ãˆÊ8bit
 			if rw_buf01 = '0' and bw_buf01(1) = '0' then
-				RAM01(conv_integer(ad_buf01(9 downto 0))) <= SRAMIOA(15 downto 8);
-				RAMP01(conv_integer(ad_buf01(9 downto 0))) <= SRAMIOPA(1);
+				RAM01(conv_integer(ad_buf01(15 downto 0))) <= SRAMIOA(15 downto 8);
+				RAMP01(conv_integer(ad_buf01(15 downto 0))) <= SRAMIOPA(1);
 			end if;
 		end if;
 	end process;
@@ -216,20 +216,20 @@ begin
 			bw_buf10 <= SRAMBWA(1 downto 0);
 			bw_buf11 <= bw_buf10;
 			
-			data_buf10(7 downto 0) <= RAM10(conv_integer(SRAMAA(9 downto 0)));
-			data_buf10(15 downto 8) <= RAM11(conv_integer(SRAMAA(9 downto 0)));
-			data_buf10(16) <= RAMP10(conv_integer(SRAMAA(9 downto 0)));
-			data_buf10(17) <= RAMP11(conv_integer(SRAMAA(9 downto 0)));
+			data_buf10(7 downto 0) <= RAM10(conv_integer(SRAMAA(15 downto 0)));
+			data_buf10(15 downto 8) <= RAM11(conv_integer(SRAMAA(15 downto 0)));
+			data_buf10(16) <= RAMP10(conv_integer(SRAMAA(15 downto 0)));
+			data_buf10(17) <= RAMP11(conv_integer(SRAMAA(15 downto 0)));
 			data_buf11 <= data_buf10;
 			
 			if rw_buf11 = '0' and bw_buf11(0) = '0' then
-				RAM10(conv_integer(ad_buf11(9 downto 0))) <= SRAMIOA(23 downto 16);
-				RAMP10(conv_integer(ad_buf11(9 downto 0))) <= SRAMIOPA(2);
+				RAM10(conv_integer(ad_buf11(15 downto 0))) <= SRAMIOA(23 downto 16);
+				RAMP10(conv_integer(ad_buf11(15 downto 0))) <= SRAMIOPA(2);
 			end if;
 			
 			if rw_buf11 = '0' and bw_buf11(1) = '0' then
-				RAM11(conv_integer(ad_buf11(9 downto 0))) <= SRAMIOA(31 downto 24);
-				RAMP11(conv_integer(ad_buf11(9 downto 0))) <= SRAMIOPA(3);
+				RAM11(conv_integer(ad_buf11(15 downto 0))) <= SRAMIOA(31 downto 24);
+				RAMP11(conv_integer(ad_buf11(15 downto 0))) <= SRAMIOPA(3);
 			end if;
 		end if;
 	end process;

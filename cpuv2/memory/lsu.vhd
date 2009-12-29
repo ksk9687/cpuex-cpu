@@ -40,8 +40,8 @@ architecture arch of lsu is
 
 begin
 	lsu_full <= not writeok_in;
-	writeok_in <= '0' when read_pointer = write_pointer + '1' else '1';
-	lsu_may_full <= '1' when read_pointer = write_pointer + "10" else '0';
+	writeok_in <= '0' when read_pointer = (write_pointer + '1') else '1';
+	lsu_may_full <= '1' when read_pointer = (write_pointer + "10") else '0';
 	
 	lsu_ok <= (not empty) and lsu_ok_in and (not readdata(52));
 	
@@ -94,7 +94,7 @@ begin
 				load_end_p <= '1';
 			end if;
 			
-			if load_ok = '1' then
+			if load_ok = '1' and load_end = '0' then
 				buf <= load_data;
 			end if;
 		end if;

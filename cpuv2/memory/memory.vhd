@@ -85,7 +85,7 @@ architecture synth of memory is
 	signal dcache_addr,addr_out,d_set_addr,ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_addr_buf : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_ok_p : std_logic := '1';
-		
+	signal rom_access : std_logic := '0';
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 
 	signal ls_buf0,ls_buf1,ls_buf2,ls_buf3,ls_buf4 : std_logic_vector(1 downto 0) := "00";
@@ -101,81 +101,60 @@ architecture synth of memory is
 	
 begin
 	
-	inst_ok <= cache_hit or inst_select(1);
+	inst_ok <= cache_hit or rom_access;
 	inst <= inst_i;
 	
-	inst_i <= cache_out when inst_select(1) = '0' else
+	inst_i <= cache_out when rom_access = '0' else
 	irom_inst;
 	
 	ls_ok <= dcache_hit;
-	
-	load_data <= DATAOUT when ls_buf4 = "10" else
-	dcache_out;
+	load_data <= dcache_out;
 	
 	cache_set <= i_d_out(1);
 	set_addr <= addr_out(13 downto 0);
 	
 	
 	--データキャッシュアドレス
-	d_set_addr <= addr_out when ls_buf4 = "10" else--missload
+	d_set_addr <= addr_out when i_d_out(0) = '1' else--missload
 	ls_addr;
 	--データキャッシュデータ
-	dcache_in <= DATAOUT when ls_buf4 = "10" else--missload
+	dcache_in <= DATAOUT when i_d_out(0) = '1' else--missload
 	store_data;--Store
 
 	--データキャッシュセット　MissLoad,Store
 	dcache_set <= i_d_out(0) or (ls_flg(0));
 	
-	dcache_read <= (ls_flg(1) and (not ls_flg(0))) or 
-	(ls_buf0(1) and (not ls_buf0(0))) or
-	(ls_buf1(1) and (not ls_buf1(0))) or
-	(ls_buf2(1) and (not ls_buf2(0)));
-
+	
 	--SRAMアドレス
 	ADDR <= ls_addr_buf when (ls_buf0(1) = '1' and (dcache_hit = '0' or ls_buf0(0) = '1')) else
 	"000000"&pc_buf;
+	
 	--SRAM書き込みデータ
-	DATAIN <= store_data_buf when ls_buf0 = "11" else
-	(others => '0');
+	DATAIN <= store_data_buf;
+	
 	--SRAM読み書き　1:Read 0:Write
 	RW <= '0' when ls_buf0 = "11" else
 	'1';
-	
-	i_d_in(1) <= i_mem_req;
+
+	--Iキャッシュミスかつ(DキャッシュミスまたはStoreでない)	
+	i_d_in(1) <= (not pc(14)) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
+	---store,Dmiss
 	i_d_in(0) <= ls_buf0(1) and (not dcache_hit);
 	
-	process(clk)
+	IMEM : process(clk)
 	begin
 		if rising_edge(clk) then
 			pc_buf <= pc(13 downto 0);
-			inst_select(1) <= pc(14);
-			inst_select(0) <= cache_hit;
+			rom_access <= pc(14);
 		end if;
 	end process;
-
-	--Iキャッシュミスかつ(DキャッシュミスまたはStoreでない)
-	i_mem_req <= (not pc(14)) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
-
-
-
-	DMEM_STATE : process(clk)
+	
+	DMEM : process(clk)
 	begin
 		if rising_edge(clk) then
 			ls_buf0 <= ls_flg;
-			store_data_buf <= store_data;
-			  
-			if (ls_flg /= "00") then
-			  ls_addr_buf <= ls_addr;
-			end if;
-			
-			if dcache_hit = '0' then
-			 ls_buf1 <= ls_buf0;
-			else
-			 ls_buf1 <= "00";
-			end if;
-			ls_buf2 <= ls_buf1;
-			ls_buf3 <= ls_buf2;
-			ls_buf4 <= ls_buf3;
+			store_data_buf <= store_data;  
+			ls_addr_buf <= ls_addr;
 		end if;
 	end process;
 	
@@ -218,7 +197,6 @@ begin
 		,d_set_addr
 		,dcache_in
 		,dcache_set
-		,dcache_read
 		,dcache_out
 		,dcache_hit
 	);

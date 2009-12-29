@@ -65,7 +65,7 @@ begin  -- STRUCTURE
 --  BH <= '1' & B(22 downto 12) when B(30 downto 23) /= 0 else "000000000000";
 --  BL <= B(11 downto 0)        when B(30 downto 23) /= 0 else "000000000000";
   
-  ZERO <= '1' when (A(30 downto 23) /= 0) or (B(30 downto 23) /= 0) else '0';
+  ZERO <= '1' when (A(30 downto 23) = 0) or (B(30 downto 23) = 0) else '0';
   
   process(clk)
   begin
@@ -75,7 +75,7 @@ begin  -- STRUCTURE
       OMM1 <= AH * BL;
       OMM2 <= BH * AL;
       
-      if (A(30 downto 23) = 0 or B(30 downto 23) = 0) then
+      if ZERO = '1' then
         OE1 <= "00000000";
       else
         OE1 <= A(30 downto 23) + B(30 downto 23) - 127;
@@ -105,7 +105,6 @@ begin  -- STRUCTURE
       	OMM1_2 <= (others => '0');
       	OMM2_2 <= (others => '0');
       	OMH2 <= (others => '0');
-      	
       end if;
       
       OE2 <= OE1;

@@ -32,6 +32,7 @@ package instruction is
    constant op_sub	:	std_logic_vector(5 downto 0) := o"11";
    constant op_cmp	:	std_logic_vector(5 downto 0) := o"12";
 
+   constant op_fadd	:	std_logic_vector(5 downto 0) := o"20";
    constant op_fsub	:	std_logic_vector(5 downto 0) := o"21";
    constant op_fmul :	std_logic_vector(5 downto 0) := o"22";
    constant op_finv :	std_logic_vector(5 downto 0) := o"23";
@@ -79,6 +80,10 @@ package instruction is
 	constant iou_op_write	: std_logic_vector(2 downto 0) := o"1";
 	constant iou_op_led	: std_logic_vector(2 downto 0) := o"2";
 	constant iou_op_ledi	: std_logic_vector(2 downto 0) := o"3";
+	
+	constant lsu_op_load	: std_logic_vector(2 downto 0) := o"0";
+	constant lsu_op_loadr	: std_logic_vector(2 downto 0) := o"1";
+	constant lsu_op_store	: std_logic_vector(2 downto 0) := o"2";
 	
 	
 	constant sp_op_nop	: std_logic_vector(2 downto 0) := o"0";
