@@ -142,7 +142,7 @@ begin
 	,SRAMLBOA,SRAMXOEA,SRAMZZA
    );
    
-   ledout <= debug;
+   --ledout <= debug;
 --   DEB:process(clk,rst)
 --   begin
 --	   if (rst = '1')then
@@ -230,11 +230,11 @@ begin
 
    --TODO •ÏX
     stall_rrx <= (reg_ok and (not lsu_may_full) and (not lsu_full));
-	reg_stall <= flush or lsu_may_full or lsu_full;
+	reg_stall <= lsu_may_full or lsu_full;
 
 	----------------------------------
 	-- 
-	-- RD
+	-- RR
 	-- 
 	----------------------------------
 	
@@ -276,7 +276,6 @@ begin
 			jmp_not_taken <= '0';
 			jr <= '0';
 			jmp_addr <= (others=> '0');
-			mask <= (others=> '0');
 			ext_im_buf0 <= (others=> '0');
 			reg_d_buf0 <= (others=> '0');
 			data_s1 <= (others=> '0');
@@ -302,7 +301,6 @@ begin
 				jr <= jr_p;
 			end if;
 			jmp_addr <= jmp_addr_p;
-			mask <= read_inst_data(26 downto 24);
 			ext_im_buf0 <= ext_im;
 			reg_d_buf0 <= read_inst_data(36 downto 31);
 			data_s1 <= data_s1_p;
@@ -329,7 +327,7 @@ begin
 			end if;
 			
 			if (unit_op_buf1 = op_unit_iou) and (sub_op_buf1(2 downto 1) = iou_op_led(2 downto 1)) then
-				--ledout <= not led_buf1;
+				ledout <= not led_buf1;
 			end if;
 		end if;
 	end process LED_OUT;
@@ -367,11 +365,11 @@ begin
 	
 	with sub_op_buf0 select
 	ls_address_p <= data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when lsu_op_store | lsu_op_load,
-	data_s1(19 downto 0) + data_s2(19 downto 0) when others;
+	data_s1(19 downto 0) + data_s2(19 downto 0) when others;--loadr
 		
 	with sub_op_buf0 select
 	lsu_in <= data_s2 when lsu_op_store,
-	x"000000"&"00"&reg_d_buf0 when others;
+	x"000000"&"00"&reg_d_buf0 when others;--load,loadr
 	
     lsu_write <= '1' when unit_op_buf0 = op_unit_lsu else '0';
 	LSU0 : LSU port map (

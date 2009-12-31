@@ -19,7 +19,7 @@ end FP_ADD;
 architecture STRUCTURE of FP_ADD is
   
   -- 1st stage
-  signal agtb : boolean;
+  signal agtb : std_logic;
   signal AE, BE : std_logic_vector(7 downto 0);
   signal AM1, BM1 : std_logic_vector(24 downto 0);
   signal BEminusAE, AEminusBE : std_logic_vector(7 downto 0);
@@ -49,15 +49,19 @@ begin  -- STRUCTURE
   begin  -- process
     if rising_edge(clk) then
       -- ê‚ëŒílÇî‰är
-      agtb <= (A(30 downto 0) > B(30 downto 0));
+      if (A(30 downto 0) > B(30 downto 0)) then
+      	agtb <= '1';
+      else
+      	agtb <= '0';
+      end if;
       
-      if A(30 downto 23) /= 0 then
+      if A(30 downto 23) /= "00000000" then
         AM1 <= "01" & A(22 downto 0);
       else
         AM1 <= "0000000000000000000000000";
       end if;
 
-      if B(30 downto 23) /= 0 then
+      if B(30 downto 23) /= "00000000" then
         BM1 <= "01" & B(22 downto 0);
       else
         BM1 <= "0000000000000000000000000";
@@ -77,13 +81,13 @@ begin  -- STRUCTURE
   -- 2nd stage
   -----------------------------------------------------------------------------
   
-  AM2 <= SHR(AM1, BEminusAE);
-  BM2 <= SHR(BM1, AEminusBE);
+  AM2 <= SHR(AM1, BEminusAE(4 downto 0));
+  BM2 <= SHR(BM1, AEminusBE(4 downto 0));
   
   process (clk)
   begin  -- process
     if rising_edge(clk) then
-      if agtb then
+      if agtb = '1' then -- A>B
         PM <= AM1;
         QM <= BM2;
         OE1 <= AE;

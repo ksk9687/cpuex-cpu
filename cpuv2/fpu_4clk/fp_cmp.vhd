@@ -17,7 +17,7 @@ architecture STRUCTURE of FP_CMP is
   
   signal tmpA1, tmpB1, tmpA2, tmpB2 : std_logic_vector(5 downto 0);
   signal AS, BS : std_logic;
-  signal ZERO : boolean;
+  signal ZERO : std_logic;
   
   signal abslt, abseq, absgt : std_logic;
 
@@ -50,7 +50,11 @@ begin  -- STRUCTURE
 
       AS <= A(31);
       BS <= B(31);
-      ZERO <= A(30 downto 23) = 0 and B(30 downto 23) = 0;
+      if A(30 downto 23) = "00000000" and B(30 downto 23) = "00000000" then
+      	ZERO <= '1';
+      else
+      	ZERO <= '0';
+      end if;
     end if;
   end process;
 
@@ -62,7 +66,7 @@ begin  -- STRUCTURE
   abseq <= '1' when tmpA2 = tmpB2 else '0';
   absgt <= '1' when tmpA2 > tmpB2 else '0';
 
-  O <= "010"  when ZERO else
+  O <= "010"  when ZERO = '1' else
        "100"  when AS = '0' and BS = '1' else
        "001"  when AS = '1' and BS = '0' else
        absgt & abseq & abslt when AS = '0' and BS = '0' else

@@ -28,7 +28,7 @@ architecture STRUCTURE of FP_MUL is
   signal AH, BH, AL, BL : std_logic_vector(11 downto 0);
   
   signal OMH1, OMM1, OMM2 : std_logic_vector(23 downto 0);
-  signal OE1 : std_logic_vector(7 downto 0);
+  signal OE1 : std_logic_vector(8 downto 0);
   signal OS1 : std_logic;
 
   -- 2nd stage
@@ -76,9 +76,9 @@ begin  -- STRUCTURE
       OMM2 <= BH * AL;
       
       if ZERO = '1' then
-        OE1 <= "00000000";
+        OE1 <= "000000000";
       else
-        OE1 <= A(30 downto 23) + B(30 downto 23) - 127;
+        OE1 <= (('0'&A(30 downto 23)) + ('0'&B(30 downto 23))) - "001111111";
       end if;
 
       OS1 <= A(31) xor B(31);
@@ -101,13 +101,13 @@ begin  -- STRUCTURE
       	OMM1_2 <= OMM1(23 downto 11);
       	OMM2_2 <= OMM2(23 downto 11);
       	OMH2 <= OMH1;
-      else
+      else--‚Ç‚¿‚ç‚©‚Ì“ü—Í‚ª‚O‚¾‚Á‚½
       	OMM1_2 <= (others => '0');
       	OMM2_2 <= (others => '0');
       	OMH2 <= (others => '0');
       end if;
       
-      OE2 <= OE1;
+      OE2 <= OE1(7 downto 0);
       OS2 <= OS1;
     end if;
   end process;
@@ -125,11 +125,11 @@ begin  -- STRUCTURE
   process (clk)
   begin  -- process
     if rising_edge(clk) then
-      OM1(24 downto 1) <= OMH2 + ("0000000000" & OMM3(13 downto 1)) + 1;
+      OM1(24 downto 1) <= OMH2 + ("0000000000" & OMM3(13 downto 1)) + '1';
       OM1(0) <= OMM3(0);
       
       OE3      <= OE2;
-      OE3plus1 <= OE2 + 1;
+      OE3plus1 <= OE2 + '1';
       
       OS3 <= OS2;
     end if;

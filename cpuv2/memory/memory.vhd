@@ -135,11 +135,14 @@ begin
 	--SRAM読み書き　1:Read 0:Write
 	RW <= '0' when ls_buf0 = "11" else
 	'1';
-
-	--Iキャッシュミスかつ(DキャッシュミスまたはStoreでない)	
-	i_d_in(1) <= (not pc(14)) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
-	---store,Dmiss
-	i_d_in(0) <= ls_buf0(1) and (not dcache_hit);
+	
+	--ICACHE FILL
+	--ROMでない　かつ　Iキャッシュミス　かつ　(DキャッシュミスまたはStoreでない)	
+	i_d_in(1) <= (not rom_access) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
+	
+	--DCACHE FILL
+	---DmissLoad
+	i_d_in(0) <= ls_buf0(1) and (not ls_buf0(0)) and (not dcache_hit);
 	
 	IMEM : process(clk)
 	begin
@@ -180,7 +183,7 @@ begin
 		,SRAMLBOA,SRAMXOEA,SRAMZZA
 	);
 	
-	ICACHE:cache port map(
+	ICACHE:baka_cache port map(
 		clk,clk
 		,pc(13 downto 0)
 		,set_addr
@@ -191,7 +194,7 @@ begin
 	);
 	
 	
-	DCACHE0:dcache port map(
+	DCACHE0:baka_dcache port map(
 		clk,clk
 		,ls_addr
 		,d_set_addr

@@ -94,8 +94,7 @@ begin  -- STRUCTURE
   -- マルチサイクルのもの、何がでてくるかなー！？
   with op_queue(0) select
   O <= 
-    O_ADD when fpu_op_fadd,
-    O_ADD when fpu_op_fsub,
+    O_ADD when fpu_op_fadd | fpu_op_fsub,
     O_MUL when fpu_op_fmul,
     O_INV when fpu_op_finv,
     O_SQRT when others;

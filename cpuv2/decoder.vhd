@@ -35,7 +35,7 @@ begin
 	--書き込みレジスタの指定
 	with op select
 	reg_d <= "111111" when op_jal, --JALではr63のみ
-	inst(19 downto 14) when op_load | op_mv | op_fabs | op_fneg |
+	inst(19 downto 14) when op_load | op_mv | 
 	 op_addi | op_sll | op_li | op_read | op_write | op_hsread ,--Rt
 	inst(13 downto 8) when others;--Rd
 	
