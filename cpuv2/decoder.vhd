@@ -49,6 +49,7 @@ begin
 	 with op select
 	 reg_s1_use <=  '0' when op_read | op_jmp | op_jal | op_ledi | op_li | op_halt| op_nop | op_sleep,--“Ç‚Ýž‚Ü‚È‚¢
 	 '1' when others;
+	 
 	 --ƒŒƒWƒXƒ^‚ð“Ç‚Ýž‚Þ‚©‚Ç‚¤‚© ‚»‚Ì‚Q
 	 with op select
 	 reg_s2_use <=  '0' when op_write | op_read | op_load |

@@ -53,7 +53,7 @@ architecture arch of cpu_top is
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
-   signal jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1 : std_logic_vector(14 downto 0) := "100"&x"000";
+   signal jr_pc,jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1 : std_logic_vector(14 downto 0) := "100"&x"000";
    signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
    signal write_inst_data,read_inst_data : std_logic_vector(43 downto 0) := (others=>'0');
    signal write_inst_im : std_logic_vector(14 downto 0) := (others=>'0');
@@ -85,6 +85,7 @@ architecture arch of cpu_top is
 	signal fpu_out : std_logic_vector(31 downto 0) := (others=>'0');
 	signal fpu_cmp :std_logic_vector(2 downto 0) := "000";
 	--pipeline ctrl
+	signal write_op :std_logic_vector(5 downto 0) := (others=>'0');
 	signal unit_op_buf0,unit_op_buf1,unit_op_buf2,unit_op_buf3,unit_op_buf4 :std_logic_vector(2 downto 0) := (others=>'0');
 	signal sub_op_buf0,sub_op_buf1,sub_op_buf2,sub_op_buf3,sub_op_buf4 :std_logic_vector(2 downto 0) := (others=>'0');
 	signal reg_write_buf0,reg_write_buf1,reg_write_buf2,reg_write_buf3,reg_write_buf4:std_logic := '0';
@@ -142,45 +143,17 @@ begin
 	,SRAMLBOA,SRAMXOEA,SRAMZZA
    );
    
-   --ledout <= debug;
---   DEB:process(clk,rst)
---   begin
---	   if (rst = '1')then
---	   	debug <= (others=>'1');
---	   elsif rising_edge(clk) then
---	   	if inst_ok = '1' and pc = "000000000000000" then
---	   		debug <= inst(31 downto 24);
---	   	end if;
---	   end if;
---   end process DEB; 
-   
+
    flush <= (jmp_taken or jr);
    
-   ib_write <= ((not jmp_flg) and (write_inst_ok) and (inst_ok));
-	
-   jmp_addr_next <= jmp_addr when (jmp_taken = '1') or (jr = '1') else
-   inst(14 downto 0);
+   --ib_write <= (not flush) and (not jmp_flg) and (write_inst_ok) and (inst_ok);
+   ib_write <= (write_inst_ok) and (inst_ok);
    
-   jmp_flg_p <= '1' when (jmp_taken or jr) = '1' else --jr,jmp
-   ((not jmp_flg) and (write_inst_ok) and (inst_ok)) when (inst(31 downto 26) = op_jal) else--jal
-   '0';
-   
-   next_pc <= pc when (write_inst_ok = '0') or inst_ok = '0'else
+   next_pc <= 
+   jmp_addr when flush = '1' else
+   pc when ib_write = '0' else
+   inst(14 downto 0) when (inst(31 downto 26) = op_jal) else
    pc_p1;
-   
-	process(clk)
-	begin
-	    if (rst = '1')then
-	    	jr_buf <= '0'; 
-		elsif rising_edge(clk) then
-			if jr = '1' or jmp_taken = '1' or jmp_not_taken = '1' then
-				jr_buf <= '0';
-			elsif ((inst(31 downto 26) = op_jr) or (inst(31 downto 26) = op_jmp)) and (write_inst_ok = '1') and (inst_ok = '1') and (jmp_flg = '0') then
-				jr_buf <= '1';
-			end if;
-		end if;
-	end process;
-	
    
    PC0:process(clk,rst)
    begin
@@ -188,16 +161,18 @@ begin
 	   		pc <= "100"&x"000";
 	   		pc_p1 <= "100"&x"001";
 	   		jmp_flg <= '0';
-	   		flushed <= '0';
 	   elsif rising_edge(clk) then
-	   		jmp_flg <= jmp_flg_p;
-			if jmp_flg_p = '1' then
-				pc <= jmp_addr_next;
-				pc_p1 <= jmp_addr_next;
-			else
+--	   		jmp_flg <= flush;
+--			jr_pc <= next_pc + '1';
+--			if flush = '1' then
+--				pc <= jmp_addr;
+--				pc_p1 <= jmp_addr;
+--			else
+--				pc <= next_pc;
+--				pc_p1 <= next_pc + '1';
+--			end if;
 				pc <= next_pc;
 				pc_p1 <= next_pc + '1';
-			end if;
 	   end if;
    end process PC0;
    
@@ -216,19 +191,21 @@ begin
    with inst(31 downto 26) select
     write_inst_im <= pc_p1 when op_jal,
     inst(23)&inst(13 downto 0) when op_jmp,
-    inst(14 downto 0) when others;
+    '0'&inst(13 downto 0) when others;
     
-   write_inst_data <=  inst(31 downto 26) & regwrite & reg_d & reg_s1_use & reg_s1 & reg_s2_use & reg_s2 & cr_flg & write_inst_im;
+    write_op <= op_li when inst(31 downto 26) = op_jal else
+    inst(31 downto 26);
+    
+   write_inst_data <=  write_op & regwrite & reg_d & reg_s1_use & reg_s1 & reg_s2_use & reg_s2 & cr_flg & write_inst_im;
    
    IB0 : instructionBuffer port map (
    	clk,rst,flush,
    	stall_rrx,ib_write,
    	read_inst_ok,write_inst_ok,
-	  read_inst_data,write_inst_data
+	read_inst_data,write_inst_data
    );
    
 
-   --TODO •ÏX
     stall_rrx <= (reg_ok and (not lsu_may_full) and (not lsu_full));
 	reg_stall <= lsu_may_full or lsu_full;
 
@@ -253,11 +230,11 @@ begin
 		cr_p,reg_ok
 	);
 	
-	ext_im <= "00"&x"0000"&read_inst_data(13 downto 0) when read_inst_data(43 downto 38) = op_li else
+	ext_im <= "0"&x"0000"&read_inst_data(14 downto 0) when read_inst_data(43 downto 38) = op_li else
 	sign_extention(read_inst_data(13 downto 0));
 
 	cr_mask <= ((read_inst_data(26) and cr_p(2)) or (read_inst_data(25) and cr_p(1)) or (read_inst_data(24) and cr_p(0)));
-	jmp_taken_p <= not cr_mask when read_inst_data(43 downto 38) = op_jmp else '0';
+	jmp_taken_p <= (not cr_mask) when read_inst_data(43 downto 38) = op_jmp else '0';
 	jmp_not_taken_p <= cr_mask when read_inst_data(43 downto 38) = op_jmp else '0';
 	
 	jmp_addr_p <= read_inst_data(14 downto 0) when read_inst_data(43 downto 38) = op_jmp else
@@ -281,7 +258,6 @@ begin
 			data_s1 <= (others=> '0');
 			data_s2 <= (others=> '0');
 			cr <= (others=> '0');
-			pc_buf0 <= (others=> '0');
 		elsif rising_edge(clk) then
 			if stall_rrx = '0' or flush = '1' then--nop
 				unit_op_buf0 <= op_unit_sp;
@@ -305,8 +281,6 @@ begin
 			reg_d_buf0 <= read_inst_data(36 downto 31);
 			data_s1 <= data_s1_p;
 			data_s2 <= data_s2_p;
-			cr <= cr_p;
-			pc_buf0 <= read_inst_data(14 downto 0);
 		end if;
 	end process RR;
 	
@@ -381,7 +355,7 @@ begin
 	);
 	
 	
-	EX1 : process(CLK)
+	EX1 : process(CLK,rst)
 	begin
 		if rst = '1' then
 			unit_op_buf1 <= (others=> '0');
@@ -402,7 +376,6 @@ begin
 			end if;
 			alu_out_buf1 <= alu_out;
 			alu_im_out_buf1 <= alu_im_out;
-			pc_buf1 <= pc_buf0;
 		end if;
 	end process EX1;
 	
@@ -424,8 +397,6 @@ begin
 				alu_out_buf2 <= iou_out;
 			elsif unit_op_buf1 = op_unit_alu then
 				alu_out_buf2 <= alu_out_buf1;
-			elsif unit_op_buf1 = op_unit_jmp then
-				alu_out_buf2 <= x"0000"&'0'&pc_buf1;
 			else
 				alu_out_buf2 <= alu_im_out_buf1;
 			end if;
@@ -491,13 +462,9 @@ begin
 	 cr_d <= alui_cmp when op_unit_alui,
 	 fpu_cmp when op_unit_fpu,
 	 alu_cmp when others;
-	 
-	 
-	 
+	
 	reg_d_buf <= reg_d_buf4;
 	regwrite_f <= reg_write_buf4;
 	data_d <= alu_out_buf4;
-		
-	
 
 end arch;

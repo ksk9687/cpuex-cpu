@@ -72,10 +72,10 @@ architecture synth of memory is
 	signal RW : std_logic := '0';
 	signal DATAIN : std_logic_vector(31 downto 0) := (others => '0');
 	signal DATAOUT,ls_buf : std_logic_vector(31 downto 0) := (others => '0');
-	signal pc_buf,set_addr : std_logic_vector(13 downto 0) := (others => '0');
+	signal pc_buf,set_addr,pc_buf_p1 : std_logic_vector(13 downto 0) := (others => '0');
 	
 	signal cache_out,cache_out_buf,store_data_buf : std_logic_vector(31 downto 0) := (others => '0');
-	signal cache_hit,cache_hit_b : std_logic := '0';
+	signal cache_hit,cache_hit_b,ipref : std_logic := '0';
 	signal cache_set : std_logic := '0';
 
 	signal dcache_out : std_logic_vector(31 downto 0) := (others => '0');
@@ -84,7 +84,7 @@ architecture synth of memory is
 	signal dcache_set,dcache_read : std_logic := '0';
 	signal dcache_addr,addr_out,d_set_addr,ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_addr_buf : std_logic_vector(19 downto 0) := (others => '0');
-	signal ls_ok_p : std_logic := '1';
+	signal dac,ls_ok_p : std_logic := '1';
 	signal rom_access : std_logic := '0';
     type ram_type is array (0 to 63) of std_logic_vector (31 downto 0); 
 
@@ -93,15 +93,12 @@ architecture synth of memory is
 	signal i_mem_req,i_halt : std_logic := '0';
 	
 	signal i_d_out,i_d_in : std_logic_vector(1 downto 0) := "00";
-	
-	
-	constant sleep_inst : std_logic_vector(31 downto 0):= op_nop&"00"&x"000000";
-	constant halt_inst : std_logic_vector(31 downto 0):= op_nop&"00"&x"000000";
+
 	
 	
 begin
 	
-	inst_ok <= cache_hit or rom_access;
+	inst_ok <= 	cache_hit or rom_access;
 	inst <= inst_i;
 	
 	inst_i <= cache_out when rom_access = '0' else
@@ -112,7 +109,6 @@ begin
 	
 	cache_set <= i_d_out(1);
 	set_addr <= addr_out(13 downto 0);
-	
 	
 	--データキャッシュアドレス
 	d_set_addr <= addr_out when i_d_out(0) = '1' else--missload
@@ -126,7 +122,7 @@ begin
 	
 	
 	--SRAMアドレス
-	ADDR <= ls_addr_buf when (ls_buf0(1) = '1' and (dcache_hit = '0' or ls_buf0(0) = '1')) else
+	ADDR <= ls_addr_buf when dac = '1' else
 	"000000"&pc_buf;
 	
 	--SRAM書き込みデータ
@@ -136,18 +132,68 @@ begin
 	RW <= '0' when ls_buf0 = "11" else
 	'1';
 	
+	dac <= ls_buf0(1) and (ls_buf0(0) or (not dcache_hit));
 	--ICACHE FILL
-	--ROMでない　かつ　Iキャッシュミス　かつ　(DキャッシュミスまたはStoreでない)	
-	i_d_in(1) <= (not rom_access) and (not cache_hit) and (not (ls_buf0(1) and ((not dcache_hit) or ls_buf0(0))));
+	--ROMでない　かつ　Iキャッシュミス　かつ　Dアクセスでない
+	i_d_in(1) <=
+	(((not rom_access) and (not cache_hit)) or ipref) and (not dac);
 	
 	--DCACHE FILL
 	---DmissLoad
 	i_d_in(0) <= ls_buf0(1) and (not ls_buf0(0)) and (not dcache_hit);
 	
-	IMEM : process(clk)
+	pc_buf_p1 <= pc_buf + '1';
+	
+	IMEM : process(clk,rst)
 	begin
-		if rising_edge(clk) then
-			pc_buf <= pc(13 downto 0);
+		if rst = '1' then
+			i_mem_state <= idle;
+			ipref <= '0';
+			rom_access <= '1';
+		elsif rising_edge(clk) then
+			case i_mem_state is
+				when idle		=>
+					if i_d_in(1) = '1' then
+						ipref <= '1';
+						pc_buf <= pc_buf_p1;
+						i_mem_state <= inst_w1;
+					else
+						ipref <= '0';
+						pc_buf <= pc(13 downto 0);
+					end if;
+				when inst_w1	=>
+					if i_d_in(1) = '1' then
+						ipref <= '1';
+						pc_buf <= pc_buf_p1;
+						i_mem_state <= inst_w2;
+					end if;
+				when inst_w2	=>
+					if i_d_in(1) = '1' then
+						ipref <= '1';
+						pc_buf <= pc_buf_p1;
+						i_mem_state <= inst_w3;
+					end if;
+				when inst_w3	=>
+					if i_d_in(1) = '1' then
+						ipref <= '1';
+						pc_buf <= pc_buf_p1;
+						i_mem_state <= inst_w4;
+					end if;
+				when inst_w4	=>
+					if i_d_in(1) = '1' then
+						ipref <= '1';
+						pc_buf <= pc_buf_p1;
+						i_mem_state <= inst_w5;
+					end if;
+				when inst_w5	=>
+					if i_d_in(1) = '1' then
+						ipref <= '0';
+						pc_buf <= pc(13 downto 0);
+						i_mem_state <= idle;
+					end if;
+				when others =>
+					i_mem_state <= idle;
+			end case;
 			rom_access <= pc(14);
 		end if;
 	end process;
@@ -155,9 +201,36 @@ begin
 	DMEM : process(clk)
 	begin
 		if rising_edge(clk) then
-			ls_buf0 <= ls_flg;
-			store_data_buf <= store_data;  
+--			case d_mem_state is
+--				when idle		=>
+--					if i_d_in(0) = '1' then--misLoad
+--						ls_addr_buf <= ls_addr_buf + '1';
+--						d_mem_state <= data_w1;
+--					else
+--						ls_addr_buf <= ls_addr;
+--					end if;
+--				when data_w1	=>
+--					ls_addr_buf <= ls_addr_buf + '1';
+--					d_mem_state <= data_w2;
+--				when data_w2	=>
+--					ls_addr_buf <= ls_addr_buf + '1';
+--					d_mem_state <= data_w3;
+--				when data_w3	=>
+--					ls_addr_buf <= ls_addr_buf + '1';
+--					d_mem_state <= data_w4;
+--				when data_w4	=>
+--					ls_addr_buf <= ls_addr_buf + '1';
+--					d_mem_state <= data_w5;
+--				when data_w5	=>
+--					ls_addr_buf <= ls_addr;
+--					d_mem_state <= idle;
+--				when others =>
+--					d_mem_state <= idle;
+--					ls_addr_buf <= ls_addr;
+--			end case;
 			ls_addr_buf <= ls_addr;
+			ls_buf0 <= ls_flg;
+			store_data_buf <= store_data;
 		end if;
 	end process;
 	
@@ -183,7 +256,7 @@ begin
 		,SRAMLBOA,SRAMXOEA,SRAMZZA
 	);
 	
-	ICACHE:baka_cache port map(
+	ICACHE:small_cache port map(
 		clk,clk
 		,pc(13 downto 0)
 		,set_addr

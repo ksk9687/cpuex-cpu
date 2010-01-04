@@ -59,8 +59,10 @@ architecture Behavioral of sram_controller is
   signal rw_buf1 :  std_logic := '0';
   signal rw_buf2 :  std_logic := '0';
   
-  signal i_d_buf0,i_d_buf1,i_d_buf2,i_d_buf3 : std_logic_vector(1 downto 0) := "00";
-  signal ADDR_BUF0,ADDR_BUF1,ADDR_BUF2,ADDR_BUF3 : std_logic_vector(19 downto 0) := (others => '0');
+  signal rst :  std_logic := '0';
+  
+  signal i_d_buf0,i_d_buf1,i_d_buf2,i_d_buf3,i_d_buf4 : std_logic_vector(1 downto 0) := "00";
+  signal ADDR_BUF0,ADDR_BUF1,ADDR_BUF2,ADDR_BUF3,ADDR_BUF4 : std_logic_vector(19 downto 0) := (others => '0');
   
   signal state,clk1,clk2 :std_logic := '0';
   signal data_out : std_logic_vector(31 downto 0) := (others => '0');
@@ -75,6 +77,11 @@ architecture Behavioral of sram_controller is
     return (tmp);
   end br_xor;
 begin
+  
+  ROC0 : ROC
+    port map (
+      O => rst);
+  
   
 	--固定する信号たち
   SRAMLBOA   <= '1';
@@ -119,14 +126,27 @@ begin
     	clk2 <= clk1;
   end if;
   end process;
-    
+   
+   SRAMAA <= ADDR_BUF0;
+   SRAMRWA <= rw_buf0;
 
-
-  process (clk)
+  process (clk,rst)
   begin
-    if rising_edge(clk) then
-      SRAMAA  <= ADDR;
-      SRAMRWA <= RW;
+  	if rst = '1' then
+  		rw_buf0 <= '1';
+  		rw_buf1 <= '1';
+  		rw_buf2 <= '1';
+  		i_d_buf0 <= "00";
+  		i_d_buf1 <= "00";
+  		i_d_buf2 <= "00";
+  		i_d_buf3 <= "00";
+  		i_d_buf4 <= "00";
+  		ADDR_BUF0 <= (others => '0');
+  		ADDR_BUF1 <= (others => '0');
+  		ADDR_BUF2 <= (others => '0');
+  		ADDR_BUF3 <= (others => '0');
+  		ADDR_BUF4 <= (others => '0');
+    elsif rising_edge(clk) then
 
 	  --バッファ
       rw_buf0    <= RW;
@@ -141,11 +161,13 @@ begin
       i_d_buf1 <= i_d_buf0;
       i_d_buf2 <= i_d_buf1;
       i_d_buf3 <= i_d_buf2;
+      i_d_buf4 <= i_d_buf3;
       
       ADDR_BUF0 <= ADDR;
       ADDR_BUF1 <= ADDR_BUF0;
       ADDR_BUF2 <= ADDR_BUF1;
       ADDR_BUF3 <= ADDR_BUF2;
+      ADDR_BUF4 <= ADDR_BUF3;
       
 	  
 	  DATAOUT <= data_out;
@@ -157,8 +179,7 @@ begin
   process (sramclk)
   begin
     if rising_edge(sramclk) then
-		data_out <= SRAMIOA;
-		
+		data_out <= SRAMIOA;		
 		--DATAOUT <= SRAMIOA;
 	end if;
   end process;

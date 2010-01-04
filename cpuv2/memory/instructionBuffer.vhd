@@ -22,8 +22,8 @@ architecture arch of instructionBuffer is
 	type ram_t is array (0 to 15) of std_logic_vector (43 downto 0);
 	 signal RAM : ram_t := (others => nop_out);
 	 
-	 signal read_pointer :std_logic_vector(3 downto 0) := (others => '0');
-	 signal write_pointer :std_logic_vector(3 downto 0) := (others => '0');
+	 signal read_pointer,read_pointer_p1 :std_logic_vector(3 downto 0) := (others => '0');
+	 signal write_pointer,write_pointer_p1 :std_logic_vector(3 downto 0) := (others => '0');
 	 signal writeok_in,readok_in :std_logic := '0';
 	 signal readdata_in : std_logic_vector(43 downto 0) := nop_out;
 	 
@@ -50,9 +50,11 @@ begin
 	
 	
 	writeok <= writeok_in;
-	writeok_in <= '0' when read_pointer = (write_pointer + '1') else '1';
+	write_pointer_p1 <= (write_pointer + '1');
+	writeok_in <= '0' when read_pointer = write_pointer_p1 else '1';
 	readok <= readok_in;
-	readok_in <= '0' when read_pointer = write_pointer else '1';
+	read_pointer_p1 <= (read_pointer + '1');
+	readok_in <= '0' when (read_pointer = write_pointer)else '1';
 
 	
 	
@@ -70,6 +72,7 @@ begin
 					RAM(conv_integer(write_pointer)) <= writedata;
 					write_pointer <= write_pointer + '1';
 				end if;
+				
 				if (read = '1') and (readok_in = '1') then
 					read_pointer <= read_pointer + '1';
 				end if;

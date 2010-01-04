@@ -29,7 +29,7 @@ entity lsu is
 end lsu;
 
 architecture arch of lsu is
-	type ram_t is array (0 to 15) of std_logic_vector (53 downto 0);
+	type ram_t is array (0 to 7) of std_logic_vector (53 downto 0);
 	 signal RAM : ram_t := (others => (others => '0'));
 	 
 	 signal read_pointer :std_logic_vector(2 downto 0) := (others => '0');
