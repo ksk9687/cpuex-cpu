@@ -95,29 +95,29 @@ architecture arch of cpu_top is
 	signal reg_d_buf0,reg_d_buf1,reg_d_buf2,reg_d_buf3,reg_d_buf4:std_logic_vector(5 downto 0) := (others=>'0');
 			
    	signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
-   signal cr_mask,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,predict_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
+   signal jal,cr_mask,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,predict_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
    signal debug :std_logic_vector(7 downto 0) := (others=>'1');
 begin
   	ROC0 : ROC port map (O => rst);
---	CLOCK0 : CLOCK port map (
---  		clkin     => CLKIN,
---    	clkout2x    => clk,
---		clkout2x90 => clk90,
---		clkout2x180 => clk180,
---		clkout2x270 => clk270,
---		clkout4x => clk2x,
---		clkout1x => clk50,
---  		locked    => locked0);
-  		
-  	CLOCK0 : CLOCK port map (
+	CLOCK0 : CLOCK port map (
   		clkin     => CLKIN,
-    	clkout0    => clk,
-		clkout90 => clk90,
-		clkout180 => clk180,
-		clkout270 => clk270,
-		clkout2x => clk2x,
+    	clkout2x    => clk,
+		clkout2x90 => clk90,
+		clkout2x180 => clk180,
+		clkout2x270 => clk270,
+		clkout4x => clk2x,
+		clkout1x => clk50,
   		locked    => locked0);
-  	clk50 <= not clk;
+  		
+--  	CLOCK0 : CLOCK port map (
+--  		clkin     => CLKIN,
+--    	clkout0    => clk,
+--		clkout90 => clk90,
+--		clkout180 => clk180,
+--		clkout270 => clk270,
+--		clkout2x => clk2x,
+--  		locked    => locked0);
+--  	clk50 <= not clk;
 
   BP0 : branchPredictor port map (
   	clk,rst,
@@ -147,13 +147,16 @@ begin
    flush <= (jmp_taken or jr);
    
    --ib_write <= (not flush) and (not jmp_flg) and (write_inst_ok) and (inst_ok);
-   ib_write <= (write_inst_ok) and (inst_ok);
+   ib_write <= (not jmp_flg) and (write_inst_ok) and (inst_ok);
+   
+   jal <= ib_write when (inst(31 downto 26) = op_jal) else '0';
    
    next_pc <= 
-   jmp_addr when flush = '1' else
    pc when ib_write = '0' else
-   inst(14 downto 0) when (inst(31 downto 26) = op_jal) else
    pc_p1;
+   
+   jmp_addr_next <= jmp_addr when flush = '1' else
+   inst(14 downto 0);
    
    PC0:process(clk,rst)
    begin
@@ -162,17 +165,16 @@ begin
 	   		pc_p1 <= "100"&x"001";
 	   		jmp_flg <= '0';
 	   elsif rising_edge(clk) then
---	   		jmp_flg <= flush;
---			jr_pc <= next_pc + '1';
---			if flush = '1' then
---				pc <= jmp_addr;
---				pc_p1 <= jmp_addr;
---			else
---				pc <= next_pc;
---				pc_p1 <= next_pc + '1';
---			end if;
+	   		jmp_flg <= flush or jal;
+			if flush = '1' or ((ib_write = '1') and (inst(31 downto 26) = op_jal)) then
+				pc <= jmp_addr_next;
+				pc_p1 <= jmp_addr_next;
+			else
 				pc <= next_pc;
 				pc_p1 <= next_pc + '1';
+			end if;
+--				pc <= next_pc;
+--				pc_p1 <= next_pc + '1';
 	   end if;
    end process PC0;
    
@@ -290,7 +292,6 @@ begin
 	-- EX
 	-- 
 	----------------------------------
-	
 	LED_OUT :process(clk)
 	begin
 		if rising_edge(clk) then

@@ -28,7 +28,7 @@ architecture STRUCTURE of FP_MUL is
   signal AH, BH, AL, BL : std_logic_vector(11 downto 0);
   
   signal OMH1, OMM1, OMM2 : std_logic_vector(23 downto 0);
-  signal OE1 : std_logic_vector(8 downto 0);
+  signal OE1 : std_logic_vector(7 downto 0);
   signal OS1 : std_logic;
 
   -- 2nd stage
@@ -76,9 +76,9 @@ begin  -- STRUCTURE
       OMM2 <= BH * AL;
       
       if ZERO = '1' then
-        OE1 <= "000000000";
+        OE1 <= "00000000";
       else
-        OE1 <= (('0'&A(30 downto 23)) + ('0'&B(30 downto 23))) - "001111111";
+        OE1 <= ((A(30 downto 23)) + (B(30 downto 23))) - "01111111";
       end if;
 
       OS1 <= A(31) xor B(31);

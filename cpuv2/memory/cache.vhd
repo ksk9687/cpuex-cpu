@@ -73,35 +73,110 @@ architecture arch of small_cache is
     type cache_tag_type is array (0 to 2047) of std_logic_vector (3 downto 0);--3 + 1
     type cache_data_type is array (0 to 2047) of std_logic_vector (31 downto 0); --32
     
-   signal tag,tag_p : std_logic_vector(3 downto 0) := '0'&"000";
+   signal tag,tag_p,tag_p2,tag_write : std_logic_vector(3 downto 0) := '0'&"000";
    signal cache : cache_tag_type := (others => '0'&"000");
    signal cache_data : cache_data_type:= (others => (others => '0'));
    
+    signal data : std_logic_vector(31 downto 0) := (others => '0');
     signal read_addr : std_logic_vector(10 downto 0) := (others => '0');
     signal cmp_addr : std_logic_vector(2 downto 0) := (others => '0');
     signal addr_buf,set_addr_buf : std_logic_vector(13 downto 0) := (others => '0');
-    signal hit_p,hit_p2,conflict : std_logic := '0';
+    signal hit1,hit2,hit_p,hit_p2,conflict : std_logic := '0';
     signal set_data_buf : std_logic_vector(31 downto 0) := (others => '0');
-    
+    component icache_tag IS
+	port (
+	a: IN std_logic_VECTOR(10 downto 0);
+	d: IN std_logic_VECTOR(3 downto 0);
+	dpra: IN std_logic_VECTOR(10 downto 0);
+	clk: IN std_logic;
+	we: IN std_logic;
+	spo: OUT std_logic_VECTOR(3 downto 0);
+	dpo: OUT std_logic_VECTOR(3 downto 0));
+end component;
 begin
+	IT0:icache_tag
+	port map(
+	set_addr(10 downto 0),
+	tag_write,
+	address(10 downto 0),
+	clk,set,tag_p2,tag_p);
+	
+	tag_write <= '1'&set_addr(13 downto 11);
 	read_data <= cache_data(conv_integer(read_addr));
-	tag <= cache(conv_integer(read_addr));
-	hit <= tag(3) and (not conflict) when tag(2 downto 0) = cmp_addr else '0';
+	hit <= tag(3) when tag(2 downto 0) = cmp_addr(2 downto 0) else '0';
 	
 	process (clk)
 	begin
 	    if rising_edge(clk) then
 	        if set = '1' then
-	            cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(13 downto 11);
+	            --cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(13 downto 11);
 	            cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
 	        end if;
 	        read_addr <= address(10 downto 0);
 	        cmp_addr <= address(13 downto 11);
-	        if (address(10 downto 0) = set_addr(10 downto 0)) then
-	        	conflict <= set;
-	        else
-	        	conflict <= '0';
+			
+			tag <= tag_p;
+	    end if;
+	end process;
+end arch;
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity block_cache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(13 downto 0);
+		set_addr: in std_logic_vector(13 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end block_cache;
+
+
+architecture arch of block_cache is
+    type cache_tag_type is array (0 to 2047) of std_logic_vector (3 downto 0);--3 + 1
+    type cache_data_type is array (0 to 2047) of std_logic_vector (31 downto 0); --32
+    
+   signal tag,tag_p,tag_p2,tag_write : std_logic_vector(3 downto 0) := '0'&"000";
+   signal cache : cache_tag_type := (others => '0'&"000");
+   signal cache_data : cache_data_type:= (others => (others => '0'));
+   
+    signal data : std_logic_vector(31 downto 0) := (others => '0');
+    signal read_addr : std_logic_vector(10 downto 0) := (others => '0');
+    signal cmp_addr : std_logic_vector(2 downto 0) := (others => '0');
+    signal addr_buf,set_addr_buf : std_logic_vector(13 downto 0) := (others => '0');
+    signal hit1,hit2,hit_p,hit_p2,conflict,conflict1,conflict2 : std_logic := '0';
+    signal set_data_buf : std_logic_vector(31 downto 0) := (others => '0');
+
+begin
+
+	tag_write <= '1'&set_addr(13 downto 11);
+	read_data <= cache_data(conv_integer(read_addr));
+	tag <= cache(conv_integer(read_addr));
+	hit <= tag(3) and (not conflict) and (not conflict1) when tag(2 downto 0) = cmp_addr(2 downto 0) else '0';
+	
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	        if set = '1' then
+	            cache(conv_integer(set_addr(10 downto 0))) <= tag_write;
+	            cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
 	        end if;
+	        read_addr <= address(10 downto 0);
+	        cmp_addr <= address(13 downto 11);
+			
+			if set_addr(10 downto 0) = address(10 downto 0) then
+			  conflict <= set;
+			 else
+			  conflict <= '0';
+			 end if;
+			conflict1 <= conflict;
 	    end if;
 	end process;
 end arch;
@@ -174,11 +249,6 @@ use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity dcache is
-	generic (
-		width : integer := 9;
-		depth : integer := 2048;
-		check_width : integer := 2
-	);
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
@@ -191,51 +261,115 @@ entity dcache is
 end dcache;
 
 architecture arch of dcache is
-    type cache_tag_type is array (0 to depth - 1) of std_logic_vector (width downto 0); --width + 1
-    type cache_data_type is array (0 to depth - 1) of std_logic_vector (31 downto 0); --32
-    
-    signal cache : cache_tag_type :=(
-    	others => (others => '0')
-    	);
-    	
-   signal cache_data : cache_data_type;
+
+component data_cache IS
+	port (
+	clka: IN std_logic;
+	dina: IN std_logic_VECTOR(31 downto 0);
+	addra: IN std_logic_VECTOR(10 downto 0);
+	wea: IN std_logic_VECTOR(0 downto 0);
+	douta: OUT std_logic_VECTOR(31 downto 0));
+END component;
+component data_cache_tag IS
+	port (
+	clka: IN std_logic;
+	dina: IN std_logic_VECTOR(9 downto 0);
+	addra: IN std_logic_VECTOR(10 downto 0);
+	wea: IN std_logic_VECTOR(0 downto 0);
+	douta: OUT std_logic_VECTOR(9 downto 0));
+END component;
    
-    signal entry : std_logic_vector(9 downto 0) := (others => '0');
+    signal data : std_logic_vector(31 downto 0) := (others => '0');
+    signal entry,set_entry : std_logic_vector(9 downto 0) := (others => '0');
     signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
-    signal address_buf : std_logic_vector(19 downto 0) := (others => '0');
+    signal address_buf,ac_addr : std_logic_vector(19 downto 0) := (others => '0');
+    signal we : std_logic_vector(0 downto 0) := (others => '0');
     signal conflict : std_logic := '0';
 begin
-	read_data <= cache_data(conv_integer(address_buf(10 downto 0)));
-	
-	entry <= cache(conv_integer(address_buf(10 downto 0)));
+	--read_data <= cache_data(conv_integer(address_buf(10 downto 0)));
 	hit <= entry(9) and (not conflict) when entry(8 downto 0) = address_buf(19 downto 11) else '0';
+	ac_addr <= set_addr when set = '1' else address;
+	we(0) <= set;	
+	
+	set_entry <= '1'&set_addr(19 downto 11);
+	
+	DC0 : data_cache
+	port map(
+	clk,set_data,ac_addr(10 downto 0),
+	we,read_data);
+	
+	DCTAG0 : data_cache_tag
+	port map(
+	clk,set_entry,ac_addr(10 downto 0),
+	we,entry);
 	
 	process (clk)
 	begin
 	    if rising_edge(clk) then
-	        if set = '1' then
-	            cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(19 downto 11);
-	        end if;
 	        address_buf <= address;
-	        
-	        if (address(10 downto 0) = set_addr(10 downto 0)) then
-	        	conflict <= set;
-	        else
-	        	conflict <= '0';
-	        end if;
-	    end if;
-	end process;
-	
-	process (clk)
-	begin
-	    if rising_edge(clk) then
-	        if set = '1' then
-	            cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
-	        end if;
+	       	conflict <= set;
 	    end if;
 	end process;
 end arch;
 
+--データキャッシュ
+
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity block_dcache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end block_dcache;
+
+architecture arch of block_dcache is
+    type cache_tag_type is array (0 to 2047) of std_logic_vector (9 downto 0);--9 + 1
+    type cache_data_type is array (0 to 2047) of std_logic_vector (31 downto 0); --32
+    
+   signal tag,tag_p : std_logic_vector(9 downto 0) := '0'&"000000000";
+   signal cache : cache_tag_type := (others => '0'&"000000000");
+   signal cache_data : cache_data_type := (others => (others => '0'));
+   
+    signal data : std_logic_vector(31 downto 0) := (others => '0');
+    signal entry,set_entry : std_logic_vector(9 downto 0) := (others => '0');
+    signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
+    signal address_buf,ac_addr,rd_addr : std_logic_vector(19 downto 0) := (others => '0');
+    signal we : std_logic_vector(0 downto 0) := (others => '0');
+    signal conflict,conflict1 : std_logic := '0';
+begin
+	read_data <= cache_data(conv_integer(address_buf(10 downto 0)));
+	hit <= entry(9) and (not conflict) and (not conflict1) when entry(8 downto 0) = address_buf(19 downto 11) else '0';
+	entry <= cache(conv_integer(address_buf(10 downto 0)));
+	
+	
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	    	if set = '1' then
+	    	   cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(19 downto 11);
+	           cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
+	    	end if;
+	    	
+	        address_buf <= address;
+	    	
+	    	if set_addr(10 downto 0) = address(10 downto 0) then
+	    		conflict <= set;
+	    	else
+	    		conflict <= '0';
+	    	end if;
+	    	conflict1 <= conflict;
+	    end if;
+	end process;
+end arch;
 
 --馬鹿キャッシュ
 library ieee;
@@ -277,6 +411,63 @@ begin
 	    		address_buf <= set_addr;
 	    		data_buf <= set_data;
 	    	end if;
+	    end if;
+	end process;
+end arch;
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity simple_dcache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end simple_dcache;
+
+architecture arch of simple_dcache is
+    type cache_tag_type is array (0 to 2047) of std_logic_vector (9 downto 0);--9 + 1
+    type cache_data_type is array (0 to 2047) of std_logic_vector (31 downto 0); --32
+    
+   signal tag,tag_p : std_logic_vector(9 downto 0) := '0'&"000000000";
+   signal cache : cache_tag_type := (others => '0'&"000000000");
+   signal cache_data : cache_data_type := (others => (others => '0'));
+   
+    signal data : std_logic_vector(31 downto 0) := (others => '0');
+    signal entry,set_entry : std_logic_vector(9 downto 0) := (others => '0');
+    signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
+    signal address_buf,ac_addr,rd_addr : std_logic_vector(19 downto 0) := (others => '0');
+    signal we : std_logic_vector(0 downto 0) := (others => '0');
+    signal conflict : std_logic := '0';
+begin
+	read_data <= cache_data(conv_integer(address_buf(10 downto 0)));
+	hit <= (entry(9) and (not conflict)) when entry(8 downto 0) = address_buf(19 downto 11) else '0';
+	
+	entry <= cache(conv_integer(address_buf(10 downto 0)));
+	
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	    	if set = '1' then
+	    	   cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(19 downto 11);
+	           cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
+	    	end if;
+	    	
+	    	if address(10 downto 0) = set_addr(10 downto 0) then
+	    		conflict <= '1';
+	    	else
+	    		conflict <= '0';
+	    	end if;
+	       
+	       address_buf <= address;
 	    end if;
 	end process;
 end arch;

@@ -61,8 +61,8 @@ begin  -- CLOCK
     generic map (
       CLK_FEEDBACK       => "1X",
       CLKIN_PERIOD       => 20.0,
-      CLKFX_MULTIPLY     => 2,
-      CLKFX_DIVIDE       => 1,
+      CLKFX_MULTIPLY     => 7,
+      CLKFX_DIVIDE       => 4,
       CLKDV_DIVIDE       => 2.0,
       CLKOUT_PHASE_SHIFT => "NONE")
     port map (
@@ -72,7 +72,7 @@ begin  -- CLOCK
       CLK90  => clk90,
       CLK180 => clk180,
       CLK270 => clk270,
-      CLK2X  => clk2x,
+      CLKFX  => clk2x,
       CLKDV => clkdv,
       LOCKED => locked0,
       RST    => rst0);
@@ -83,7 +83,7 @@ begin  -- CLOCK
   DCM1 : DCM
     generic map (
       CLK_FEEDBACK       => "1X",
-      CLKIN_PERIOD       => 10.0,
+      CLKIN_PERIOD       => 11.1,
       CLKFX_MULTIPLY     => 2,
       CLKFX_DIVIDE       => 1,
       CLKDV_DIVIDE       => 2.0,

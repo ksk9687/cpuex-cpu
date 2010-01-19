@@ -58,6 +58,18 @@ component small_cache is
 	);
 end component;
 
+component block_cache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(13 downto 0);
+		set_addr: in std_logic_vector(13 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end component;
+
 component lazy_cache is
 	port  (
 		clk,clkfast : in std_logic;
@@ -71,11 +83,18 @@ component lazy_cache is
 end component;
 
 component dcache is
-	generic (
-		width : integer := 9;
-		depth : integer := 2048;
-		check_width : integer := 2
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
 	);
+end component;
+
+component block_dcache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
@@ -92,6 +111,18 @@ component baka_cache is
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(13 downto 0);
 		set_addr: in std_logic_vector(13 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end component;
+
+component simple_dcache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);

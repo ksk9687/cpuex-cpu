@@ -54,7 +54,7 @@ begin
 	writeok_in <= '0' when read_pointer = write_pointer_p1 else '1';
 	readok <= readok_in;
 	read_pointer_p1 <= (read_pointer + '1');
-	readok_in <= '0' when (read_pointer = write_pointer)else '1';
+	readok_in <= '0' when (read_pointer = write_pointer) else '1';
 
 	
 	
