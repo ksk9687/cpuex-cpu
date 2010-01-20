@@ -54,7 +54,7 @@ begin
 	 with op select
 	 reg_s2_use <=  '0' when op_write | op_read | op_load |
 	 op_jmp | op_jal| op_jr | op_ledi |op_led | op_cmpi 
-	 | op_addi | op_li | op_mv | op_fneg | op_fabs
+	 | op_addi | op_li | op_mv | op_fneg | op_fabs| op_finv| op_fsqrt
 	 | op_sleep | op_halt | op_nop,--“Ç‚Ýž‚Ü‚È‚¢
 	 '1' when others;
 	 

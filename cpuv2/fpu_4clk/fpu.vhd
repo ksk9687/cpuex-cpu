@@ -84,9 +84,8 @@ begin  -- STRUCTURE
   fp_cmp_inst  : FP_CMP  port map (clk => clk, O => O_CMP, A => A, B => B);
 
   -- B ‚Ì•„†‚ğ”½“]‚·‚éê‡‚ª‚ ‚é
-  B_ADD(30 downto 0) <= B(30 downto 0);
-  B_ADD(31) <= B(31) when op = fpu_op_fadd else   -- add
-           (not B(31));-- sub -> negate
+  B_ADD <= B when op = fpu_op_fadd else       -- add
+           (not B(31)) & B(30 downto 0);  -- sub -> negate
 
   -- cmp ê—po—Í
   cmp <= O_CMP;

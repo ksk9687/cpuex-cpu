@@ -37,6 +37,7 @@ architecture arch of lsu is
 	 signal writeok_in,empty,readok_in,load_end,load_end_p,lsu_ok_in :std_logic := '0';
 	 signal buf : std_logic_vector(31 downto 0) := (others => '0');
 	 signal writedata,readdata : std_logic_vector(53 downto 0) := (others => '0');
+	 signal load_wait :std_logic := '0';
 
 begin
 	lsu_full <= not writeok_in;
@@ -48,7 +49,7 @@ begin
 	--空か
 	empty <= '1' when read_pointer = write_pointer else '0';
 	--読み込み位置にあるレコードを消してもよいか。
-	lsu_ok_in <= load_end when readdata(53 downto 52) = "10" else '1';
+	lsu_ok_in <= (load_ok and load_wait) when readdata(53 downto 52) = "10" else '1';
 	
 	reg_d <= readdata(25 downto 20);
 	lsu_out <= buf;
@@ -71,6 +72,7 @@ begin
 			write_pointer <= (others => '0');
 			load_end <= '0';
 			load_end_p <= '0';
+			load_wait <= '0';
 		elsif rising_edge(clk) then
 			
 			if (write = '1') and (writeok_in = '1') then
@@ -78,25 +80,15 @@ begin
 				write_pointer <= write_pointer + '1';
 			end if;
 			
-			if (((read = '1') or (readdata(53 downto 52) /= "10")) and (empty = '0')) then
+			if (lsu_ok_in = '1') and (empty = '0') then
 				read_pointer <= read_pointer + '1';
-			end if;
-
-			if ((read = '1') or (readdata(53 downto 52) /= "10")) then
-				load_end <= '0';
-				load_end_p <= '0';
-			elsif (write = '1') and (writeok_in = '1') and (empty = '1') then
-				load_end <= '0';
-				load_end_p <= '0';	
-			elsif (load_ok = '1') and (load_end_p = '1') then
-				load_end <= '1';
+				load_wait <= '0';
 			else
-				load_end_p <= '1';
+				if (readdata(53 downto 52) = "10") and (empty = '0') and (load_ok = '1') then
+					load_wait <= '1';
+				end if;	
 			end if;
 			
-			if load_ok = '1' and load_end = '0' then
-				buf <= load_data;
-			end if;
 		end if;
 	end process;
 	

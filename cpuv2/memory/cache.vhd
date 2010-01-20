@@ -344,7 +344,7 @@ architecture arch of block_dcache is
     signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
     signal address_buf,ac_addr,rd_addr : std_logic_vector(19 downto 0) := (others => '0');
     signal we : std_logic_vector(0 downto 0) := (others => '0');
-    signal conflict,conflict1 : std_logic := '0';
+    signal conflict,conflict1,conflict2 : std_logic := '0';
 begin
 	read_data <= cache_data(conv_integer(address_buf(10 downto 0)));
 	hit <= entry(9) and (not conflict) and (not conflict1) when entry(8 downto 0) = address_buf(19 downto 11) else '0';

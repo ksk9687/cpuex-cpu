@@ -315,9 +315,31 @@ port (
     data_s1,data_s2 : out std_logic_vector(31 downto 0);
     
     cr : out std_logic_vector(2 downto 0);
-    reg_ok: out std_logic
+    s1_ok,s2_ok,cr_ok: out std_logic
     ); 
     
+end component;
+
+
+component reorderBuffer is
+	port  (
+		clk,rst : in std_logic;
+		write : in std_logic;
+		writeok: out std_logic;
+		
+		reg_d,reg_s1,reg_s2 : in std_logic_vector(5 downto 0);
+		reg_s1_ok,reg_s2_ok : out std_logic;
+		reg_s1_data,reg_s2_data : out std_logic_vector(31 downto 0);
+		newtag : out std_logic_vector(2 downto 0);
+		
+		readok: out std_logic;
+		reg_num : out std_logic_vector(5 downto 0);
+		reg_data : out std_logic_vector(31 downto 0);
+		
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(2 downto 0);
+		value1,value2,value3 : in std_logic_vector(31 downto 0)
+	);
 end component;
 
 

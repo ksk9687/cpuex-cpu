@@ -26,7 +26,7 @@ port (
     data_s1,data_s2 : out std_logic_vector(31 downto 0);
     
     cr : out std_logic_vector(2 downto 0);
-    reg_ok: out std_logic
+    s1_ok,s2_ok,cr_ok: out std_logic
     ); 
     
 end reg;
@@ -36,8 +36,8 @@ architecture synth of reg is
     type reg is array (0 to 63) of std_logic_vector (31 downto 0);
 	signal registers : reg;
 	
-    type using_table_t is array (0 to 63) of std_logic;
-	signal using	:	std_logic_vector (63 downto 0) := (others => '0');
+    type using_table_t is array (0 to 63) of std_logic_vector (2 downto 0);
+	signal using	:	using_table_t := (others => (others => '0'));
 	
 	signal cr_a :std_logic_vector (2 downto 0) := "000";
 	signal cr_using :std_logic:= '0';
@@ -48,45 +48,48 @@ begin
     data_s2 <= registers(conv_integer(s2(5 downto 0)));
     cr <= cr_a;
     
-    reg_ok <= ok;
-    
-    ok <= not ((s1(6) and using(conv_integer(s1(5 downto 0))))
-    or (s2(6) and using(conv_integer(s2(5 downto 0))))
-    or (pd(6) and using(conv_integer(pd(5 downto 0))))
-    or (pcrflg(1) and cr_using));
-   
-    
+    --レジスタかリオーダバッファかどちらを見ればよいか　1:レジスタ　0:リオーダバッファ
+    s1_ok <= '1' when using(conv_integer(s1(5 downto 0))) = "000" else '0';
+    s2_ok <= '1' when using(conv_integer(s2(5 downto 0))) = "000" else '0';
+    --crが正しいかどうか
+    cr_ok <= not (pcrflg(1) and cr_using);
     
     WRITE : process (clk,rst)
      begin
      	if rst = '1'then
-     		using <= (others => '0');
+     		using <= (others => (others => '0'));
 	     	cr_using <= '0';
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
 	     	if dflg = '1'then
 	     		registers(conv_integer(d(5 downto 0))) <= data_d;
-	     		using(conv_integer(d(5 downto 0))) <= '0';
 	     	end if;
 	     	
-	     	if ok = '1' and stall = '0' and flush = '0' and pd(6) = '1' then
-	     		using(conv_integer(pd(5 downto 0))) <= '1';
-	     	end if;
+	     	if stall = '0' and flush = '0' and pd(6) = '1' then
+	     		if (pd(5 downto 0) = d(5 downto 0)) and dflg = '1' then
+	     		else
+	     			if dflg = '1' then
+	     				using(conv_integer(d(5 downto 0))) <= using(conv_integer(d(5 downto 0))) - '1';
+	     			end if;
+	 	     		using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
+				end if;
+	     	else
+	     		if dflg = '1' then
+		     		using(conv_integer(d(5 downto 0))) <= using(conv_integer(d(5 downto 0))) - '1';
+		     	end if;
+	    	end if;
 	     	--Crの書き換え
 	     	if crflg = "11" then
 	     		cr_a <= cr_d;
 	     		cr_using <= '0';
-	     	elsif ok = '1' and stall = '0' and flush = '0' and pcrflg(0) = '1' then
+	     	elsif stall = '0' and flush = '0' and pcrflg(0) = '1' then
      			cr_using <= '1';
 	     	end if;
 	     	
-	     	
---	     	end if;
      	end if;
      end process WRITE;
     	
     
-
 end synth;
 
 

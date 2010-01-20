@@ -209,7 +209,6 @@ begin
 	
 	ls_addr_buf_p1 <= ls_addr_buf + '1';
 	
-	
 	DMEM : process(clk,rst)
 	begin
 		if rst = '1' then
@@ -221,25 +220,25 @@ begin
 				when idle		=>
 					if i_d_in(0) = '1' then--miss Load
 						d_mem_state <= data_w1;
-						ls_buf0 <= "00";
+						ls_buf0 <= "10";
+						ls_addr_buf <= ls_addr_buf_p1;
 					else
+						ls_addr_buf <= ls_addr;
 						ls_buf0 <= ls_flg;
 					end if;
 				when data_w1	=>
-					d_mem_state <= data_w2;
-					ls_buf0 <= "00";
+						d_mem_state <= data_w2;
+						ls_buf0 <= "10";
+						ls_addr_buf <= ls_addr_buf_p1;
 				when data_w2	=>
-					d_mem_state <= data_w3;
-					ls_buf0 <= "00";
+						d_mem_state <= data_w3;
+						ls_buf0 <= "10";
+						ls_addr_buf <= ls_addr_buf_p1;
 				when data_w3	=>
-					d_mem_state <= data_w4;
 					ls_buf0 <= "00";
-				when data_w4	=>
-					d_mem_state <= data_w5;
-					ls_buf0 <= "00";
-				when data_w5	=>
-					d_mem_state <= idle;
-					ls_buf0 <= "00";
+					if dcache_hit = '1' then
+						d_mem_state <= idle;
+					end if;
 				when others	=>
 					ls_buf0 <= ls_flg;
 					d_mem_state <= idle;
@@ -247,7 +246,7 @@ begin
 			
 			dpref <= '0';
 			--ls_buf0 <= ls_flg;
-			ls_addr_buf <= ls_addr;
+			
 			store_data_buf <= store_data;
 		end if;
 	end process;
@@ -285,7 +284,7 @@ begin
 	);
 	
 	
-	DCACHE0:block_dcache port map(
+	DCACHE0: block_dcache port map(
 		clk,clk
 		,ls_addr
 		,d_set_addr

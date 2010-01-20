@@ -81,8 +81,8 @@ begin  -- STRUCTURE
   -- 2nd stage
   -----------------------------------------------------------------------------
   
-  AM2 <= SHR(AM1, BEminusAE(4 downto 0));
-  BM2 <= SHR(BM1, AEminusBE(4 downto 0));
+  AM2 <= SHR(AM1, BEminusAE);
+  BM2 <= SHR(BM1, AEminusBE);
   
   process (clk)
   begin  -- process
