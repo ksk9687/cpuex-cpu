@@ -9,7 +9,7 @@ all : cpuv2
 cpuv2 : tmp/2/alu.cmp tmp/2/alu_im.cmp tmp/2/sramc.cmp tmp/2/cache.cmp tmp/2/instructionBuffer.cmp\
 	tmp/2/reg.cmp tmp/2/irom.cmp tmp/2/memory.cmp tmp/2/usb.cmp tmp/2/iou.cmp\
 	tmp/2/branchPredictor.cmp tmp/2/lsu.cmp tmp/2/fpu.cmp tmp/2/reorderBuffer.cmp\
-	tmp/2/clock.cmp tmp/2/clock.cmp tmp/2/decoder.cmp tmp/2/dff.cmp
+	tmp/2/clock.cmp tmp/2/clock.cmp tmp/2/decoder.cmp tmp/2/dff.cmp tmp/2/returnAddressStack.cmp
 	$(CMD) -l 2 cpuv2/library/SuperScalarComponents.vhd  
 	
 tmp/2/alu.cmp:cpuv2/alu/alu.vhd
@@ -62,6 +62,11 @@ tmp/2/fpu.cmp:cpuv2/fpu_4clk/fpu.vhd
 
 tmp/2/reorderBuffer.cmp:cpuv2/reorderBuffer.vhd
 	$(CMD) 2 $< $@
+	
+tmp/2/returnAddressStack.cmp:cpuv2/returnAddressStack.vhd
+	$(CMD) 2 $< $@
+	
+	
 
 clean:
 	rm -f $(ALL_COMPONENT_FILES)

@@ -26,17 +26,10 @@ architecture arch of branchPredictor is
 	signal write_pointer :std_logic_vector(3 downto 0) := (others => '0');
 	
 	signal stop,taken_in,hist : std_logic;
-	signal counter,counter_buf,newcounter : std_logic_vector(1 downto 0);
+	signal counter,counter_buf,newcounter,newcounter_p,newcounter_m : std_logic_vector(1 downto 0);
 	signal pc_buf,pc_buf2 : std_logic_vector(12 downto 0);
-	signal hist_buf : std_logic_vector(7 downto 0);
+	signal branch_hist_buf : std_logic_vector(7 downto 0);
 begin
-	--taken <= '0';
-	--taken_hist <= '0';
-	
-
---	bp_ok <= not stop;
---	taken <= taken_in;
---	taken_hist <= hist;
 
 	taken <= taken_in;
 	taken_in <= counter(1);
@@ -46,17 +39,26 @@ begin
 	counter_buf <= counter_hist_table(conv_integer(read_pointer))(2 downto 1);
 	pc_buf2 <= counter_hist_table(conv_integer(read_pointer))(15 downto 3);
 	
+	bp_ok <= '1' when read_pointer = write_pointer else '0';
 	
-	newcounter <= counter_buf + '1' when b_taken = '1' and counter_buf /= "11" else
-	counter_buf - '1' when b_not_taken = '1' and counter_buf /= "00" else
-	counter_buf;
+	with counter_buf select
+	 newcounter_p <= "01" when "00",
+	 "10" when "01",
+	 "11" when others;
+	with counter_buf select
+	 newcounter_m <= "10" when "11",
+	 "01" when "10",
+	 "00" when others;
 	
-	process(clk)
+	newcounter <= newcounter_p when b_taken = '1' else
+	newcounter_m;
+	
+	process(clk,rst)
 	begin
 		if rst = '1' then
-				read_pointer <= "0000";
-				write_pointer <= "0000";
-				hist_buf <= (others => '0');
+			read_pointer <= "0000";
+			write_pointer <= "0000";
+			branch_hist_buf <= (others => '0');
 		elsif rising_edge(clk) then
 			if flush = '1' then
 				read_pointer <= "0000";
@@ -70,17 +72,13 @@ begin
 					read_pointer <= read_pointer + '1';
 				end if;
 			end if;
-			
 			if b_taken = '1' or b_not_taken = '1' then
-				hist_buf <= hist_buf(6 downto 0) & b_taken;
+				branch_hist_buf <= branch_hist_buf(6 downto 0) & b_taken;
 				counter_table(conv_integer(pc_buf2)) <= newcounter;
 			end if;
-			
-			pc_buf <= (pc(12 downto 5) xor hist_buf(7 downto 0))& pc(4 downto 0);
+			pc_buf <= (pc(12 downto 5) xor branch_hist_buf(7 downto 0))& pc(4 downto 0);
 		end if;
 	end process;
-	
-	
 
 end arch;
 

@@ -96,10 +96,10 @@ architecture arch of cpu_top is
 	signal im_buf0,ext_im_buf0 :std_logic_vector(31 downto 0) := (others=>'0');
 	signal reg_d_buf0,reg_d_buf1,reg_d_buf2,reg_d_buf3,reg_d_buf4:std_logic_vector(5 downto 0) := (others=>'0');
 			
-	signal jmp_stop,jmp,predict_taken_hist,predict_taken,bp_miss : std_logic :='0';
+	signal pc_next,jmp_stop,jmp,predict_taken_hist,predict_taken,bp_miss : std_logic :='0';
 	
    	signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
-   signal jal,cr_mask,cr_mask_p,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
+   signal jal_op,jr_op,jal,cr_mask,cr_mask_p,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
    signal debug :std_logic_vector(7 downto 0) := (others=>'1');
    
    signal reg_s1_ok,reg_s2_ok,reg_cr_ok,rob_s1_ok,rob_s2_ok : std_logic := '0';
@@ -139,6 +139,13 @@ begin
   	jmp,jmp_taken,jmp_not_taken,
   	predict_taken,predict_taken_hist
   );
+  
+  RAS0 : returnAddressStack port map (
+  	clk,rst,flush,
+  	jal,jr,
+  	pc_p1,jr_pc
+  );
+  
   MEMORY0 : memory port map (
    	clk,rst,clk,clk180,clk270,
    	next_pc,inst,inst_ok,
@@ -153,22 +160,27 @@ begin
 
    bp_miss <= (jmp_taken and (not predict_taken_hist)) or
    (jmp_not_taken and predict_taken_hist);
-	
-   flush <= (bp_miss or jr);
+   flush <= (bp_miss);
    
-   --ib_write <= (not flush) and (not jmp_flg) and (write_inst_ok) and (inst_ok);
-   ib_write <= (not jmp_flg) and (write_inst_ok) and (inst_ok);
+   pc_next <= (not jmp_flg) and 
+   (((not (jr_op or jal_op)) and  write_inst_ok) or (bp_ok and (jr_op or jal_op))) 
+   and (inst_ok);
+   ib_write <= (not jmp_flg) and (write_inst_ok) and (inst_ok) and (not jal_op) and (not jr_op);
 
    jmp <= ib_write when (inst(31 downto 26) = op_jmp) else '0';   
-   jal <= ib_write when (inst(31 downto 26) = op_jal) else '0';
-      
+   jal <= (not jmp_flg) and (inst_ok) and bp_ok and jal_op;
+   jr <= (not jmp_flg) and (inst_ok) and bp_ok and jr_op;
+   jal_op <= '1' when (inst(31 downto 26) = op_jal) else '0';
+   jr_op <= '1' when (inst(31 downto 26) = op_jr) else '0';
+   
    next_pc <= 
-   pc when ib_write = '0' else
+   pc when pc_next = '0' else
    pc_p1;
    
    jmp_addr_next <= jmp_addr when flush = '1' else
-   inst(23)&inst(13 downto 0) when (inst(31 downto 26) = op_jmp) else
-   inst(14 downto 0);
+   jr_pc when jr_op = '1' else
+   inst(14 downto 0) when jal_op = '1'else
+   inst(23)&inst(13 downto 0);
    
    PC0:process(clk,rst)
    begin
@@ -177,8 +189,8 @@ begin
 	   		pc_p1 <= "100"&x"001";
 	   		jmp_flg <= '0';
 	   elsif rising_edge(clk) then
-	   		jmp_flg <= flush or jal or (jmp and predict_taken);
-			if flush = '1' or ((jmp = '1') and (predict_taken = '1')) or (jal = '1') then
+	   		jmp_flg <= flush or jal or jr or (jmp and predict_taken);
+			if flush = '1' or ((jmp = '1') and (predict_taken = '1')) or (jal = '1') or (jr = '1') then
 				pc <= jmp_addr_next;
 				pc_p1 <= jmp_addr_next;
 			else
@@ -201,13 +213,11 @@ begin
    	regwrite,cr_flg
    );
    
-    write_inst_im <= pc_p1 when inst(31 downto 26) = op_jal else
-    pc_p1 when inst(31 downto 26) = op_jmp and predict_taken = '1' else
+    write_inst_im <= pc_p1 when inst(31 downto 26) = op_jmp and predict_taken = '1' else
     inst(23)&inst(13 downto 0) when inst(31 downto 26) = op_jmp else
     '0'&inst(13 downto 0);
     
-    write_op <= op_li when jal = '1' else
-    inst(31 downto 26);
+    write_op <= inst(31 downto 26);
     
    write_inst_data <=  write_op & regwrite & reg_d & reg_s1_use & reg_s1 & reg_s2_use & reg_s2 & cr_flg & write_inst_im;
    
@@ -333,9 +343,7 @@ begin
 	----•ªŠò
 	jmp_taken <= (not cr_mask) when (unit_op_buf0&sub_op_buf0) = op_jmp else '0';
 	jmp_not_taken <= cr_mask when (unit_op_buf0&sub_op_buf0) = op_jmp else '0';
-	jr <= '1'when (unit_op_buf0&sub_op_buf0) = op_jr else '0';
-	jmp_addr <= ext_im_buf0(14 downto 0) when (unit_op_buf0&sub_op_buf0) = op_jmp else
-	data_s1(14 downto 0);--jr
+	jmp_addr <= ext_im_buf0(14 downto 0);
 
 
 	LED_OUT :process(clk)

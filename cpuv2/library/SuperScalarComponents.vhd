@@ -356,6 +356,16 @@ component reorderBuffer is
 end component;
 
 
+component returnAddressStack is
+	port  (
+		clk,rst,flush : in std_logic;
+		jal,jr : in std_logic;
+		pc : in std_logic_vector(14 downto 0);
+		new_pc : out std_logic_vector(14 downto 0)
+	);
+end component;
+
+
 component sram_controller is
     Port (
 		CLK : in STD_LOGIC
