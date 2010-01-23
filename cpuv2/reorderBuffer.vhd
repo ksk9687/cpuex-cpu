@@ -27,19 +27,19 @@ end reorderBuffer;
 
 architecture arch of reorderBuffer is
 	constant init_entry : std_logic_vector(38 downto 0) := (others => '0');
-	type entry_t is array (0 to 7) of std_logic_vector (38 downto 0);
+	type entry_t is array (0 to 3) of std_logic_vector (38 downto 0);
 	signal buf : entry_t := (others => init_entry);
 	
-	constant init_map_entry : std_logic_vector(2 downto 0) := (others => '0');
-	type map_t is array (0 to 63) of std_logic_vector (2 downto 0);
+	constant init_map_entry : std_logic_vector(1 downto 0) := (others => '0');
+	type map_t is array (0 to 63) of std_logic_vector (1 downto 0);
 	signal bufmap : map_t := (others => init_map_entry);
 	
-	signal read_pointer :std_logic_vector(2 downto 0) := (others => '0');
-	signal write_pointer :std_logic_vector(2 downto 0) := (others => '0');
+	signal read_pointer :std_logic_vector(1 downto 0) := (others => '0');
+	signal write_pointer :std_logic_vector(1 downto 0) := (others => '0');
 	signal writeok_in,readok_in :std_logic := '0';
 	 signal readdata_in : std_logic_vector(38 downto 0) := init_entry;
 	 
-	signal s1_tag,s2_tag :std_logic_vector(2 downto 0) := (others => '0');
+	signal s1_tag,s2_tag :std_logic_vector(1 downto 0) := (others => '0');
 begin
 
 	writeok <= writeok_in;
@@ -49,15 +49,15 @@ begin
 	reg_num <= buf(conv_integer(read_pointer))(37 downto 32);
 	readok_in <= '0' when read_pointer = write_pointer else buf(conv_integer(read_pointer))(38);
 	
-	s1_tag <=bufmap(conv_integer(reg_s1))(2 downto 0);
-	s2_tag <= bufmap(conv_integer(reg_s2))(2 downto 0);
+	s1_tag <= bufmap(conv_integer(reg_s1));
+	s2_tag <= bufmap(conv_integer(reg_s2));
 	reg_s1_ok <= buf(conv_integer( s1_tag ))(38);
 	reg_s2_ok <= buf(conv_integer( s2_tag ))(38);
 	reg_s1_data <= buf(conv_integer( s1_tag ))(31 downto 0);
 	reg_s2_data <= buf(conv_integer( s2_tag ))(31 downto 0);
 	
 	--新しいTAG（エントリ番号）
-	newtag <= write_pointer;
+	newtag <= '0'&write_pointer;
 	
 	process(clk,rst)
 	begin
@@ -67,8 +67,8 @@ begin
 		elsif rising_edge(clk) then
 			
 			--追加
-			if (write = '1') and (writeok_in = '1') then
-				buf(conv_integer(write_pointer))(38 downto 32) <= '0'&reg_d;
+			if (write = '1') then
+				--buf(conv_integer(write_pointer))(38 downto 32) <= '0'&reg_d;
 				bufmap(conv_integer(reg_d)) <= write_pointer;
 				write_pointer <= write_pointer + '1';
 			end if;
@@ -76,24 +76,162 @@ begin
 			--消去
 			if (readok_in = '1') then
 				read_pointer <= read_pointer + '1';
-				buf(conv_integer(read_pointer))(38) <= '0';
+				--buf(conv_integer(read_pointer))(38) <= '0';
 			end if;
 			
-			if write1 = '1' then
-				buf(conv_integer(dtag1))(38) <= '1';
-				buf(conv_integer(dtag1))(31 downto 0) <= value1;
+			if (readok_in = '1') and read_pointer = "00" then
+				buf(0)(38) <= '0';
+			elsif (write1 = '1') and (dtag1(1 downto 0) = "00") then
+				buf(0)(38) <= '1';
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
+				buf(0)(38) <= '1';
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "00") then
+				buf(0)(38) <= '1';
 			end if;
-			if write2 = '1' then
-				buf(conv_integer(dtag2))(38) <= '1';
-				buf(conv_integer(dtag2))(31 downto 0) <= value2;
+			if (write = '1') and write_pointer = "00" then
+				buf(0)(37 downto 32) <= reg_d;
 			end if;
-			if write3 = '1' then
-				buf(conv_integer(dtag3))(38) <= '1';
-				buf(conv_integer(dtag3))(31 downto 0) <= value3;
+			if (write1 = '1') and (dtag1(1 downto 0) = "00") then
+				buf(0)(31 downto 0) <= value1;
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
+				buf(0)(31 downto 0) <= value2;
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "00") then
+				buf(0)(31 downto 0) <= value3;
+			end if;
+			
+			if (readok_in = '1') and read_pointer = "01" then
+				buf(1)(38) <= '0';
+			elsif (write1 = '1') and (dtag1(1 downto 0) = "01") then
+				buf(1)(38) <= '1';
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "01") then
+				buf(1)(38) <= '1';
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "01") then
+				buf(1)(38) <= '1';
+			end if;
+			if (write = '1') and write_pointer = "01" then
+				buf(1)(37 downto 32) <= reg_d;
+			end if;
+			if (write1 = '1') and (dtag1(1 downto 0) = "01") then
+				buf(1)(31 downto 0) <= value1;
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "01") then
+				buf(1)(31 downto 0) <= value2;
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "01") then
+				buf(1)(31 downto 0) <= value3;
+			end if;
+			
+			if (readok_in = '1') and read_pointer = "10" then
+				buf(2)(38) <= '0';
+			elsif (write1 = '1') and (dtag1(1 downto 0) = "10") then
+				buf(2)(38) <= '1';
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "10") then
+				buf(2)(38) <= '1';
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "10") then
+				buf(2)(38) <= '1';
+			end if;
+			if (write = '1') and write_pointer = "10" then
+				buf(2)(37 downto 32) <= reg_d;
+			end if;
+			if (write1 = '1') and (dtag1(1 downto 0) = "10") then
+				buf(2)(31 downto 0) <= value1;
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "10") then
+				buf(2)(31 downto 0) <= value2;
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "10") then
+				buf(2)(31 downto 0) <= value3;
+			end if;
+			
+			if (readok_in = '1') and read_pointer = "11" then
+				buf(3)(38) <= '0';
+			elsif (write1 = '1') and (dtag1(1 downto 0) = "11") then
+				buf(3)(38) <= '1';
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "11") then
+				buf(3)(38) <= '1';
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "11") then
+				buf(3)(38) <= '1';
+			end if;
+			if (write = '1') and write_pointer = "11" then
+				buf(3)(37 downto 32) <= reg_d;
+			end if;
+			if (write1 = '1') and (dtag1(1 downto 0) = "11") then
+				buf(3)(31 downto 0) <= value1;
+			elsif (write2 = '1') and (dtag2(1 downto 0) = "11") then
+				buf(3)(31 downto 0) <= value2;
+			elsif (write3 = '1') and (dtag3(1 downto 0) = "11") then
+				buf(3)(31 downto 0) <= value3;
 			end if;
 		end if;
 	end process;
 
 
 end arch;
-
+--
+--			if (readok_in = '1') and read_pointer = "00" then
+--				buf(0)(38) <= '0';
+--			elsif (write = '1') and write_pointer = "00" then
+--				buf(0)(38) <= '0';
+--				buf(0)(37 downto 32) <= reg_d;
+--			elsif (write1 = '1') and (dtag1(1 downto 0) = "00") then
+--				buf(0)(38) <= '1';
+--				buf(0)(31 downto 0) <= value1;
+--			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
+--				buf(0)(38) <= '1';
+--				buf(0)(31 downto 0) <= value2;
+--			elsif (write3 = '1') and (dtag3(1 downto 0) = "00") then
+--				buf(0)(38) <= '1';
+--				buf(0)(31 downto 0) <= value3;
+--			end if;
+--			
+--			f (write1 = '1') and (dtag1(1 downto 0) = "00") then
+--				buf(0)(31 downto 0) <= value1;
+--			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
+--				buf(0)(31 downto 0) <= value2;
+--			elsif (write3 = '1') and (dtag3(1 downto 0) = "00") then
+--				buf(0)(31 downto 0) <= value3;
+--			end if;
+--			
+--			if (readok_in = '1') and read_pointer = "01" then
+--				buf(1)(38) <= '0';
+--			elsif (write = '1') and write_pointer = "01" then
+--				buf(1)(38) <= '0';
+--				buf(1)(37 downto 32) <= reg_d;
+--			elsif (write1 = '1') and (dtag1(1 downto 0) = "01") then
+--				buf(1)(38) <= '1';
+--				buf(1)(31 downto 0) <= value1;
+--			elsif (write2 = '1') and (dtag2(1 downto 0) = "01") then
+--				buf(1)(38) <= '1';
+--				buf(1)(31 downto 0) <= value2;
+--			elsif (write3 = '1') and (dtag3(1 downto 0) = "01") then
+--				buf(1)(38) <= '1';
+--				buf(1)(31 downto 0) <= value3;
+--			end if;
+--			
+--			if (readok_in = '1') and read_pointer = "10" then
+--				buf(2)(38) <= '0';
+--			elsif (write = '1') and write_pointer = "10" then
+--				buf(2)(38) <= '0';
+--				buf(2)(37 downto 32) <= reg_d;
+--			elsif (write1 = '1') and (dtag1(1 downto 0) = "10") then
+--				buf(2)(38) <= '1';
+--				buf(2)(31 downto 0) <= value1;
+--			elsif (write2 = '1') and (dtag2(1 downto 0) = "10") then
+--				buf(2)(38) <= '1';
+--				buf(2)(31 downto 0) <= value2;
+--			elsif (write3 = '1') and (dtag3(1 downto 0) = "10") then
+--				buf(2)(38) <= '1';
+--				buf(2)(31 downto 0) <= value3;
+--			end if;
+--			
+--			if (readok_in = '1') and read_pointer = "11" then
+--				buf(3)(38) <= '0';
+--			elsif (write = '1') and write_pointer = "11" then
+--				buf(3)(38) <= '0';
+--				buf(3)(37 downto 32) <= reg_d;
+--			elsif (write1 = '1') and (dtag1(1 downto 0) = "11") then
+--				buf(3)(38) <= '1';
+--				buf(3)(31 downto 0) <= value1;
+--			elsif (write2 = '1') and (dtag2(1 downto 0) = "11") then
+--				buf(3)(38) <= '1';
+--				buf(3)(31 downto 0) <= value2;
+--			elsif (write3 = '1') and (dtag3(1 downto 0) = "11") then
+--				buf(3)(38) <= '1';
+--				buf(3)(31 downto 0) <= value3;
+--			end if;

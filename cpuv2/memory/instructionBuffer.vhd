@@ -19,11 +19,11 @@ end instructionBuffer;
 
 architecture arch of instructionBuffer is
 	 constant nop_out : std_logic_vector(43 downto 0) := op_nop&x"000000000"&"00";
-	type ram_t is array (0 to 15) of std_logic_vector (43 downto 0);
+	type ram_t is array (0 to 7) of std_logic_vector (43 downto 0);
 	 signal RAM : ram_t := (others => nop_out);
 	 
-	 signal read_pointer,read_pointer_p1 :std_logic_vector(3 downto 0) := (others => '0');
-	 signal write_pointer,write_pointer_p1 :std_logic_vector(3 downto 0) := (others => '0');
+	 signal read_pointer,read_pointer_p1 :std_logic_vector(2 downto 0) := (others => '0');
+	 signal write_pointer,write_pointer_p1 :std_logic_vector(2 downto 0) := (others => '0');
 	 signal writeok_in,readok_in :std_logic := '0';
 	 signal readdata_in : std_logic_vector(43 downto 0) := nop_out;
 	 
@@ -53,7 +53,6 @@ begin
 	write_pointer_p1 <= (write_pointer + '1');
 	writeok_in <= '0' when read_pointer = write_pointer_p1 else '1';
 	readok <= readok_in;
-	read_pointer_p1 <= (read_pointer + '1');
 	readok_in <= '0' when (read_pointer = write_pointer) else '1';
 
 	

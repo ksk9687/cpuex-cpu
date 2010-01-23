@@ -24,8 +24,8 @@ begin  -- STRUCTURE
 
   with op select
   C0 <=	A + B when op_addi,
-  		SHR(A, B) when op_srl,
-  		SHL(A, B) when op_sll,
+  		SHR(A, B(4 downto 0)) when op_srl,
+  		SHL(A, B(4 downto 0)) when op_sll,
   		B when op_li,
 		"11111111111111111111111111111111" when others;
   

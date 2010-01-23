@@ -285,7 +285,7 @@ begin
 	
 	
 	DCACHE0: block_dcache port map(
-		clk,clk
+		clk,clkfast
 		,ls_addr
 		,d_set_addr
 		,dcache_in

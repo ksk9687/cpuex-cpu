@@ -26,10 +26,11 @@ end component;
 
 component branchPredictor is
 	port  (
-		clk,rst :in std_logic;
+		clk,rst,flush :in std_logic;
+		bp_ok :out std_logic;
 		pc : in std_logic_vector(13 downto 0);
-		im : in std_logic_vector(13 downto 0);
-		taken : out std_logic
+		jmp,b_taken,b_not_taken : in std_logic;
+		taken,taken_hist : out std_logic
 	);
 end component;
 
@@ -95,6 +96,18 @@ component dcache is
 end component;
 
 component block_dcache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end component;
+
+component block_s_dcache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(19 downto 0);
@@ -304,7 +317,7 @@ end component;
 
 component reg is 
 port (
-    clk,rst,flush,stall			: in	  std_logic;
+    clk,rst,flush,rob_alloc,rr_reg_ok			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;

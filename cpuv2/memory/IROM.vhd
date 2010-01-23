@@ -113,7 +113,7 @@ begin
       O => rst0);
       
 	i <= ROM(conv_integer(pc(5 downto 0)));
-	process(clk)
+	process(clk,rst0)
 	begin
 		if rst0 = '1' then
 		inst <= op_nop&"00"&x"000000";

@@ -73,7 +73,6 @@ begin  -- CLOCK
       CLK180 => clk180,
       CLK270 => clk270,
       CLKFX  => clk2x,
-      CLKDV => clkdv,
       LOCKED => locked0,
       RST    => rst0);
 
@@ -83,7 +82,7 @@ begin  -- CLOCK
   DCM1 : DCM
     generic map (
       CLK_FEEDBACK       => "1X",
-      CLKIN_PERIOD       => 11.5,
+      CLKIN_PERIOD       => 12.5,
       CLKFX_MULTIPLY     => 2,
       CLKFX_DIVIDE       => 1,
       CLKDV_DIVIDE       => 2.0,

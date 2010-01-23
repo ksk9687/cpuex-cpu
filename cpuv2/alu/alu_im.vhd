@@ -30,7 +30,7 @@ begin  -- STRUCTURE
 
   with op select
   O <=	A + B when alui_op_addi,
-  		SHL(A, B) when alui_op_sll,
+  		SHL(A, B(4 downto 0)) when alui_op_sll,
   		A when alui_op_mv,
   		'0'&A(30 downto 0) when alui_op_fabs,
   		(not A(31))&A(30 downto 0) when alui_op_fneg,

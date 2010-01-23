@@ -1,4 +1,4 @@
-
+--キューあふれが考慮されていないので注意。
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -44,7 +44,7 @@ begin
 	writeok_in <= '0' when read_pointer = (write_pointer + '1') else '1';
 	lsu_may_full <= '1' when read_pointer = (write_pointer + "10") else '0';
 	
-	lsu_ok <= (not empty) and lsu_ok_in and (not readdata(52));
+	lsu_ok <= load_ok and load_wait and (readdata(53)) and (not readdata(52));
 	
 	--空か
 	empty <= '1' when read_pointer = write_pointer else '0';

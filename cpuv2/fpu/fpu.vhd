@@ -105,8 +105,9 @@ begin  -- STRUCTURE
   fp_neg_inst  : FP_NEG  port map (O => O_NEG, A => A);
 
   -- B ‚Ì•„†‚ğ”½“]‚·‚éê‡‚ª‚ ‚é
-  B_ADD <= B when op = fpu_op_fadd else       -- add
-           (not B(31)) & B(30 downto 0);  -- sub -> negate
+  B_ADD(30 downto 0) <= B(30 downto 0);
+  B_ADD(31) <= B(31) when op = fpu_op_fadd else       -- add
+           (not B(31));  -- sub -> negate
 
 
   -- O ‚É’¼Œ‹‚·‚é•K—v‚ª‚ ‚é‚à‚Ì‚à‚ ‚é
