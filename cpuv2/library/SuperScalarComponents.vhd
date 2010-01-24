@@ -317,7 +317,7 @@ end component;
 
 component reg is 
 port (
-    clk,rst,flush,rob_alloc,rr_reg_ok			: in	  std_logic;
+    clk,rst,rob_alloc,rr_reg_ok			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;

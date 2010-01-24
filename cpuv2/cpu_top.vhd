@@ -240,10 +240,10 @@ begin
 	--命令発行するかどうか
     stall_rr <= not stall_rrx;
 	stall_rrx <= rr_reg_ok and rr_cr_ok and
-	 ((not read_inst_data(37)) or (rob_ok)) and (not flush) and (not lsu_full) and (not lsu_may_full);
+	 ((not read_inst_data(37)) or (rob_ok)) and (not lsu_full) and (not lsu_may_full);
 	
 	--リオーダバッファにエントリを確保するか
-	rob_alloc <= rr_reg_ok and read_inst_data(37) and rob_ok and (not flush) and (not lsu_full) and (not lsu_may_full);
+	rob_alloc <= rr_reg_ok and read_inst_data(37) and rob_ok and (not lsu_full) and (not lsu_may_full);
 	
 	--オペランドがそろっているか
 	rr_reg_ok <=  ((not read_inst_data(30)) or reg_s1_ok or rob_s1_ok) and
@@ -251,10 +251,15 @@ begin
 	
 	--CRが準備出来ているか
 	rr_cr_ok <= reg_cr_ok;
+	cr_mask <= ((read_inst_data(26) and cr_p(2)) or (read_inst_data(25) and cr_p(1)) or (read_inst_data(24) and cr_p(0)));
 	
+	--分岐
+	jmp_taken <= (not cr_mask) and rr_cr_ok when read_inst_data(43 downto 38) = op_jmp else '0';
+	jmp_not_taken <= cr_mask and rr_cr_ok when read_inst_data(43 downto 38) = op_jmp else '0';
+	jmp_addr <= read_inst_data(14 downto 0);
 	
 	REGISTERS : reg port map (
-		clk,rst,flush,rob_alloc,rr_reg_ok,
+		clk,rst,rob_alloc,rr_reg_ok,
 		reg_num,
 		read_inst_data(37 downto 31),
 		read_inst_data(30 downto 24),
@@ -293,10 +298,9 @@ begin
 	data_s1_p <= data_s1_reg_p when reg_s1_ok = '1' else data_s1_rob_p;
 	data_s2_p <= data_s2_reg_p when reg_s2_ok = '1' else data_s2_rob_p;
 	
-	ext_im <= "0"&x"0000"&read_inst_data(14 downto 0) when (read_inst_data(43 downto 38) = op_li) or (read_inst_data(43 downto 38) = op_jmp) else
+	ext_im <= "0"&x"0000"&read_inst_data(14 downto 0) when (read_inst_data(43 downto 38) = op_li) else
 	sign_extention(read_inst_data(13 downto 0));
 
-	cr_mask_p <= ((read_inst_data(26) and cr_p(2)) or (read_inst_data(25) and cr_p(1)) or (read_inst_data(24) and cr_p(0)));
 	
 
 	
@@ -311,7 +315,6 @@ begin
 			reg_d_buf0 <= (others=> '0');
 			data_s1 <= (others=> '0');
 			data_s2 <= (others=> '0');
-			cr_mask <= '1';
 		elsif rising_edge(clk) then
 			if stall_rrx = '0' then--nop
 				unit_op_buf0 <= op_unit_sp;
@@ -329,7 +332,6 @@ begin
 			data_s1 <= data_s1_p;
 			data_s2 <= data_s2_p;
 			tag_buf0 <= rob_tag;
-			cr_mask	<= cr_mask_p;
 		end if;
 	end process RR;
 	
@@ -340,10 +342,6 @@ begin
 	-- 
 	----------------------------------
 	
-	----分岐
-	jmp_taken <= (not cr_mask) when (unit_op_buf0&sub_op_buf0) = op_jmp else '0';
-	jmp_not_taken <= cr_mask when (unit_op_buf0&sub_op_buf0) = op_jmp else '0';
-	jmp_addr <= ext_im_buf0(14 downto 0);
 
 
 	LED_OUT :process(clk)

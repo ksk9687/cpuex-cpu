@@ -15,7 +15,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 entity reg is 
 port (
-    clk,rst,flush,rob_alloc,rr_reg_ok			: in	  std_logic;
+    clk,rst,rob_alloc,rr_reg_ok			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;
@@ -81,7 +81,7 @@ begin
 	     		cr_a <= cr_d;
 	     	end if;
 	     	
-	     	if rr_reg_ok = '1' and flush = '0' and pcrflg(0) = '1' then
+	     	if rr_reg_ok = '1' and pcrflg(0) = '1' then
      			cr_using <= '1';
      		elsif crflg(0) = '1' then
 	     		cr_using <= '0';
