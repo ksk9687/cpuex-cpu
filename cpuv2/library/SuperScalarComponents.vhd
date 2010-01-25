@@ -29,6 +29,7 @@ component branchPredictor is
 		clk,rst,flush :in std_logic;
 		bp_ok :out std_logic;
 		pc : in std_logic_vector(13 downto 0);
+		jmp_num : out std_logic_vector(2 downto 0);
 		jmp,b_taken,b_not_taken : in std_logic;
 		taken,taken_hist : out std_logic
 	);
@@ -359,8 +360,10 @@ end component;
 component returnAddressStack is
 	port  (
 		clk,rst,flush : in std_logic;
-		jal,jr : in std_logic;
+		ras_ok : out std_logic;
+		jal,jr,jmp : in std_logic;
 		pc : in std_logic_vector(14 downto 0);
+		jmp_num : in std_logic_vector(2 downto 0);
 		new_pc : out std_logic_vector(14 downto 0)
 	);
 end component;

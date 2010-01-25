@@ -9,6 +9,7 @@ entity branchPredictor is
 		clk,rst,flush :in std_logic;
 		bp_ok :out std_logic;
 		pc : in std_logic_vector(13 downto 0);
+		jmp_num : out std_logic_vector(2 downto 0);
 		jmp,b_taken,b_not_taken : in std_logic;
 		taken,taken_hist : out std_logic
 	);
@@ -16,18 +17,18 @@ end branchPredictor;
 
 
 architecture arch of branchPredictor is
-	type counter_table_t is array (0 to 8191) of std_logic_vector (1 downto 0);
+	type counter_table_t is array (0 to 4095) of std_logic_vector (1 downto 0);
 	signal counter_table	:	counter_table_t := (others => "01");
 	
-	type counter_hist_table_t is array (0 to 15) of std_logic_vector (15 downto 0);
+	type counter_hist_table_t is array (0 to 7) of std_logic_vector (14 downto 0);
 	signal counter_hist_table	:	counter_hist_table_t := (others => (others => '0'));
 	
-	signal read_pointer :std_logic_vector(3 downto 0) := (others => '0');
-	signal write_pointer :std_logic_vector(3 downto 0) := (others => '0');
+	signal read_pointer :std_logic_vector(2 downto 0) := (others => '0');
+	signal write_pointer :std_logic_vector(2 downto 0) := (others => '0');
 	
 	signal stop,taken_in,hist : std_logic;
 	signal counter,counter_buf,newcounter,newcounter_p,newcounter_m : std_logic_vector(1 downto 0);
-	signal pc_buf,pc_buf2 : std_logic_vector(12 downto 0);
+	signal pc_buf,pc_buf2 : std_logic_vector(11 downto 0);
 	signal branch_hist_buf : std_logic_vector(7 downto 0);
 begin
 
@@ -37,9 +38,10 @@ begin
 	
 	taken_hist <= counter_hist_table(conv_integer(read_pointer))(0);
 	counter_buf <= counter_hist_table(conv_integer(read_pointer))(2 downto 1);
-	pc_buf2 <= counter_hist_table(conv_integer(read_pointer))(15 downto 3);
+	pc_buf2 <= counter_hist_table(conv_integer(read_pointer))(14 downto 3);
 	
 	bp_ok <= '1' when read_pointer = write_pointer else '0';
+	jmp_num <= write_pointer - read_pointer;
 	
 	with counter_buf select
 	 newcounter_p <= "01" when "00",
@@ -56,13 +58,13 @@ begin
 	process(clk,rst)
 	begin
 		if rst = '1' then
-			read_pointer <= "0000";
-			write_pointer <= "0000";
+			read_pointer <= "000";
+			write_pointer <= "000";
 			branch_hist_buf <= (others => '0');
 		elsif rising_edge(clk) then
 			if flush = '1' then
-				read_pointer <= "0000";
-				write_pointer <= "0000";
+				read_pointer <= "000";
+				write_pointer <= "000";
 			else
 				if jmp = '1' then
 					counter_hist_table(conv_integer(write_pointer)) <= pc_buf&counter&taken_in;
@@ -76,7 +78,7 @@ begin
 				branch_hist_buf <= branch_hist_buf(6 downto 0) & b_taken;
 				counter_table(conv_integer(pc_buf2)) <= newcounter;
 			end if;
-			pc_buf <= (pc(12 downto 5) xor branch_hist_buf(7 downto 0))& pc(4 downto 0);
+			pc_buf <= (pc(11 downto 4) xor branch_hist_buf(7 downto 0))& pc(3 downto 0);
 		end if;
 	end process;
 

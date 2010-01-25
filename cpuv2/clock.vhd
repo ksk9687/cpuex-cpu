@@ -61,8 +61,8 @@ begin  -- CLOCK
     generic map (
       CLK_FEEDBACK       => "1X",
       CLKIN_PERIOD       => 20.0,
-      CLKFX_MULTIPLY     => 8,
-      CLKFX_DIVIDE       => 5,
+      CLKFX_MULTIPLY     => 7,
+      CLKFX_DIVIDE       => 4,
       CLKDV_DIVIDE       => 2.0,
       CLKOUT_PHASE_SHIFT => "NONE")
     port map (
@@ -72,6 +72,7 @@ begin  -- CLOCK
       CLK90  => clk90,
       CLK180 => clk180,
       CLK270 => clk270,
+      --CLK2X  => clk2x,
       CLKFX  => clk2x,
       LOCKED => locked0,
       RST    => rst0);

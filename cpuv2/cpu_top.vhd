@@ -49,7 +49,7 @@ end cpu_top;
 architecture arch of cpu_top is	
    signal clk,clk50,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
    signal stall,reg_stall,flush,sleep,stall_b,stall_id,stall_rr,stall_rrx,stall_rd,stall_ex,flushed,bp_write: std_logic := '0';
-   signal write_inst_ok,read_inst_ok,inst_ok,lsu_ok,lsu_ok_t,reg_ok,rr_ok,rr_reg_ok,rr_cr_ok,rob_ok,bp_ok : std_logic := '0';
+   signal write_inst_ok,read_inst_ok,inst_ok,lsu_ok,lsu_ok_t,reg_ok,rr_ok,rr_reg_ok,rr_cr_ok,rob_ok,bp_ok,ras_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
@@ -99,32 +99,33 @@ architecture arch of cpu_top is
 	signal pc_next,jmp_stop,jmp,predict_taken_hist,predict_taken,bp_miss : std_logic :='0';
 	
    	signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
-   signal jal_op,jr_op,jal,cr_mask,cr_mask_p,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
+   signal jmp_ex,jal_op,jr_op,jal,cr_mask,cr_mask_p,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
    signal debug :std_logic_vector(7 downto 0) := (others=>'1');
-   
+   signal jmp_num :std_logic_vector(2 downto 0) := (others=>'1');
+      
    signal reg_s1_ok,reg_s2_ok,reg_cr_ok,rob_s1_ok,rob_s2_ok : std_logic := '0';
 begin
   	ROC0 : ROC port map (O => rst);
   	
---	CLOCK0 : CLOCK port map (
---  		clkin     => CLKIN,
---    	clkout2x    => clk,
---		clkout2x90 => clk90,
---		clkout2x180 => clk180,
---		clkout2x270 => clk270,
---		clkout4x => clk2x,
---		clkout1x => clk50,
---  		locked    => locked0);
-  		
-  	CLOCK0 : CLOCK port map (
+	CLOCK0 : CLOCK port map (
   		clkin     => CLKIN,
-    	clkout0    => clk,
-		clkout90 => clk90,
-		clkout180 => clk180,
-		clkout270 => clk270,
-		clkout2x => clk2x,
+    	clkout2x    => clk,
+		clkout2x90 => clk90,
+		clkout2x180 => clk180,
+		clkout2x270 => clk270,
+		clkout4x => clk2x,
+		clkout1x => clk50,
   		locked    => locked0);
-  	clk50 <= not clk;
+  		
+--  	CLOCK0 : CLOCK port map (
+--  		clkin     => CLKIN,
+--    	clkout0    => clk,
+--		clkout90 => clk90,
+--		clkout180 => clk180,
+--		clkout270 => clk270,
+--		clkout2x => clk2x,
+--  		locked    => locked0);
+--  	clk50 <= not clk;
 
 
   
@@ -135,15 +136,15 @@ begin
 	----------------------------------
   BP0 : branchPredictor port map (
   	clk,rst,flush,bp_ok,
-  	next_pc(13 downto 0),
+  	next_pc(13 downto 0),jmp_num,
   	jmp,jmp_taken,jmp_not_taken,
   	predict_taken,predict_taken_hist
   );
   
   RAS0 : returnAddressStack port map (
-  	clk,rst,flush,
-  	jal,jr,
-  	pc_p1,jr_pc
+  	clk,rst,flush,ras_ok,
+  	jal,jr,jmp_ex,
+  	pc_p1,jmp_num,jr_pc
   );
   
   MEMORY0 : memory port map (
@@ -158,11 +159,12 @@ begin
 	,SRAMLBOA,SRAMXOEA,SRAMZZA
    );
 
+   jmp_ex <= jmp_taken or jmp_not_taken;
    bp_miss <= (jmp_taken and (not predict_taken_hist)) or
    (jmp_not_taken and predict_taken_hist);
-   flush <= (bp_miss);
+   flush <= bp_miss;
    
-   pc_next <= (not jmp_flg) and 
+   pc_next <= 
    (((not (jr_op or jal_op)) and  write_inst_ok) or (bp_ok and (jr_op or jal_op))) 
    and (inst_ok);
    ib_write <= (not jmp_flg) and (write_inst_ok) and (inst_ok) and (not jal_op) and (not jr_op);
@@ -215,7 +217,8 @@ begin
    
     write_inst_im <= pc_p1 when inst(31 downto 26) = op_jmp and predict_taken = '1' else
     inst(23)&inst(13 downto 0) when inst(31 downto 26) = op_jmp else
-    '0'&inst(13 downto 0);
+    '0'&inst(13 downto 0) when inst(31 downto 26) = op_li else
+    inst(13)&inst(13 downto 0);
     
     write_op <= inst(31 downto 26);
     
@@ -298,11 +301,8 @@ begin
 	data_s1_p <= data_s1_reg_p when reg_s1_ok = '1' else data_s1_rob_p;
 	data_s2_p <= data_s2_reg_p when reg_s2_ok = '1' else data_s2_rob_p;
 	
-	ext_im <= "0"&x"0000"&read_inst_data(14 downto 0) when (read_inst_data(43 downto 38) = op_li) else
-	sign_extention(read_inst_data(13 downto 0));
-
+	ext_im <= sign_extention(read_inst_data(14 downto 0));
 	
-
 	
 	RR : process(CLK,rst)
 	begin
@@ -328,7 +328,6 @@ begin
 				cr_flg_buf0 <= read_inst_data(16 downto 15);
 			end if;
 			ext_im_buf0 <= ext_im;
-			reg_d_buf0 <= read_inst_data(36 downto 31);
 			data_s1 <= data_s1_p;
 			data_s2 <= data_s2_p;
 			tag_buf0 <= rob_tag;
