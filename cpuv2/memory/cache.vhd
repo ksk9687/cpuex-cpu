@@ -126,6 +126,67 @@ use ieee.std_logic_1164.all;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
+entity block_l_cache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(13 downto 0);
+		set_addr: in std_logic_vector(13 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit : out std_logic
+	);
+end block_l_cache;
+
+
+architecture arch of block_l_cache is
+    type cache_tag_type is array (0 to 4095) of std_logic_vector (2 downto 0);--3 + 1
+    type cache_data_type is array (0 to 4095) of std_logic_vector (31 downto 0); --32
+    
+   signal tag,tag_p,tag_p2,tag_write : std_logic_vector(2 downto 0) := '0'&"00";
+   signal cache : cache_tag_type := (others => '0'&"00");
+   signal cache_data : cache_data_type:= (others => (others => '0'));
+   
+    signal data : std_logic_vector(31 downto 0) := (others => '0');
+    signal read_addr : std_logic_vector(11 downto 0) := (others => '0');
+    signal cmp_addr : std_logic_vector(1 downto 0) := (others => '0');
+    signal addr_buf,set_addr_buf : std_logic_vector(13 downto 0) := (others => '0');
+    signal hit1,hit2,hit_p,hit_p2,conflict,conflict1,conflict2 : std_logic := '0';
+    signal set_data_buf : std_logic_vector(31 downto 0) := (others => '0');
+
+begin
+
+	tag_write <= '1'&set_addr(13 downto 12);
+	read_data <= cache_data(conv_integer(read_addr));
+	tag <= cache(conv_integer(read_addr));
+	hit <= tag(2) and (not conflict) and (not conflict1) when tag(1 downto 0) = cmp_addr(1 downto 0) else '0';
+	
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	        if set = '1' then
+	            cache(conv_integer(set_addr(11 downto 0))) <= tag_write;
+	            cache_data(conv_integer(set_addr(11 downto 0))) <= set_data;
+	        end if;
+	        read_addr <= address(11 downto 0);
+	        cmp_addr <= address(13 downto 12);
+			
+			if set_addr(11 downto 0) = address(11 downto 0) then
+			  conflict <= set;
+			 else
+			  conflict <= '0';
+			 end if;
+			conflict1 <= conflict;
+	    end if;
+	end process;
+end arch;
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
 entity block_cache is
 	port  (
 		clk,clkfast : in std_logic;

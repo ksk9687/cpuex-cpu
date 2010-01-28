@@ -103,9 +103,11 @@ architecture arch of cpu_top is
    signal debug :std_logic_vector(7 downto 0) := (others=>'1');
    signal jmp_num :std_logic_vector(2 downto 0) := (others=>'1');
    
-   signal path1_0,path1_1,path1_2,path1_3,path1_4 :std_logic_vector(3 downto 0) := (others=>'0');
-   signal path2_0,path2_1,path2_2,path2_3,path2_4 :std_logic_vector(3 downto 0) := (others=>'0');
-      
+   signal path1_0,path1_1,path1_2,path1_3,path1_4,path1_1_write :std_logic_vector(5 downto 0) := (others=>'0');
+   signal path2_0,path2_1,path2_2,path2_3,path2_4 :std_logic_vector(5 downto 0) := (others=>'0');
+    
+   signal path1_ok,path1_1_ok,path1_4_ok : std_logic := '0';
+   signal path1_unit : std_logic_vector(1 downto 0) := (others=>'0');
 
    
    signal reg_s1_ok,reg_s2_ok,reg_cr_ok,rob_s1_ok,rob_s2_ok,dec_write : std_logic := '0';
@@ -247,10 +249,10 @@ begin
 	--命令発行するかどうか
     stall_rr <= not stall_rrx;
 	stall_rrx <= rr_reg_ok and rr_cr_ok and
-	 ((not read_inst_data(37)) or (rob_ok)) and (not lsu_full) and (not lsu_may_full);
+	 ((not read_inst_data(37)) or (rob_ok and path1_ok)) and (not lsu_full) and (not lsu_may_full);
 	
 	--リオーダバッファにエントリを確保するか
-	rob_alloc <= rr_reg_ok and read_inst_data(37) and rob_ok and (not lsu_full) and (not lsu_may_full);
+	rob_alloc <= rr_reg_ok and read_inst_data(37) and rob_ok and path1_ok and (not lsu_full) and (not lsu_may_full);
 	
 	--オペランドがそろっているか
 	rr_reg_ok <=  ((not read_inst_data(30)) or reg_s1_ok or rob_s1_ok) and
@@ -307,6 +309,30 @@ begin
 	
 	ext_im <= sign_extention( read_inst_data(14 downto 0) );
 	
+	
+	path1_ok <= '0' when (path1_2(2) = '1') and (read_inst_data(37) = '1') and (read_inst_data(42) = '0') else '1';
+	
+	 path1_1_write <= rob_tag&((not read_inst_data(42)) and stall_rrx and read_inst_data(37))&path1_unit when (path1_2(2) = '0')
+	 else path1_2;
+	path1_unit <= (read_inst_data(43) or read_inst_data(42)) & read_inst_data(41);
+	
+	path1_4(5 downto 3) <= rob_tag;
+	path1_4(2) <= stall_rrx and rob_alloc when read_inst_data(43 downto 41) = op_unit_fpu else '0';
+	path1_4(1 downto 0) <= path1_unit;
+	process(clk,rst)
+	begin
+		if rst = '1' then
+			path1_0 <= (others=> '0');
+			path1_1 <= (others=> '0');
+			path1_2 <= (others=> '0');
+			path1_3 <= (others=> '0');
+		elsif rising_edge(clk) then
+			path1_0 <= path1_1;
+			path1_1 <= path1_1_write;
+			path1_2 <= path1_3;
+			path1_3 <= path1_4;
+		end if;
+	end process;
 	
 	RR : process(CLK,rst)
 	begin
@@ -465,57 +491,42 @@ begin
 	 fpu_cmp when op_unit_fpu,
 	 alu_cmp when others;
 	
-	--パス１ALU系
+	--パス2　メモリ
+	write_rob_2 <= lsu_load_ok;
+	value2 <= load_data;
+	dtag2 <= ls_reg_d(2 downto 0);
+
+	write_rob_3 <= '0';
+
+	
+	
+	--　コンディションレジスタ
 	with unit_op_buf1 select
-	 write_rob_1 <= reg_write_buf1 when op_unit_iou | op_unit_alu | op_unit_alui,
-	 '0' when others;
-	value1 <= iou_out when unit_op_buf1 = op_unit_iou else
-	 alu_out_buf1 when unit_op_buf1 = op_unit_alu else
-	 alu_im_out_buf1;
-	dtag1 <= tag_buf1;
-
-	--パス2　FPU
-	write_rob_2 <= reg_write_buf3 when unit_op_buf3 = op_unit_fpu else '0';
-	value2 <= fpu_out;
-	dtag2 <= tag_buf3;
-
-	--パス3　メモリ
-	write_rob_3 <= lsu_load_ok;
-	value3 <= load_data;
-	dtag3 <= ls_reg_d(2 downto 0);
-
---
---	process(clk)
---	begin
---		if rising_edge(clk) then
---			path1_0 <= path1_1;
---			path1_1 <= path1_2;
---			path1_2 <= path1_3;
---			path1_3 <= path1_4;
---			
---			path2_0 <= path2_1;
---			path2_1 <= path2_2;
---			path2_2 <= path2_3;
---			path2_3 <= path2_4;
---		end if;
---	end process;
+	 cr_d <= alui_cmp when op_unit_alui,
+	 fpu_cmp when op_unit_fpu,
+	 alu_cmp when others;
 	
-	
---	
---	--　コンディションレジスタ
+	--パス１
+	 write_rob_1 <= path1_0(2);
+	with path1_0(1 downto 0) select
+	  value1 <=  alu_im_out_buf1 when "00",
+	  alu_out_buf1 when "01",
+	  iou_out when "11",
+	  fpu_out when others;
+    dtag1 <= path1_0(5 downto 3);
+
+
+--	--パス１ALU系
 --	with unit_op_buf1 select
---	 cr_d <= alui_cmp when op_unit_alui,
---	 fpu_cmp when op_unit_fpu,
---	 alu_cmp when others;
---	
---	
---	
---	--パス１
---	 write_rob_1 <= path1_0(3);
---	with path1_0(2 downto 0) select
---	  value1 <= alu_out_buf1 when "000",
---	  alu_im_out_buf1 when "001",
---	  iou_out when others;
---    dtag1 <= tag_buf1;
-
+--	 write_rob_1 <= reg_write_buf1 when op_unit_iou | op_unit_alu | op_unit_alui,
+--	 '0' when others;
+--	value1 <= iou_out when unit_op_buf1 = op_unit_iou else
+--	 alu_out_buf1 when unit_op_buf1 = op_unit_alu else
+--	 alu_im_out_buf1;
+--	dtag1 <= tag_buf1;
+--
+--	--パス2　FPU
+--	write_rob_2 <= reg_write_buf3 when unit_op_buf3 = op_unit_fpu else '0';
+--	value2 <= fpu_out;
+--	dtag2 <= tag_buf3;
 end arch;
