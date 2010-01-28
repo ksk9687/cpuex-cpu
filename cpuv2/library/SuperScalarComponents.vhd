@@ -363,9 +363,9 @@ component reorderBuffer is
 		reg_num : out std_logic_vector(5 downto 0);
 		reg_data : out std_logic_vector(31 downto 0);
 		
-		write1,write2,write3 : in std_logic;
-		dtag1,dtag2,dtag3 : in std_logic_vector(2 downto 0);
-		value1,value2,value3 : in std_logic_vector(31 downto 0)
+		write1,write2 : in std_logic;
+		dtag1,dtag2 : in std_logic_vector(2 downto 0);
+		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end component;
 

@@ -19,9 +19,9 @@ entity reorderBuffer is
 		reg_num : out std_logic_vector(5 downto 0);
 		reg_data : out std_logic_vector(31 downto 0);
 		
-		write1,write2,write3 : in std_logic;
-		dtag1,dtag2,dtag3 : in std_logic_vector(2 downto 0);
-		value1,value2,value3 : in std_logic_vector(31 downto 0)
+		write1,write2 : in std_logic;
+		dtag1,dtag2 : in std_logic_vector(2 downto 0);
+		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end reorderBuffer;
 
@@ -85,8 +85,6 @@ begin
 				buf(0)(38) <= '1';
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
 				buf(0)(38) <= '1';
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "00") then
-				buf(0)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "00" then
 				buf(0)(37 downto 32) <= reg_d;
@@ -95,8 +93,6 @@ begin
 				buf(0)(31 downto 0) <= value1;
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
 				buf(0)(31 downto 0) <= value2;
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "00") then
-				buf(0)(31 downto 0) <= value3;
 			end if;
 			
 			if (readok_in = '1') and read_pointer = "01" then
@@ -104,8 +100,6 @@ begin
 			elsif (write1 = '1') and (dtag1(1 downto 0) = "01") then
 				buf(1)(38) <= '1';
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "01") then
-				buf(1)(38) <= '1';
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "01") then
 				buf(1)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "01" then
@@ -115,8 +109,6 @@ begin
 				buf(1)(31 downto 0) <= value1;
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "01") then
 				buf(1)(31 downto 0) <= value2;
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "01") then
-				buf(1)(31 downto 0) <= value3;
 			end if;
 			
 			if (readok_in = '1') and read_pointer = "10" then
@@ -124,8 +116,6 @@ begin
 			elsif (write1 = '1') and (dtag1(1 downto 0) = "10") then
 				buf(2)(38) <= '1';
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "10") then
-				buf(2)(38) <= '1';
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "10") then
 				buf(2)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "10" then
@@ -135,8 +125,6 @@ begin
 				buf(2)(31 downto 0) <= value1;
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "10") then
 				buf(2)(31 downto 0) <= value2;
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "10") then
-				buf(2)(31 downto 0) <= value3;
 			end if;
 			
 			if (readok_in = '1') and read_pointer = "11" then
@@ -144,8 +132,6 @@ begin
 			elsif (write1 = '1') and (dtag1(1 downto 0) = "11") then
 				buf(3)(38) <= '1';
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "11") then
-				buf(3)(38) <= '1';
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "11") then
 				buf(3)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "11" then
@@ -155,8 +141,6 @@ begin
 				buf(3)(31 downto 0) <= value1;
 			elsif (write2 = '1') and (dtag2(1 downto 0) = "11") then
 				buf(3)(31 downto 0) <= value2;
-			elsif (write3 = '1') and (dtag3(1 downto 0) = "11") then
-				buf(3)(31 downto 0) <= value3;
 			end if;
 		end if;
 	end process;

@@ -114,25 +114,25 @@ architecture arch of cpu_top is
 begin
   	ROC0 : ROC port map (O => rst);
   	
---	CLOCK0 : CLOCK port map (
---  		clkin     => CLKIN,
---    	clkout2x    => clk,
---		clkout2x90 => clk90,
---		clkout2x180 => clk180,
---		clkout2x270 => clk270,
---		clkout4x => clk2x,
---		clkout1x => clk50,
---  		locked    => locked0);
-  		
-  	CLOCK0 : CLOCK port map (
+	CLOCK0 : CLOCK port map (
   		clkin     => CLKIN,
-    	clkout0    => clk,
-		clkout90 => clk90,
-		clkout180 => clk180,
-		clkout270 => clk270,
-		clkout2x => clk2x,
+    	clkout2x    => clk,
+		clkout2x90 => clk90,
+		clkout2x180 => clk180,
+		clkout2x270 => clk270,
+		clkout4x => clk2x,
+		clkout1x => clk50,
   		locked    => locked0);
-  	clk50 <= not clk;
+  		
+--  	CLOCK0 : CLOCK port map (
+--  		clkin     => CLKIN,
+--    	clkout0    => clk,
+--		clkout90 => clk90,
+--		clkout180 => clk180,
+--		clkout270 => clk270,
+--		clkout2x => clk2x,
+--  		locked    => locked0);
+--  	clk50 <= not clk;
 
 
   
@@ -299,9 +299,9 @@ begin
 		reg_num,
 		data_d,
 		
-		write_rob_1,write_rob_2,write_rob_3,
-		dtag1,dtag2,dtag3,
-		value1,value2,value3
+		write_rob_1,write_rob_2,
+		dtag1,dtag2,
+		value1,value2
 	);
 	
 	data_s1_p <= data_s1_reg_p when reg_s1_ok = '1' else data_s1_rob_p;

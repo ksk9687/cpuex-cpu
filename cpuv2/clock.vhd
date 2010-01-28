@@ -83,7 +83,7 @@ begin  -- CLOCK
   DCM1 : DCM
     generic map (
       CLK_FEEDBACK       => "1X",
-      CLKIN_PERIOD       => 12.5,
+      CLKIN_PERIOD       => 10.0,
       CLKFX_MULTIPLY     => 2,
       CLKFX_DIVIDE       => 1,
       CLKDV_DIVIDE       => 2.0,
