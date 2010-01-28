@@ -214,7 +214,6 @@ begin
 		if rst = '1' then
 			d_mem_state <= idle;
 			ls_buf0 <= "00";
-			dpref <= '0';
 		elsif rising_edge(clk) then
 			case d_mem_state is
 				when idle		=>
@@ -243,9 +242,9 @@ begin
 					ls_buf0 <= ls_flg;
 					d_mem_state <= idle;
 				end case;
-			
-			dpref <= '0';
+						
 			--ls_buf0 <= ls_flg;
+			--ls_addr_buf <= ls_addr;
 			
 			store_data_buf <= store_data;
 		end if;

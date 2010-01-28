@@ -17,12 +17,12 @@ end returnAddressStack;
 
 architecture arch of returnAddressStack is
 
-	type ras_t is array (0 to 15) of std_logic_vector (14 downto 0);
+	type ras_t is array (0 to 31) of std_logic_vector (14 downto 0);
 	signal ras	:	ras_t := (others => (others => '0'));
 
 	signal p :std_logic := '0';
-	signal read_pointer,read_pointer_buf :std_logic_vector(3 downto 0) := (others => '0');
-	signal read_pointer2,read_pointer2_buf :std_logic_vector(3 downto 0) := (others => '1');
+	signal read_pointer,read_pointer_buf :std_logic_vector(4 downto 0) := (others => '0');
+	signal read_pointer2,read_pointer2_buf :std_logic_vector(4 downto 0) := (others => '1');
 begin
 	new_pc <= ras(conv_integer(read_pointer2));
 	ras_ok <= (not jmp_num(0)) and (not jmp_num(1)) and (not jmp_num(2));

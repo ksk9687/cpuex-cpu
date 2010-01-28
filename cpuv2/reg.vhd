@@ -65,7 +65,7 @@ begin
 	     	end if;
 	     	
      		if (pd(5 downto 0) = d(5 downto 0)) and dflg = '1' and rob_alloc = '1' then
-
+				
      		else
      			if dflg = '1' then
      				using(conv_integer(d(5 downto 0))) <= using(conv_integer(d(5 downto 0))) - '1';
@@ -74,7 +74,6 @@ begin
  	     			using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
      			end if;
 			end if;
-	    	
 	    	
 	     	--Cr‚Ì‘‚«Š·‚¦
 	     	if crflg(0) = '1' then

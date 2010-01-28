@@ -102,30 +102,35 @@ architecture arch of cpu_top is
    signal jmp_ex,jal_op,jr_op,jal,cr_mask,cr_mask_p,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
    signal debug :std_logic_vector(7 downto 0) := (others=>'1');
    signal jmp_num :std_logic_vector(2 downto 0) := (others=>'1');
+   
+   signal path1_0,path1_1,path1_2,path1_3,path1_4 :std_logic_vector(3 downto 0) := (others=>'0');
+   signal path2_0,path2_1,path2_2,path2_3,path2_4 :std_logic_vector(3 downto 0) := (others=>'0');
       
-   signal reg_s1_ok,reg_s2_ok,reg_cr_ok,rob_s1_ok,rob_s2_ok : std_logic := '0';
+
+   
+   signal reg_s1_ok,reg_s2_ok,reg_cr_ok,rob_s1_ok,rob_s2_ok,dec_write : std_logic := '0';
 begin
   	ROC0 : ROC port map (O => rst);
   	
-	CLOCK0 : CLOCK port map (
-  		clkin     => CLKIN,
-    	clkout2x    => clk,
-		clkout2x90 => clk90,
-		clkout2x180 => clk180,
-		clkout2x270 => clk270,
-		clkout4x => clk2x,
-		clkout1x => clk50,
-  		locked    => locked0);
-  		
---  	CLOCK0 : CLOCK port map (
+--	CLOCK0 : CLOCK port map (
 --  		clkin     => CLKIN,
---    	clkout0    => clk,
---		clkout90 => clk90,
---		clkout180 => clk180,
---		clkout270 => clk270,
---		clkout2x => clk2x,
+--    	clkout2x    => clk,
+--		clkout2x90 => clk90,
+--		clkout2x180 => clk180,
+--		clkout2x270 => clk270,
+--		clkout4x => clk2x,
+--		clkout1x => clk50,
 --  		locked    => locked0);
---  	clk50 <= not clk;
+  		
+  	CLOCK0 : CLOCK port map (
+  		clkin     => CLKIN,
+    	clkout0    => clk,
+		clkout90 => clk90,
+		clkout180 => clk180,
+		clkout270 => clk270,
+		clkout2x => clk2x,
+  		locked    => locked0);
+  	clk50 <= not clk;
 
 
   
@@ -184,6 +189,8 @@ begin
    inst(14 downto 0) when jal_op = '1'else
    inst(23)&inst(13 downto 0);
    
+   dec_write <= ib_write and (not flush);
+   
    PC0:process(clk,rst)
    begin
 	   if (rst = '1')then
@@ -209,7 +216,7 @@ begin
 	-- 
 	----------------------------------
     DEC : decoder port map (
-   	inst,
+   	clk,dec_write,inst,write_op,
    	reg_d,reg_s1,reg_s2,
    	reg_s1_use,reg_s2_use,
    	regwrite,cr_flg
@@ -220,7 +227,7 @@ begin
     '0'&inst(13 downto 0) when inst(31 downto 26) = op_li else
     inst(13)&inst(13 downto 0);
     
-    write_op <= inst(31 downto 26);
+   
     
    write_inst_data <=  write_op & regwrite & reg_d & reg_s1_use & reg_s1 & reg_s2_use & reg_s2 & cr_flg & write_inst_im;
    
@@ -230,9 +237,6 @@ begin
    	read_inst_ok,write_inst_ok,
 	read_inst_data,write_inst_data
    );
-   
-
-
 
 	----------------------------------
 	-- 
@@ -301,7 +305,7 @@ begin
 	data_s1_p <= data_s1_reg_p when reg_s1_ok = '1' else data_s1_rob_p;
 	data_s2_p <= data_s2_reg_p when reg_s2_ok = '1' else data_s2_rob_p;
 	
-	ext_im <= sign_extention(read_inst_data(14 downto 0));
+	ext_im <= sign_extention( read_inst_data(14 downto 0) );
 	
 	
 	RR : process(CLK,rst)
@@ -389,7 +393,7 @@ begin
 	with sub_op_buf0 select
 	ls_address_p <= data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when lsu_op_store | lsu_op_load,
 	data_s1(19 downto 0) + data_s2(19 downto 0) when others;--loadr
-		
+	
 	with sub_op_buf0 select
 	lsu_in <= data_s2 when lsu_op_store,
 	x"0000000"&"0"&tag_buf0 when others;--load,loadr
@@ -404,7 +408,6 @@ begin
 	);
 	
 
-	 			
 	
 	EX : process(CLK,rst)
 	begin
@@ -480,5 +483,39 @@ begin
 	write_rob_3 <= lsu_load_ok;
 	value3 <= load_data;
 	dtag3 <= ls_reg_d(2 downto 0);
+
+--
+--	process(clk)
+--	begin
+--		if rising_edge(clk) then
+--			path1_0 <= path1_1;
+--			path1_1 <= path1_2;
+--			path1_2 <= path1_3;
+--			path1_3 <= path1_4;
+--			
+--			path2_0 <= path2_1;
+--			path2_1 <= path2_2;
+--			path2_2 <= path2_3;
+--			path2_3 <= path2_4;
+--		end if;
+--	end process;
+	
+	
+--	
+--	--　コンディションレジスタ
+--	with unit_op_buf1 select
+--	 cr_d <= alui_cmp when op_unit_alui,
+--	 fpu_cmp when op_unit_fpu,
+--	 alu_cmp when others;
+--	
+--	
+--	
+--	--パス１
+--	 write_rob_1 <= path1_0(3);
+--	with path1_0(2 downto 0) select
+--	  value1 <= alu_out_buf1 when "000",
+--	  alu_im_out_buf1 when "001",
+--	  iou_out when others;
+--    dtag1 <= tag_buf1;
 
 end arch;

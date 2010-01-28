@@ -10,11 +10,13 @@ use ieee.std_logic_1164.all;
 
 library work;
 use work.instruction.all;
-
+library UNISIM;
+use UNISIM.VComponents.all;
 entity decoder is 
 port (
-    --clk			: in	  std_logic;
+    clk,write			: in	  std_logic;
     inst : in std_logic_vector(31 downto 0)
+    ;write_op : out std_logic_vector(5 downto 0)
     
     --レジスタの指定
     ;reg_d,reg_s1,reg_s2 : out std_logic_vector(5 downto 0)
@@ -30,11 +32,16 @@ architecture synth of decoder is
 	--OPCODE
 	alias op : std_logic_vector(5 downto 0) is inst(31 downto 26);
 	
+	signal reg_d_in,mov_reg_rename_from,mov_reg_rename_to :std_logic_vector(5 downto 0) := (others=>'0');
+   signal mov_reg_rename_flg1,mov_reg_rename_flg2,rst :std_logic := '0';
 begin
+  	ROC0 : ROC port map (O => rst);
+	write_op <= op;
 	
+	reg_d <= reg_d_in;
 	--書き込みレジスタの指定
 	with op select
-	reg_d <= inst(19 downto 14) when op_load | op_mv | 
+	reg_d_in <= inst(19 downto 14) when op_load | op_mv | 
 	 op_addi | op_sll | op_li | op_read | op_write | op_hsread ,--Rt
 	inst(13 downto 8) when others;--Rd
 	
@@ -63,12 +70,33 @@ begin
 	 "10" when op_jmp,--読む
 	 "00" when others;
 
-	--Rs
-	reg_s1 <= inst(25 downto 20);
-	
-	--Rt
-	reg_s2 <= inst(19 downto 14);
-
+	reg_s1 <= mov_reg_rename_to when ((mov_reg_rename_flg1 = '1') or (mov_reg_rename_flg2 = '1')) and (mov_reg_rename_from = inst(25 downto 20)) and (op /= op_jmp) else
+	inst(25 downto 20);
+	reg_s2 <= mov_reg_rename_to when ((mov_reg_rename_flg1 = '1') or (mov_reg_rename_flg2 = '1')) and (mov_reg_rename_from = inst(19 downto 14)) and (op /= op_jmp) else
+	inst(19 downto 14);
+--	
+--	reg_s1 <= inst(25 downto 20);
+--	reg_s2 <= inst(19 downto 14);
+	process(clk)
+	begin
+		if rst = '1' then
+			mov_reg_rename_flg1 <= '0';
+			mov_reg_rename_flg2 <= '0';
+		elsif rising_edge(clk) then
+			if (op = op_mv) and (write = '1') then
+				mov_reg_rename_from <= inst(25 downto 20);
+				mov_reg_rename_to <= reg_d_in;
+				mov_reg_rename_flg1 <= '1';
+			else
+				mov_reg_rename_flg1 <= '0';
+			end if;
+			if (reg_d_in = mov_reg_rename_from) or (reg_d_in = mov_reg_rename_to) then
+				mov_reg_rename_flg2 <= '0';
+			else
+				mov_reg_rename_flg2 <= mov_reg_rename_flg1;		
+			end if;
+		end if;
+	end process;
 	
 			
 

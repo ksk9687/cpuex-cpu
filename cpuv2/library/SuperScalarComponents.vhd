@@ -184,8 +184,9 @@ end component;
 
 component decoder is 
 port (
-    --clk			: in	  std_logic;
+    clk,write			: in	  std_logic;
     inst : in std_logic_vector(31 downto 0)
+    ;write_op : out std_logic_vector(5 downto 0)
     
     --レジスタの指定
     ;reg_d,reg_s1,reg_s2 : out std_logic_vector(5 downto 0)
