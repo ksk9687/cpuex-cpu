@@ -72,8 +72,8 @@ begin  -- CLOCK
       CLK90  => clk90,
       CLK180 => clk180,
       CLK270 => clk270,
-      --CLK2X  => clk2x,
-      CLKFX  => clk2x,
+      CLK2X  => clk2x,
+      --CLKFX  => clk2x,
       LOCKED => locked0,
       RST    => rst0);
 

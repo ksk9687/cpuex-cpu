@@ -80,6 +80,7 @@ component block_cache is
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
+		jmp_flgs : out std_logic_vector(2 downto 0);
 		hit : out std_logic
 	);
 end component;
@@ -206,6 +207,7 @@ port (
     ;reg_write : out std_logic
     
     ;cr_flg : out std_logic_vector(1 downto 0)
+    ;op_type : out std_logic_vector(3 downto 0)
     );
 end component;
 
@@ -234,8 +236,8 @@ component instructionBuffer is
 		clk,rst,flush : in std_logic;        -- input clock, xx MHz.
 		read ,write: in std_logic;
 		readok,writeok: out std_logic;
-		readdata : out std_logic_vector(43 downto 0);
-		writedata: in std_logic_vector(43 downto 0)
+		readdata : out std_logic_vector(62 downto 0);
+		writedata: in std_logic_vector(62 downto 0)
 	);
 end component;
 
@@ -263,8 +265,8 @@ component IROM is
 	port  (
 		clk : in std_logic;
 		pc : in std_logic_vector(13 downto 0);
-		
-		inst : out std_logic_vector(31 downto 0)
+		inst : out std_logic_vector(31 downto 0);
+		jmp_flgs : out std_logic_vector(2 downto 0)
 	);
 end component;
 
@@ -273,7 +275,7 @@ component lsu is
 	port  (
 		clk,rst,read,write,load_ok : in std_logic;
 		op : in std_logic_vector(2 downto 0);
-    	lsu_ok,lsu_full,lsu_may_full : out std_logic;--
+    	lsu_ok,lsu_full : out std_logic;--
     	
     	ls_addr_in : in std_logic_vector(19 downto 0);--
     	ls_addr_out : out std_logic_vector(19 downto 0);--
@@ -295,6 +297,7 @@ port (
     
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
+    jmp_flgs : out std_logic_vector(2 downto 0);
     inst_ok : out std_logic;
     
     ls_flg : in std_logic_vector(1 downto 0);
@@ -331,7 +334,7 @@ end component;
 
 component reg is 
 port (
-    clk,rst,rob_alloc,rr_reg_ok			: in	  std_logic;
+    clk,rst,reg_alloc,rr_reg_ok			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;
@@ -342,7 +345,7 @@ port (
     data_s1,data_s2 : out std_logic_vector(31 downto 0);
     
     cr : out std_logic_vector(2 downto 0);
-    s1_ok,s2_ok,cr_ok: out std_logic
+    d_ok,s1_ok,s2_ok,cr_ok: out std_logic
     ); 
     
 end component;
@@ -372,11 +375,9 @@ end component;
 
 component returnAddressStack is
 	port  (
-		clk,rst,flush : in std_logic;
-		ras_ok : out std_logic;
-		jal,jr,jmp : in std_logic;
+		clk,rst : in std_logic;
+		jal,jr : in std_logic;
 		pc : in std_logic_vector(14 downto 0);
-		jmp_num : in std_logic_vector(2 downto 0);
 		new_pc : out std_logic_vector(14 downto 0)
 	);
 end component;

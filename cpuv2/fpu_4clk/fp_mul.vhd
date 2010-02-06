@@ -125,7 +125,7 @@ begin  -- STRUCTURE
   process (clk)
   begin  -- process
     if rising_edge(clk) then
-      OM1(24 downto 1) <= OMH2 + ("0000000000" & OMM3(13 downto 1)) + '1';
+      OM1(24 downto 1) <= OMH2 + (OMM3(13 downto 1)) + '1';
       OM1(0) <= OMM3(0);
       
       OE3      <= OE2;

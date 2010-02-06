@@ -24,6 +24,7 @@ port (
     ;reg_write : out std_logic
     
     ;cr_flg : out std_logic_vector(1 downto 0)
+    ;op_type : out std_logic_vector(3 downto 0)
     );
 end decoder;     
         
@@ -69,14 +70,33 @@ begin
 	 cr_flg <= "11" when op_fcmp | op_cmp | op_cmpi ,--‘‚«‚±‚Þ
 	 "10" when op_jmp,--“Ç‚Þ
 	 "00" when others;
+	 
+	 op_type(3) <= '0';
+	 with op select
+	 op_type(2) <= '1' when op_li |op_addi|op_sll|op_cmpi
+	 |op_add |op_sub|op_fabs|op_fneg
+	 |op_read|op_write |op_mv
+	 ,--“Ç‚Ýž‚Ü‚È‚¢
+	 '0' when others;
+	 
+	 
+	 with op select
+	 op_type(1) <= '1' when op_fadd |op_fsub|op_fmul|op_finv|op_fsqrt,--“Ç‚Ýž‚Ü‚È‚¢
+	 '0' when others;
+	 
+	 with op select
+	 op_type(0) <=  '1' when op_load|op_loadr|op_store,--“Ç‚Ýž‚Ü‚È‚¢
+	 '0' when others;
+	 
+	 
 
-	reg_s1 <= mov_reg_rename_to when ((mov_reg_rename_flg1 = '1') or (mov_reg_rename_flg2 = '1')) and (mov_reg_rename_from = inst(25 downto 20)) and (op /= op_jmp) else
-	inst(25 downto 20);
-	reg_s2 <= mov_reg_rename_to when ((mov_reg_rename_flg1 = '1') or (mov_reg_rename_flg2 = '1')) and (mov_reg_rename_from = inst(19 downto 14)) and (op /= op_jmp) else
-	inst(19 downto 14);
+--	reg_s1 <= mov_reg_rename_to when ((mov_reg_rename_flg1 = '1') or (mov_reg_rename_flg2 = '1')) and (mov_reg_rename_from = inst(25 downto 20)) and (op /= op_jmp) else
+--	inst(25 downto 20);
+--	reg_s2 <= mov_reg_rename_to when ((mov_reg_rename_flg1 = '1') or (mov_reg_rename_flg2 = '1')) and (mov_reg_rename_from = inst(19 downto 14)) and (op /= op_jmp) else
+--	inst(19 downto 14);
 --	
---	reg_s1 <= inst(25 downto 20);
---	reg_s2 <= inst(19 downto 14);
+	reg_s1 <= inst(25 downto 20);
+	reg_s2 <= inst(19 downto 14);
 	process(clk)
 	begin
 		if rst = '1' then

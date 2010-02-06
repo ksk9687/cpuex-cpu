@@ -20,13 +20,13 @@ architecture STRUCTURE of FP_ADD is
   
   -- 1st stage
   signal agtb : std_logic;
-  signal AE, BE : std_logic_vector(7 downto 0);
-  signal AM1, BM1 : std_logic_vector(24 downto 0);
-  signal BEminusAE, AEminusBE : std_logic_vector(7 downto 0);
-  signal AS, BS : std_logic;
+  signal AE, BE ,WE ,LE: std_logic_vector(7 downto 0);
+  signal AM1, BM1 , WM , LM: std_logic_vector(24 downto 0);
+  signal BEminusAE, AEminusBE,WEminusLE : std_logic_vector(7 downto 0);
+  signal AS, BS , OS : std_logic;
 
   -- 2nd stage
-  signal AM2, BM2 : std_logic_vector(24 downto 0);
+  signal AM2, BM2 ,LM2: std_logic_vector(24 downto 0);
   signal PM, QM : std_logic_vector(24 downto 0);
   signal OE1 : std_logic_vector(7 downto 0);
   signal OS1 : std_logic;
@@ -44,35 +44,35 @@ begin  -- STRUCTURE
   -- 1st stage
   -----------------------------------------------------------------------------
 
+  BEminusAE <= B(30 downto 23) - A(30 downto 23);
+  AEminusBE <= A(30 downto 23) - B(30 downto 23);
+  
+  agtb <= '1' when (A(30 downto 0) > B(30 downto 0)) else
+  '0';
+  
+  AM1 <="01" & A(22 downto 0) when A(30 downto 23) /= "00000000" else
+  "0000000000000000000000000";
+  BM1 <="01" & B(22 downto 0) when B(30 downto 23) /= "00000000" else
+  "0000000000000000000000000";
   
   process (clk)
   begin  -- process
-    if rising_edge(clk) then
-      -- â‘Î’l‚ð”äŠr
-      if (A(30 downto 0) > B(30 downto 0)) then
-      	agtb <= '1';
+    if rising_edge(clk) then     
+      if (agtb = '1') then
+      	WEminusLE <= AEminusBE;
+      	WE <= A(30 downto 23);
+      	WM <= AM1;
+      	LM <= BM1;
+      	OS <= A(31);
       else
-      	agtb <= '0';
+      	WEminusLE <= BEminusAE;
+      	WE <= B(30 downto 23);
+      	WM <=BM1;
+      	LM <=AM1;
+      	OS <= B(31);
       end if;
-      
-      if A(30 downto 23) /= "00000000" then
-        AM1 <= "01" & A(22 downto 0);
-      else
-        AM1 <= "0000000000000000000000000";
-      end if;
-
-      if B(30 downto 23) /= "00000000" then
-        BM1 <= "01" & B(22 downto 0);
-      else
-        BM1 <= "0000000000000000000000000";
-      end if;
-
-      AE <= A(30 downto 23);
-      BE <= B(30 downto 23);      
-      AS <= A(31);
-      BS <= B(31);
-      BEminusAE <= B(30 downto 23) - A(30 downto 23);
-      AEminusBE <= A(30 downto 23) - B(30 downto 23);
+      	AS <= A(31);
+      	BS <= B(31);
     end if;
   end process;
   
@@ -81,23 +81,15 @@ begin  -- STRUCTURE
   -- 2nd stage
   -----------------------------------------------------------------------------
   
-  AM2 <= SHR(AM1, BEminusAE);
-  BM2 <= SHR(BM1, AEminusBE);
+  LM2 <= SHR(LM, WEminusLE);
   
   process (clk)
   begin  -- process
     if rising_edge(clk) then
-      if agtb = '1' then -- A>B
-        PM <= AM1;
-        QM <= BM2;
-        OE1 <= AE;
-        OS1 <= AS;
-      else
-        PM <= BM1;
-        QM <= AM2;
-        OE1 <= BE;
-        OS1 <= BS;
-      end if;
+      OE1 <= WE;
+      PM <= WM;
+      OS1 <= OS;
+      QM <= LM2;
 
       op <= AS xor BS;
     end if;

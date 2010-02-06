@@ -113,7 +113,7 @@ begin  -- STRUCTURE
   --OMM3 <= ('0' & OMM1(12 downto 0)) + ('0' & OMM2(12 downto 0));
   
   --OM1 <= (OMH & '0') + ("00000000000" & OMM3) + 2;
-  OM1(24 downto 1) <= OMH + ("0000000000" & OMM3(13 downto 1)) + '1';
+  OM1(24 downto 1) <= OMH + (OMM3(13 downto 1)) + '1';
   OM1(0) <= OMM3(0);
   
   -- ŒJ‚èã‚ª‚è‚ðˆ—

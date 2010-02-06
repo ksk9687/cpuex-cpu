@@ -83,23 +83,17 @@ begin
 				buf(0)(38) <= '0';
 			elsif (write1 = '1') and (dtag1(1 downto 0) = "00") then
 				buf(0)(38) <= '1';
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
-				buf(0)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "00" then
 				buf(0)(37 downto 32) <= reg_d;
 			end if;
 			if (write1 = '1') and (dtag1(1 downto 0) = "00") then
 				buf(0)(31 downto 0) <= value1;
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "00") then
-				buf(0)(31 downto 0) <= value2;
 			end if;
 			
 			if (readok_in = '1') and read_pointer = "01" then
 				buf(1)(38) <= '0';
 			elsif (write1 = '1') and (dtag1(1 downto 0) = "01") then
-				buf(1)(38) <= '1';
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "01") then
 				buf(1)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "01" then
@@ -107,15 +101,11 @@ begin
 			end if;
 			if (write1 = '1') and (dtag1(1 downto 0) = "01") then
 				buf(1)(31 downto 0) <= value1;
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "01") then
-				buf(1)(31 downto 0) <= value2;
 			end if;
 			
 			if (readok_in = '1') and read_pointer = "10" then
 				buf(2)(38) <= '0';
 			elsif (write1 = '1') and (dtag1(1 downto 0) = "10") then
-				buf(2)(38) <= '1';
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "10") then
 				buf(2)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "10" then
@@ -123,15 +113,11 @@ begin
 			end if;
 			if (write1 = '1') and (dtag1(1 downto 0) = "10") then
 				buf(2)(31 downto 0) <= value1;
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "10") then
-				buf(2)(31 downto 0) <= value2;
 			end if;
 			
 			if (readok_in = '1') and read_pointer = "11" then
 				buf(3)(38) <= '0';
 			elsif (write1 = '1') and (dtag1(1 downto 0) = "11") then
-				buf(3)(38) <= '1';
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "11") then
 				buf(3)(38) <= '1';
 			end if;
 			if (write = '1') and write_pointer = "11" then
@@ -139,8 +125,6 @@ begin
 			end if;
 			if (write1 = '1') and (dtag1(1 downto 0) = "11") then
 				buf(3)(31 downto 0) <= value1;
-			elsif (write2 = '1') and (dtag2(1 downto 0) = "11") then
-				buf(3)(31 downto 0) <= value2;
 			end if;
 		end if;
 	end process;

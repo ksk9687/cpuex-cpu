@@ -21,6 +21,7 @@ port (
     
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
+    jmp_flgs : out std_logic_vector(2 downto 0);
     inst_ok : out std_logic;
     
     ls_flg : in std_logic_vector(1 downto 0);
@@ -93,6 +94,7 @@ architecture synth of memory is
 	signal i_mem_req,i_halt : std_logic := '0';
 	
 	signal i_d_out,i_d_in : std_logic_vector(1 downto 0) := "00";
+	signal jmp_flgs_ir,jmp_flgs_ic : std_logic_vector(2 downto 0) := "000";
 
 	
 	
@@ -100,6 +102,8 @@ begin
 	inst_ok <= 	cache_hit or rom_access;
 	inst <= inst_i;
 	
+	jmp_flgs <= jmp_flgs_ic when rom_access = '0' else
+	jmp_flgs_ir;
 	inst_i <= cache_out when rom_access = '0' else
 	irom_inst;
 	
@@ -139,7 +143,7 @@ begin
 	--ICACHE FILL
 	--ROMでない　かつ　Iキャッシュミス　かつ　Dアクセスでない
 	i_d_in(1) <=
-	(not rom_access) and ((not cache_hit) or ipref) and (not (ls_buf0(1) and (ls_buf0(0) or (not dcache_hit))));
+	(((not rom_access) and (not cache_hit)) or ipref) and (not dac);
 	
 	--DCACHE FILL
 	---DmissLoad
@@ -147,7 +151,10 @@ begin
 	ls_buf0(1) and (not ls_buf0(0)) and (not dcache_hit);
 	--ls_buf0(1) and (not ls_buf0(0)) and ((not dcache_hit) or dpref);
 	
-	pc_buf_p1 <= pc_buf + '1';
+	pc_buf_p1 <= pc_buf(13 downto 3)&(pc_buf(2 downto 0) + '1') when (i_mem_state /= inst_w7) and i_d_in(1) = '1' else
+	pc_buf when (i_mem_state /= idle) and ((i_mem_state /= inst_w7) or i_d_in(1) = '0') else
+	pc(13 downto 0);
+	
 	
 	IMEM : process(clk,rst)
 	begin
@@ -189,18 +196,16 @@ begin
 						i_mem_state <= inst_w7;
 					end if;
 				when inst_w7	=>
-					ipref <= '0';
-					i_mem_state <= idle;
+					if i_d_in(1) = '1' then
+						ipref <= '0';
+						i_mem_state <= idle;
+					end if;
 				when others =>
 					ipref <= '0';
 					i_mem_state <= idle;
 			end case;
 			
-			if (i_mem_state /= inst_w7) and (i_d_in(1) = '1') then
-				pc_buf <= pc_buf_p1;
-			else
-				pc_buf <= pc(13 downto 0);
-			end if;	
+			pc_buf <= pc_buf_p1;
 			--ipref <= '0';
 			--pc_buf <= pc(13 downto 0);
 			rom_access <= pc(14);
@@ -254,6 +259,7 @@ begin
 		clk
 		,pc(13 downto 0)
 		,irom_inst
+		,jmp_flgs_ir
 	);
 	SRAMC : sram_controller port map(
 		 sramcclk
@@ -279,6 +285,7 @@ begin
 		,DATAOUT
 		,cache_set
 		,cache_out
+		,jmp_flgs_ic
 		,cache_hit
 	);
 	

@@ -32,7 +32,7 @@ architecture STRUCTURE of ALU is
 
 
   -- ”äŠr‚Ü‚í‚è
-  signal tmpA1, tmpB1, tmpA2, tmpB2 : std_logic_vector(5 downto 0);
+  signal tmpA1, tmpB1, tmpA2, tmpB2 : std_logic_vector(3 downto 0);
   signal AS, BS : std_logic;
   
   signal uslt, useq, usgt : std_logic;
@@ -44,8 +44,7 @@ begin  -- STRUCTURE
   -----------------------------------------------------------------------------
 
   with op select
-  O <=
-    A + B when alu_op_add,
+  O <= A + B when alu_op_add,
     A - B when alu_op_sub,
     "11111111111111111111111111111111" when others;
 
@@ -56,20 +55,16 @@ begin  -- STRUCTURE
   -----------------------------------------------------------------------------
 
   -- 1st stage
+  tmpA1(3) <= '1' when (not A(31))&A(30 downto 24) > (not B(31))&B(30 downto 24) else '0';
+  tmpA1(2) <= '1' when A(23 downto 16) > B(23 downto 16) else '0';
+  tmpA1(1) <= '1' when A(15 downto 8) > B(15 downto 8) else '0';
+  tmpA1(0) <= '1' when A(7 downto 0) > B(7 downto 0) else '0';
   
-  tmpA1(5) <= '1' when A(30 downto 25) > B(30 downto 25) else '0';
-  tmpA1(4) <= '1' when A(24 downto 20) > B(24 downto 20) else '0';
-  tmpA1(3) <= '1' when A(19 downto 15) > B(19 downto 15) else '0';
-  tmpA1(2) <= '1' when A(14 downto 10) > B(14 downto 10) else '0';
-  tmpA1(1) <= '1' when A( 9 downto  5) > B( 9 downto  5) else '0';
-  tmpA1(0) <= '1' when A( 4 downto  0) > B( 4 downto  0) else '0';
   
-  tmpB1(5) <= '1' when B(30 downto 25) > A(30 downto 25) else '0';
-  tmpB1(4) <= '1' when B(24 downto 20) > A(24 downto 20) else '0';
-  tmpB1(3) <= '1' when B(19 downto 15) > A(19 downto 15) else '0';
-  tmpB1(2) <= '1' when B(14 downto 10) > A(14 downto 10) else '0';
-  tmpB1(1) <= '1' when B( 9 downto  5) > A( 9 downto  5) else '0';
-  tmpB1(0) <= '1' when B( 4 downto  0) > A( 4 downto  0) else '0';
+  tmpB1(3) <= '1' when (not A(31))&A(30 downto 24) < (not B(31))&B(30 downto 24) else '0';
+  tmpB1(2) <= '1' when A(23 downto 16) < B(23 downto 16) else '0';
+  tmpB1(1) <= '1' when A(15 downto 8) < B(15 downto 8) else '0';
+  tmpB1(0) <= '1' when A(7 downto 0) < B(7 downto 0) else '0';
   
   process (clk)
   begin  -- process
@@ -77,8 +72,8 @@ begin  -- STRUCTURE
 	      tmpA2 <= tmpA1;
 	      tmpB2 <= tmpB1;
 	
-	      AS <= A(31);
-	      BS <= B(31);
+	      --AS <= A(31);
+	      --BS <= B(31);
     end if;
   end process;
 
@@ -89,8 +84,6 @@ begin  -- STRUCTURE
   useq <= '1' when tmpA2 = tmpB2 else '0';
   usgt <= '1' when tmpA2 > tmpB2 else '0';
 
-  cmp <= "100"  when AS = '0' and BS = '1' else
-         "001"  when AS = '1' and BS = '0' else
-         usgt & useq & uslt;
+  cmp <= usgt & useq & uslt;
 
 end STRUCTURE;
