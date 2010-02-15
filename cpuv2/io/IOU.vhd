@@ -6,10 +6,11 @@ use ieee.std_logic_unsigned.all;
 library work;
 use work.instruction.all;
 use work.SuperScalarComponents.all; 
-
+library UNISIM;
+use UNISIM.VComponents.all;
 entity IOU is
 	port  (
-		clk,clk50,rst,enable : in std_logic;
+		clk,clk50,enable : in std_logic;
 		iou_op : in std_logic_vector(2 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		no : in std_logic_vector(4 downto 0);
@@ -36,9 +37,12 @@ architecture arch of IOU is
 	signal iou_op_buf: std_logic_vector(2 downto 0);
 	signal no_buf: std_logic_vector(4 downto 0);
 	signal readdata_p,writedata_buf : std_logic_vector(31 downto 0):= (others => '0');
+	
+	signal rst :std_logic:= '0';
 begin
 	 
-	 --将来的にIO処理をWRステージにあわせる必要があるかも。
+  	ROC0 : ROC port map (O => rst);
+  	
 	 
 	 readdata_p <= 
 	 x"00000"&"000"&(not usb_read_end)&usb_readdata_out when (iou_op = iou_op_read) else

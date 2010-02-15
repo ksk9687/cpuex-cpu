@@ -71,21 +71,24 @@ begin
 	 "10" when op_jmp,--“Ç‚Þ
 	 "00" when others;
 	 
-	 op_type(3) <= '0';
 	 with op select
-	 op_type(2) <= '1' when op_li |op_addi|op_sll|op_cmpi
-	 |op_add |op_sub|op_fabs|op_fneg
+	 op_type(3) <=  '1' when op_jmp|op_jal |op_jr,
+	 '0' when others;
+	 
+	 with op select
+	 op_type(2) <= '1' when op_li |op_addi|op_sll
+	 |op_add |op_sub |op_fabs|op_fneg
 	 |op_read|op_write |op_mv
-	 ,--“Ç‚Ýž‚Ü‚È‚¢
+	 ,--short
 	 '0' when others;
 	 
 	 
 	 with op select
-	 op_type(1) <= '1' when op_fadd |op_fsub|op_fmul|op_finv|op_fsqrt,--“Ç‚Ýž‚Ü‚È‚¢
+	 op_type(1) <= '1' when op_fadd |op_fsub|op_fmul|op_finv|op_fsqrt,--long
 	 '0' when others;
 	 
 	 with op select
-	 op_type(0) <=  '1' when op_load|op_loadr|op_store,--“Ç‚Ýž‚Ü‚È‚¢
+	 op_type(0) <=  '1' when op_load|op_loadr,--load
 	 '0' when others;
 	 
 	 
@@ -97,26 +100,26 @@ begin
 --	
 	reg_s1 <= inst(25 downto 20);
 	reg_s2 <= inst(19 downto 14);
-	process(clk)
-	begin
-		if rst = '1' then
-			mov_reg_rename_flg1 <= '0';
-			mov_reg_rename_flg2 <= '0';
-		elsif rising_edge(clk) then
-			if (op = op_mv) and (write = '1') then
-				mov_reg_rename_from <= inst(25 downto 20);
-				mov_reg_rename_to <= reg_d_in;
-				mov_reg_rename_flg1 <= '1';
-			else
-				mov_reg_rename_flg1 <= '0';
-			end if;
-			if (reg_d_in = mov_reg_rename_from) or (reg_d_in = mov_reg_rename_to) then
-				mov_reg_rename_flg2 <= '0';
-			else
-				mov_reg_rename_flg2 <= mov_reg_rename_flg1;		
-			end if;
-		end if;
-	end process;
+--	process(clk)
+--	begin
+--		if rst = '1' then
+--			mov_reg_rename_flg1 <= '0';
+--			mov_reg_rename_flg2 <= '0';
+--		elsif rising_edge(clk) then
+--			if (op = op_mv) and (write = '1') then
+--				mov_reg_rename_from <= inst(25 downto 20);
+--				mov_reg_rename_to <= reg_d_in;
+--				mov_reg_rename_flg1 <= '1';
+--			else
+--				mov_reg_rename_flg1 <= '0';
+--			end if;
+--			if (reg_d_in = mov_reg_rename_from) or (reg_d_in = mov_reg_rename_to) then
+--				mov_reg_rename_flg2 <= '0';
+--			else
+--				mov_reg_rename_flg2 <= mov_reg_rename_flg1;		
+--			end if;
+--		end if;
+--	end process;
 	
 			
 

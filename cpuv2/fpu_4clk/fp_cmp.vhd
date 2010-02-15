@@ -42,12 +42,12 @@ begin  -- STRUCTURE
   process (clk)
   begin  -- process
     if rising_edge(clk) then
-    if (A(31) = '0') and (B(31) = '0') then
-      tmpA2 <= tmpA1;
-      tmpB2 <= tmpB1;
-     else
+    if (A(31) = '1') and (B(31) = '1') then
       tmpA2 <= tmpB1;
       tmpB2 <= tmpA1;
+     else
+      tmpA2 <= tmpA1;
+      tmpB2 <= tmpB1;
      end if;
       ZERO <= tmpZERO;
     end if;

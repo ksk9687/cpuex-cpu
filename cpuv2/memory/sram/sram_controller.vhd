@@ -16,13 +16,13 @@ entity sram_controller is
 		CLK : in STD_LOGIC
 		;SRAMCLK : in STD_LOGIC
 		
-		;i_d    : in  std_logic_vector(1 downto 0)
+		;i_d    : in  std_logic_vector(2 downto 0)
 		;ADDR    : in  std_logic_vector(19 downto 0)
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
 		;RW      : in  std_logic
 		
-		;i_d_buf    : out  std_logic_vector(1 downto 0)
+		;i_d_buf    : out  std_logic_vector(2 downto 0)
 		;ADDRBUF    : out  std_logic_vector(19 downto 0)
 		
 		--SRAM
@@ -61,7 +61,7 @@ architecture Behavioral of sram_controller is
   
   signal rst :  std_logic := '0';
   
-  signal i_d_buf0,i_d_buf1,i_d_buf2,i_d_buf3,i_d_buf4 : std_logic_vector(1 downto 0) := "00";
+  signal i_d_buf0,i_d_buf1,i_d_buf2,i_d_buf3,i_d_buf4 : std_logic_vector(2 downto 0) := "000";
   signal ADDR_BUF0,ADDR_BUF1,ADDR_BUF2,ADDR_BUF3,ADDR_BUF4 : std_logic_vector(19 downto 0) := (others => '0');
   
   signal state,clk1,clk2 :std_logic := '0';
@@ -136,11 +136,11 @@ begin
   		rw_buf0 <= '1';
   		rw_buf1 <= '1';
   		rw_buf2 <= '1';
-  		i_d_buf0 <= "00";
-  		i_d_buf1 <= "00";
-  		i_d_buf2 <= "00";
-  		i_d_buf3 <= "00";
-  		i_d_buf4 <= "00";
+  		i_d_buf0 <= (others => '0');
+  		i_d_buf1 <= (others => '0');
+  		i_d_buf2 <= (others => '0');
+  		i_d_buf3 <= (others => '0');
+  		i_d_buf4 <= (others => '0');
   		ADDR_BUF0 <= (others => '0');
   		ADDR_BUF1 <= (others => '0');
   		ADDR_BUF2 <= (others => '0');

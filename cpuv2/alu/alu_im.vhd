@@ -34,7 +34,7 @@ begin  -- STRUCTURE
   		A when alui_op_mv,
   		'0'&A(30 downto 0) when alui_op_fabs,
   		(not A(31))&A(30 downto 0) when alui_op_fneg,
-		B when others;
+		B when others;--li
   -----------------------------------------------------------------------------
   -- î‰är
   -----------------------------------------------------------------------------

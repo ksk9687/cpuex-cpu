@@ -36,19 +36,7 @@ component branchPredictor is
 end component;
 
 
-component cache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(19 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
-	);
-end component;
-
-component small_cache is
+component baka_cache is
 	port  (
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(13 downto 0);
@@ -56,6 +44,7 @@ component small_cache is
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
+		jmp_flgs : out std_logic_vector(2 downto 0);
 		hit : out std_logic
 	);
 end component;
@@ -78,34 +67,10 @@ component block_cache is
 		address: in std_logic_vector(13 downto 0);
 		set_addr: in std_logic_vector(13 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
+		set,set_tag : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
 		jmp_flgs : out std_logic_vector(2 downto 0);
-		hit : out std_logic
-	);
-end component;
-
-component lazy_cache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
-	);
-end component;
-
-component dcache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(19 downto 0);
-		set_addr: in std_logic_vector(19 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
+		hit,hit_tag : out std_logic
 	);
 end component;
 
@@ -117,7 +82,7 @@ component block_dcache is
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
+		hit,hit_tag : out std_logic
 	);
 end component;
 
@@ -129,31 +94,7 @@ component block_s_dcache is
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
-	);
-end component;
-
-component baka_cache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
-	);
-end component;
-
-component simple_dcache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(19 downto 0);
-		set_addr: in std_logic_vector(19 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
+		hit,hit_tag : out std_logic
 	);
 end component;
 
@@ -173,7 +114,7 @@ component baka_dcache is
 		set : in std_logic;
 		--read_f : in std_logic;
 		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
+		hit,hit_tag : out std_logic
 	);
 end component;
 
@@ -233,7 +174,7 @@ end component;
 
 component instructionBuffer is
 	port  (
-		clk,rst,flush : in std_logic;        -- input clock, xx MHz.
+		clk,flush : in std_logic;        -- input clock, xx MHz.
 		read ,write: in std_logic;
 		readok,writeok: out std_logic;
 		readdata : out std_logic_vector(62 downto 0);
@@ -244,7 +185,7 @@ end component;
 
 component IOU is
 	port  (
-		clk,clk50,rst,enable : in std_logic;
+		clk,clk50,enable : in std_logic;
 		iou_op : in std_logic_vector(2 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		no : in std_logic_vector(4 downto 0);
@@ -273,7 +214,7 @@ end component;
 
 component lsu is
 	port  (
-		clk,rst,read,write,load_ok : in std_logic;
+		clk,write,load_ok : in std_logic;
 		op : in std_logic_vector(2 downto 0);
     	lsu_ok,lsu_full : out std_logic;--
     	
@@ -293,7 +234,7 @@ end component;
 
 component memory is 
 port (
-    clk,rst,sramcclk,sramclk,clkfast	: in	  std_logic;
+    clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
@@ -334,7 +275,7 @@ end component;
 
 component reg is 
 port (
-    clk,rst,reg_alloc,rr_reg_ok			: in	  std_logic;
+    clk,reg_alloc,cr_alloc			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;
@@ -375,7 +316,7 @@ end component;
 
 component returnAddressStack is
 	port  (
-		clk,rst : in std_logic;
+		clk : in std_logic;
 		jal,jr : in std_logic;
 		pc : in std_logic_vector(14 downto 0);
 		new_pc : out std_logic_vector(14 downto 0)
@@ -388,13 +329,13 @@ component sram_controller is
 		CLK : in STD_LOGIC
 		;SRAMCLK : in STD_LOGIC
 		
-		;i_d    : in  std_logic_vector(1 downto 0)
+		;i_d    : in  std_logic_vector(2 downto 0)
 		;ADDR    : in  std_logic_vector(19 downto 0)
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
 		;RW      : in  std_logic
 		
-		;i_d_buf    : out  std_logic_vector(1 downto 0)
+		;i_d_buf    : out  std_logic_vector(2 downto 0)
 		;ADDRBUF    : out  std_logic_vector(19 downto 0)
 		
 		--SRAM

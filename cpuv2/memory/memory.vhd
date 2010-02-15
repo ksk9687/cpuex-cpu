@@ -14,10 +14,12 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 library work;
 use work.instruction.all;
 use work.SuperScalarComponents.all; 
+library UNISIM;
+use UNISIM.VComponents.all;
 
 entity memory is 
 port (
-    clk,rst,sramcclk,sramclk,clkfast	: in	  std_logic;
+    clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
@@ -70,18 +72,18 @@ architecture synth of memory is
 	signal irom_inst,inst_buf,inst_i: std_logic_vector(31 downto 0) := (others => '0');
 	signal count : std_logic_vector(31 downto 0) := (others => '0');
 	
-	signal RW : std_logic := '0';
+	signal RW,rst : std_logic := '0';
 	signal DATAIN : std_logic_vector(31 downto 0) := (others => '0');
 	signal DATAOUT,ls_buf : std_logic_vector(31 downto 0) := (others => '0');
 	signal pc_buf,set_addr,pc_buf_p1 : std_logic_vector(13 downto 0) := (others => '0');
 	
 	signal cache_out,cache_out_buf,store_data_buf : std_logic_vector(31 downto 0) := (others => '0');
 	signal cache_hit,cache_hit_b,ipref,dpref : std_logic := '0';
-	signal cache_set : std_logic := '0';
+	signal cache_set,cache_set_tag : std_logic := '0';
 
 	signal dcache_out : std_logic_vector(31 downto 0) := (others => '0');
 	signal dcache_in : std_logic_vector(31 downto 0) := (others => '0');
-	signal dcache_hit,dcache_hit_buf : std_logic := '0';
+	signal dcache_hit,cache_hit_tag,dcache_hit_buf,dcache_hit_tag : std_logic := '0';
 	signal dcache_set,dcache_read : std_logic := '0';
 	signal dcache_addr,addr_out,d_set_addr,ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_addr_buf,ls_addr_buf_p1,ls_addr_buf_pref : std_logic_vector(19 downto 0) := (others => '0');
@@ -93,12 +95,15 @@ architecture synth of memory is
 	signal inst_select : std_logic_vector(2 downto 0) := (others => '0');
 	signal i_mem_req,i_halt : std_logic := '0';
 	
-	signal i_d_out,i_d_in : std_logic_vector(1 downto 0) := "00";
+	signal i_d_out,i_d_in : std_logic_vector(2 downto 0) := "000";
 	signal jmp_flgs_ir,jmp_flgs_ic : std_logic_vector(2 downto 0) := "000";
 
 	
 	
 begin
+
+  	ROC0 : ROC port map (O => rst);
+
 	inst_ok <= 	cache_hit or rom_access;
 	inst <= inst_i;
 	
@@ -112,15 +117,16 @@ begin
 	load_data <= --DATAOUT when ls_addr = addr_out else
 	dcache_out;
 	
+	cache_set_tag <= i_d_out(2);
 	cache_set <= i_d_out(1);
 	set_addr <= addr_out(13 downto 0);
 	
 	--データキャッシュアドレス
-	d_set_addr <= addr_out when i_d_out(0) = '1' else--missload
-	ls_addr;
+	d_set_addr <= ls_addr when ls_flg(0) = '1' else--store,missload
+	 addr_out;
 	--データキャッシュデータ
-	dcache_in <= DATAOUT when i_d_out(0) = '1' else--missload
-	store_data;--Store
+	dcache_in <= store_data  when ls_flg(0) = '1' else--store,missload
+	DATAOUT;--Store
 
 	--データキャッシュセット　MissLoad,Store
 	dcache_set <= i_d_out(0) or (ls_flg(0));
@@ -134,21 +140,20 @@ begin
 	DATAIN <= store_data_buf;
 	
 	--SRAM読み書き　1:Read 0:Write
-	RW <= '0' when ls_buf0 = "11" else
-	'1';
+	RW <= not ls_buf0(0);
 	
-	dac <= 
-	(ls_buf0(1) and (ls_buf0(0) or (not dcache_hit)));
-	--ls_buf0(1) and (ls_buf0(0) or ((not dcache_hit) or dpref));
+	dac <= ls_buf0(0) or (ls_buf0(1) and (not dcache_hit_tag));
+	-- 
 	--ICACHE FILL
+	i_d_in(2) <= '1' when i_mem_state = inst_w7 else '0';
+	
 	--ROMでない　かつ　Iキャッシュミス　かつ　Dアクセスでない
 	i_d_in(1) <=
-	(((not rom_access) and (not cache_hit)) or ipref) and (not dac);
+	((not rom_access) and ((not cache_hit_tag) or ipref)) and (not dac);
 	
 	--DCACHE FILL
 	---DmissLoad
-	i_d_in(0) <= 
-	ls_buf0(1) and (not ls_buf0(0)) and (not dcache_hit);
+	i_d_in(0) <= ls_buf0(1) and (not dcache_hit_tag);
 	--ls_buf0(1) and (not ls_buf0(0)) and ((not dcache_hit) or dpref);
 	
 	pc_buf_p1 <= pc_buf(13 downto 3)&(pc_buf(2 downto 0) + '1') when (i_mem_state /= inst_w7) and i_d_in(1) = '1' else
@@ -221,7 +226,7 @@ begin
 			ls_buf0 <= "00";
 		elsif rising_edge(clk) then
 			case d_mem_state is
-				when idle		=>
+				when idle =>
 					if i_d_in(0) = '1' then--miss Load
 						d_mem_state <= data_w1;
 						ls_buf0 <= "10";
@@ -230,7 +235,7 @@ begin
 						ls_addr_buf <= ls_addr;
 						ls_buf0 <= ls_flg;
 					end if;
-				when data_w1	=>
+				when data_w1 =>
 						d_mem_state <= data_w2;
 						ls_buf0 <= "10";
 						ls_addr_buf <= ls_addr_buf_p1;
@@ -283,14 +288,15 @@ begin
 		,pc(13 downto 0)
 		,set_addr
 		,DATAOUT
-		,cache_set
+		,cache_set,cache_set_tag
 		,cache_out
 		,jmp_flgs_ic
 		,cache_hit
+		,cache_hit_tag
 	);
 	
 	
-	DCACHE0: block_s_dcache port map(
+	DCACHE0: block_dcache port map(
 		clk,clkfast
 		,ls_addr
 		,d_set_addr
@@ -298,5 +304,6 @@ begin
 		,dcache_set
 		,dcache_out
 		,dcache_hit
+		,dcache_hit_tag
 	);
 end synth;

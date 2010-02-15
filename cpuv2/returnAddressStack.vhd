@@ -4,9 +4,11 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+library UNISIM;
+use UNISIM.VComponents.all;
 entity returnAddressStack is
 	port  (
-		clk,rst : in std_logic;
+		clk : in std_logic;
 		jal,jr : in std_logic;
 		pc : in std_logic_vector(14 downto 0);
 		new_pc : out std_logic_vector(14 downto 0)
@@ -21,7 +23,11 @@ architecture arch of returnAddressStack is
 	signal p :std_logic := '0';
 	signal read_pointer,read_pointer_buf :std_logic_vector(3 downto 0) := (others => '0');
 	signal read_pointer2,read_pointer2_buf :std_logic_vector(3 downto 0) := (others => '1');
+	signal rst :std_logic:= '0';
 begin
+
+  	ROC0 : ROC port map (O => rst);
+  	
 	new_pc <= ras(conv_integer(read_pointer2));
 	--ras_ok <= (not jmp_num(0)) and (not jmp_num(1)) and (not jmp_num(2));
 

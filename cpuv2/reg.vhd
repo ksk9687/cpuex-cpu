@@ -13,9 +13,12 @@ use ieee.std_logic_1164.all;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
+library UNISIM;
+use UNISIM.VComponents.all;
+
 entity reg is 
 port (
-    clk,rst,reg_alloc,rr_reg_ok			: in	  std_logic;
+    clk,reg_alloc,cr_alloc			: in	  std_logic;
     d: in std_logic_vector(5 downto 0);
     pd,s1,s2 : in std_logic_vector(6 downto 0);
     dflg: in	  std_logic;
@@ -40,8 +43,9 @@ architecture synth of reg is
 	signal using	:	using_table_t := (others => '0');
 	
 	signal cr_a :std_logic_vector (2 downto 0) := "000";
-	signal cr_using :std_logic:= '0';
+	signal cr_using,rst :std_logic:= '0';
 begin
+  	ROC0 : ROC port map (O => rst);
     --read
     data_s1 <= registers(conv_integer(s1(5 downto 0)));
     data_s2 <= registers(conv_integer(s2(5 downto 0)));
@@ -50,7 +54,7 @@ begin
     --オペランドが使用可能か
     s1_ok <= not using(conv_integer(s1(5 downto 0)));
     s2_ok <= not using(conv_integer(s2(5 downto 0)));
---    d_ok <= not using(conv_integer(pd(5 downto 0)));
+    d_ok <= not using(conv_integer(pd(5 downto 0)));
     
     --crが正しいかどうか
     cr_ok <= (not (pcrflg(1) and cr_using)) or crflg(0);
@@ -62,7 +66,7 @@ begin
 	     	cr_using <= '0';
 	     	cr_a <= "000";
 	    elsif rising_edge(clk) then
-	     	if dflg = '1'then
+	     	if dflg = '1' then
 	     		registers(conv_integer(d(5 downto 0))) <= data_d;
 	     	end if;
 	     	
@@ -82,7 +86,7 @@ begin
 	     		cr_a <= cr_d;
 	     	end if;
 	     	
-	     	if rr_reg_ok = '1' and pcrflg(0) = '1' then
+	     	if (cr_alloc = '1') and (pcrflg(0) = '1') then
      			cr_using <= '1';
      		elsif crflg(0) = '1' then
 	     		cr_using <= '0';
