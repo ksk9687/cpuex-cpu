@@ -300,10 +300,6 @@ begin
 	process(clkfast)
 	begin
 		if rising_edge(clkfast) then
---	    	if set = '1' then
---	    	   cache(conv_integer(set_addr(11 downto 0))) <= '1'&set_addr(19 downto 12);
---	    	   cache_data(conv_integer(set_addr(11 downto 0))) <= set_data;
---	    	end if;
 	        address_buf_f <= address;
 		end if;
 	end process;
@@ -366,40 +362,62 @@ architecture arch of block_s_dcache is
     signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
     signal address_buf,address_buf_f,ac_addr,rd_addr,address_buf2 : std_logic_vector(19 downto 0) := (others => '0');
     signal conflict,conflict1,conflict2,hit_p,hit1,hit2,hit3,hit_p1,hit_p2,hit_p3 : std_logic := '0';
+
+   signal set_tag : std_logic_vector(9 downto 0) := '0'&"000000000";
+   signal set_d : std_logic_vector(0 downto 0) := "0";
+   	
+   	component dcache_2048x32 IS
+	port (
+	clka: IN std_logic;
+	dina: IN std_logic_VECTOR(31 downto 0);
+	addra: IN std_logic_VECTOR(10 downto 0);
+	wea: IN std_logic_VECTOR(0 downto 0);
+	clkb: IN std_logic;
+	addrb: IN std_logic_VECTOR(10 downto 0);
+	doutb: OUT std_logic_VECTOR(31 downto 0));
+	END component;
+	
+	component dcache_tag_2048x10 IS
+	port (
+	clka: IN std_logic;
+	dina: IN std_logic_VECTOR(9 downto 0);
+	addra: IN std_logic_VECTOR(10 downto 0);
+	wea: IN std_logic_VECTOR(0 downto 0);
+	clkb: IN std_logic;
+	addrb: IN std_logic_VECTOR(10 downto 0);
+	doutb: OUT std_logic_VECTOR(9 downto 0));
+	END component;
+	
+	
 begin
+  CACHE0 : dcache_2048x32 port map(
+  	clkfast,set_data,set_addr(10 downto 0),set_d,
+  	clkfast,address(10 downto 0),data_p
+  );
+  CACHE_TAG0 : dcache_tag_2048x10 port map(
+  	clkfast,set_tag,set_addr(10 downto 0),set_d,
+  	clkfast,address(10 downto 0),entry_p
+  );
+
+  	set_d(0) <= set;
+	set_tag <= '1'&set_addr(19 downto 11);
+	
 	read_data <= data;
-	data_p <= cache_data(conv_integer(address_buf_f(10 downto 0)));
+	
 	hit <= (not conflict1) and hit1 and hit2 and hit3;
 	hit_tag <= hit1 and hit2 and hit3;
-	entry_p <= cache(conv_integer(address_buf_f(10 downto 0)));
 	
-	process(clkfast)
-	begin
-		if rising_edge(clkfast) then
-	    	if set = '1' then
-	    	   cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(19 downto 11);
-	    	   cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
-	    	end if;
-	        address_buf_f <= address;
-		end if;
-	end process;
 	
-	hit_p1 <= '1' when entry_p(4 downto 0) = address_buf_f(15 downto 11) else '0';
-	hit_p2 <= '1' when entry_p(8 downto 5) = address_buf_f(19 downto 16) else '0';
+	hit_p1 <= '1' when entry_p(3 downto 0) = address(14 downto 11) else '0';
+	hit_p2 <= '1' when entry_p(8 downto 4) = address(19 downto 15) else '0';
 	
 	process (clk)
 	begin
 	    if rising_edge(clk) then
---	    	if set = '1' then
---	    	   --cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(19 downto 11);
---	           
---	    	end if;
-	    	
 	    	hit1 <= hit_p1;
 	    	hit2 <= hit_p2;
 	    	hit3 <= entry_p(9);
 	    	data <= data_p;
-	       -- address_buf <= address;
 	    	
 	    	if set_addr(10 downto 0) = address(10 downto 0) then
 	    		conflict <= set;

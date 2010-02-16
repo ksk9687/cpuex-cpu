@@ -45,8 +45,7 @@ begin  -- STRUCTURE
 
   with op select
   O <= A + B when alu_op_add,
-    A - B when alu_op_sub,
-    "11111111111111111111111111111111" when others;
+    A - B when others;
 
 
   

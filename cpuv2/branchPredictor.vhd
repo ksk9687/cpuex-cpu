@@ -17,10 +17,10 @@ end branchPredictor;
 
 
 architecture arch of branchPredictor is
-	type counter_table_t is array (0 to 4095) of std_logic_vector (1 downto 0);
+	type counter_table_t is array (0 to 8191) of std_logic_vector (1 downto 0);
 	signal counter_table	:	counter_table_t := (others => "01");
 	
-	type counter_hist_table_t is array (0 to 7) of std_logic_vector (14 downto 0);
+	type counter_hist_table_t is array (0 to 7) of std_logic_vector (15 downto 0);
 	signal counter_hist_table	:	counter_hist_table_t := (others => (others => '0'));
 	
 	signal read_pointer :std_logic_vector(2 downto 0) := (others => '0');
@@ -28,8 +28,8 @@ architecture arch of branchPredictor is
 	
 	signal stop,taken_in,hist : std_logic;
 	signal counter,counter_buf,newcounter,newcounter_p,newcounter_m : std_logic_vector(1 downto 0);
-	signal pc_buf,pc_buf2 : std_logic_vector(11 downto 0);
-	signal branch_hist_buf : std_logic_vector(7 downto 0);
+	signal pc_buf,pc_buf2 : std_logic_vector(12 downto 0);
+	signal branch_hist_buf : std_logic_vector(8 downto 0);
 begin
 
 	taken <= taken_in;
@@ -38,7 +38,7 @@ begin
 	
 	taken_hist <= counter_hist_table(conv_integer(read_pointer))(0);
 	counter_buf <= counter_hist_table(conv_integer(read_pointer))(2 downto 1);
-	pc_buf2 <= counter_hist_table(conv_integer(read_pointer))(14 downto 3);
+	pc_buf2 <= counter_hist_table(conv_integer(read_pointer))(15 downto 3);
 	
 	bp_ok <= '1' when read_pointer = write_pointer else '0';
 	jmp_num <= write_pointer - read_pointer;
@@ -75,10 +75,10 @@ begin
 				end if;
 			end if;
 			if b_taken = '1' or b_not_taken = '1' then
-				branch_hist_buf <= branch_hist_buf(6 downto 0) & b_taken;
+				branch_hist_buf <= branch_hist_buf(7 downto 0) & b_taken;
 				counter_table(conv_integer(pc_buf2)) <= newcounter;
 			end if;
-			pc_buf <= (pc(11 downto 4) xor branch_hist_buf(7 downto 0))& pc(3 downto 0);
+			pc_buf <= (pc(12 downto 4) xor branch_hist_buf(8 downto 0))& pc(3 downto 0);
 		end if;
 	end process;
 

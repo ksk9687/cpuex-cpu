@@ -1,0 +1,8 @@
+# Output products list for <dcache_tag_4096x9>
+dcache_tag_4096x9.ngc
+dcache_tag_4096x9.vhd
+dcache_tag_4096x9.vho
+dcache_tag_4096x9.xco
+dcache_tag_4096x9_blk_mem_gen_v2_8_xst_1.ngc_xst.xrpt
+dcache_tag_4096x9_flist.txt
+dcache_tag_4096x9_xmdf.tcl

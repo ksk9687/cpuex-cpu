@@ -32,8 +32,6 @@ architecture arch of instructionBuffer is
 	 signal tmp : std_logic_vector(2 downto 0) := "000";
 	 
 begin
-
-  	ROC0 : ROC port map (O => rst);
 	readdata_in <= RAM(conv_integer(read_pointer));
 	
 	readdata(62 downto 48) <= readdata_in(62 downto 48);
@@ -73,12 +71,9 @@ begin
 
 	
 	
-	process(clk,rst)
+	process(clk)
 	begin
-		if rst = '1' then
-			read_pointer <= (others => '0');
-			write_pointer <= (others => '0');
-		elsif rising_edge(clk) then
+		if rising_edge(clk) then
 			if flush = '1' then
 				read_pointer <= (others => '0');
 				write_pointer <= (others => '0');

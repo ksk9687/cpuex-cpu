@@ -240,12 +240,20 @@ begin
 						ls_buf0 <= "10";
 						ls_addr_buf <= ls_addr_buf_p1;
 				when data_w2	=>
-						d_mem_state <= data_w3;
+						d_mem_state <= data_w5;
 						ls_buf0 <= "10";
 						ls_addr_buf <= ls_addr_buf_p1;
 				when data_w3	=>
+						d_mem_state <= data_w4;
+						ls_buf0 <= "10";
+						ls_addr_buf <= ls_addr_buf_p1;
+				when data_w4	=>
+						d_mem_state <= data_w5;
+						ls_buf0 <= "10";
+						ls_addr_buf <= ls_addr_buf_p1;
+				when data_w5	=>
 					ls_buf0 <= "00";
-					if dcache_hit = '1' then
+					if dcache_hit_tag = '1' then
 						d_mem_state <= idle;
 					end if;
 				when others	=>
@@ -296,7 +304,7 @@ begin
 	);
 	
 	
-	DCACHE0: block_dcache port map(
+	DCACHE0: block_s_dcache port map(
 		clk,clkfast
 		,ls_addr
 		,d_set_addr

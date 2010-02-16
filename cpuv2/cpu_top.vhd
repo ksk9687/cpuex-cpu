@@ -398,14 +398,12 @@ begin
 --	end process LED_OUT;
 
 	ALU0 : alu port map (
-		clk,
-		sub_op_buf0,
+		clk,sub_op_buf0,
 		data_s1,data_s2,
 		alu_out,alu_cmp
 	);	
 	ALU_IM0 : alu_im port map (
-		clk,
-		sub_op_buf0,
+		clk,sub_op_buf0,
 		data_s1,ext_im_buf0,
 		alu_im_out,alui_cmp
 	);
@@ -427,8 +425,8 @@ begin
 	
 	
 	with sub_op_buf0 select
-	ls_address_p <= data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when lsu_op_store | lsu_op_load,
-	data_s1(19 downto 0) + data_s2(19 downto 0) when others;--loadr
+	ls_address_p <= data_s1(19 downto 0) + data_s2(19 downto 0) when lsu_op_loadr,
+	data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when others;--loadr
 	
 	with sub_op_buf0 select
 	lsu_in <= data_s2 when lsu_op_store,
