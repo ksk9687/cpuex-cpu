@@ -1,0 +1,8 @@
+50＊7 / 4 = 87.5Mhz
+42.953s
+
+Optimization effort = Normal
+
+Map effort Level = high
+P&R　Effort Level = high
+Cost Table = 4
