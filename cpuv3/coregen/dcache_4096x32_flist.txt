@@ -1,8 +1,0 @@
-# Output products list for <dcache_4096x32>
-dcache_4096x32.ngc
-dcache_4096x32.vhd
-dcache_4096x32.vho
-dcache_4096x32.xco
-dcache_4096x32_blk_mem_gen_v2_8_xst_1.ngc_xst.xrpt
-dcache_4096x32_flist.txt
-dcache_4096x32_xmdf.tcl

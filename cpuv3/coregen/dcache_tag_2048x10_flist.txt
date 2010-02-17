@@ -1,8 +1,0 @@
-# Output products list for <dcache_tag_2048x10>
-dcache_tag_2048x10.ngc
-dcache_tag_2048x10.vhd
-dcache_tag_2048x10.vho
-dcache_tag_2048x10.xco
-dcache_tag_2048x10_blk_mem_gen_v2_8_xst_1.ngc_xst.xrpt
-dcache_tag_2048x10_flist.txt
-dcache_tag_2048x10_xmdf.tcl
