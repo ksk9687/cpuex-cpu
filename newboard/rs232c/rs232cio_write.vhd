@@ -19,7 +19,7 @@ entity rs232cio_write is
     );
   Port (
     CLK : in STD_LOGIC;
---    BUFCLK : in STD_LOGIC;
+    BUFCLK : in STD_LOGIC;
     RST : in STD_LOGIC;
     -- Ç±ÇøÇÁë§ÇégÇ§
     RSIO_WD : in STD_LOGIC;     -- write êßå‰ê¸
@@ -84,8 +84,8 @@ begin
       bufreadpos <= conv_std_logic_vector(0,buflenlog);
       bufwritepos <= conv_std_logic_vector(0,buflenlog);
     else
-      if clk'event and clk = '1' then  -- rising clock edge
---      if bufclk'event and bufclk = '1' then  -- rising clock edge
+--      if clk'event and clk = '1' then  -- rising clock edge
+      if bufclk'event and bufclk = '1' then  -- rising clock edge
         if RSIO_WD = '1' then
           if writeenable = '1' then
             bufwritepos <= bufwritepos + conv_std_logic_vector(1,buflenlog);
@@ -94,8 +94,8 @@ begin
             bufwritepos <= bufwritepos;
           end if;
         end if;
---      end if;
---      if clk'event and clk = '1' then  -- rising clock edge
+      end if;
+      if clk'event and clk = '1' then  -- rising clock edge
         case state is
           when STATE_WAITDATA =>
             timecounter <= 0;

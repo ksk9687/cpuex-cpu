@@ -17,7 +17,7 @@ entity rs232cio is
     );
   Port (
     CLK : in STD_LOGIC;
---    BUFCLK : in STD_LOGIC;
+    BUFCLK : in STD_LOGIC;
     RST : in STD_LOGIC;
     -- こちら側を使う
     RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -44,7 +44,7 @@ architecture Behavioral of rs232cio is
       READBUFLENLOG : integer );      -- バッファの大きさ
     Port (
       CLK : in STD_LOGIC;
---      BUFCLK : in STD_LOGIC;
+      BUFCLK : in STD_LOGIC;
       RST : in STD_LOGIC;
       -- こちら側を使う
       RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -63,7 +63,7 @@ architecture Behavioral of rs232cio is
       );
     Port (
       CLK : in STD_LOGIC;
---      BUFCLK : in STD_LOGIC;
+      BUFCLK : in STD_LOGIC;
       RST : in STD_LOGIC;
       -- こちら側を使う
       RSIO_WD : in STD_LOGIC;     -- write 制御線
@@ -83,7 +83,7 @@ begin
       READBUFLENLOG => READBUFLENLOG)
     port map (
       CLK,
---      BUFCLK,
+      BUFCLK,
       RST,
       RSIO_RD,
       RSIO_RData,
@@ -98,7 +98,7 @@ begin
       WRITEBUFLENLOG => WRITEBUFLENLOG)
     port map (
       CLK,
---      BUFCLK,
+      BUFCLK,
       RST,
       RSIO_WD,
       RSIO_WData,
