@@ -10,20 +10,27 @@ use UNISIM.VComponents.all;
 
 entity clockgenerator is
   Port ( globalclk : in  STD_LOGIC;
-         clock50 : out  STD_LOGIC;
-         clock100 : out  STD_LOGIC;
+         globalrst : in  STD_LOGIC;
+         clock66 : out  STD_LOGIC;
+         clock66_90 : out  STD_LOGIC;
+         clock66_180 : out  STD_LOGIC;
+         clock66_270 : out  STD_LOGIC;
+         clock133 : out  STD_LOGIC;
          reset : out  STD_LOGIC);
 end clockgenerator;
 
 architecture Behavioral of clockgenerator is
   COMPONENT clockgen
     PORT(
-      CLKIN_IN : IN std_logic;
-      RST_IN : IN std_logic;          
-      CLKIN_IBUFG_OUT : OUT std_logic;
-      CLK0_OUT : OUT std_logic;
-      CLK2X_OUT : OUT std_logic;
-      LOCKED_OUT : OUT std_logic
+		CLKIN_IN : IN std_logic;
+		RST_IN : IN std_logic;          
+		CLKIN_IBUFG_OUT : OUT std_logic;
+		CLK0_OUT : OUT std_logic;
+		CLK2X_OUT : OUT std_logic;
+		CLK90_OUT : OUT std_logic;
+		CLK180_OUT : OUT std_logic;
+		CLK270_OUT : OUT std_logic;
+		LOCKED_OUT : OUT std_logic
       );
   END COMPONENT;
   signal rst : std_logic;
@@ -34,14 +41,17 @@ begin
 -- Virtex-4/5
 -- Xilinx HDL Libraries Guide, version 10.1.2
   roc_inst : roc port map (O => rocrst);
-  rst <= rocrst;
+  rst <= rocrst or (not globalrst);
   reset <= rst or (not lock);
   Inst_clockgen: clockgen PORT MAP(
     CLKIN_IN => globalclk,
     RST_IN => rst,
     CLKIN_IBUFG_OUT => open,
-    CLK0_OUT => clock50,
-    CLK2X_OUT => clock100,
+		CLK0_OUT => clock66,
+		CLK2X_OUT => clock66_90,
+		CLK90_OUT => clock66_180,
+		CLK180_OUT => clock66_270,
+		CLK270_OUT => clock133,
     LOCKED_OUT => lock
     );
 end Behavioral;

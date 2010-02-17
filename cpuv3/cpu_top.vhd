@@ -14,40 +14,43 @@ use UNISIM.VComponents.all;
 
 entity cpu_top is
 	port  (
-	    CLKIN			: in	  std_logic--50Mhz
-	    ;ledout		: out	std_logic_vector(7 downto 0)
-	    
-		--SRAM
-		;SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
-		;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
-		;SRAMIOPA : inout  STD_LOGIC_VECTOR (3 downto 0) --パリティー
-		;SRAMRWA : out  STD_LOGIC	--read=>1,write=>0
-		;SRAMBWA : out  STD_LOGIC_VECTOR (3 downto 0)--書き込みバイトの指定
-		;SRAMCLKMA0 : out  STD_LOGIC	--SRAMクロック
-		;SRAMCLKMA1 : out  STD_LOGIC	--SRAMクロック
-		;SRAMADVLDA : out  STD_LOGIC	--バーストアクセス
-		;SRAMCEA : out  STD_LOGIC --clock enable
-		;SRAMCELA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-		;SRAMCEHA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-		;SRAMCEA2X : out  STD_LOGIC	--SRAMを動作させるかどうか
-		;SRAMCEA2 : out  STD_LOGIC	--SRAMを動作させるかどうか
-		;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
-		;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
-		;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
-		
-		-- USB
-		;USBWR : out  STD_LOGIC
-		;USBRDX : out  STD_LOGIC
-		;USBTXEX : in  STD_LOGIC
-		;USBSIWU : out  STD_LOGIC
-		;USBRXFX : in  STD_LOGIC
-		;USBRST : out  STD_LOGIC
-		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
+
+    RS_RX : in STD_LOGIC;
+    RS_TX : out STD_LOGIC;
+    outdata0 : out std_logic_vector(7 downto 0);
+    outdata1 : out std_logic_vector(7 downto 0);
+    outdata2 : out std_logic_vector(7 downto 0);
+    outdata3 : out std_logic_vector(7 downto 0);
+    outdata4 : out std_logic_vector(7 downto 0);
+    outdata5 : out std_logic_vector(7 downto 0);
+    outdata6 : out std_logic_vector(7 downto 0);
+    outdata7 : out std_logic_vector(7 downto 0);
+
+    XE1 : out STD_LOGIC; -- 0
+    E2A : out STD_LOGIC; -- 1
+    XE3 : out STD_LOGIC; -- 0
+    ZZA : out STD_LOGIC; -- 0
+    XGA : out STD_LOGIC; -- 0
+    XZCKE : out STD_LOGIC; -- 0
+    ADVA : out STD_LOGIC; -- we do not use (0)
+    XLBO : out STD_LOGIC; -- no use of ADV, so what ever
+    ZCLKMA : out STD_LOGIC_VECTOR(1 downto 0); -- clk
+    XFT : out STD_LOGIC; -- FT(0) or pipeline(1)
+    XWA : out STD_LOGIC; -- read(1) or write(0)
+    XZBE : out STD_LOGIC_VECTOR(3 downto 0); -- write pos
+    ZA : out STD_LOGIC_VECTOR(19 downto 0); -- Address
+    ZDP : inout STD_LOGIC_VECTOR(3 downto 0); -- parity
+    ZD : inout STD_LOGIC_VECTOR(31 downto 0); -- bus
+
+    -- CLK_48M : in STD_LOGIC;
+    CLK_RST : in STD_LOGIC;
+    CLK_66M : in STD_LOGIC
+
 	);
 end cpu_top;
 
 architecture arch of cpu_top is	
-   signal clk,clk50,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
+   signal clk,clk66,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
    signal stall,reg_stall,flush,sleep,stall_b,stall_id,stall_rr,stall_rrx,stall_rd,stall_ex,flushed,bp_write: std_logic := '0';
    signal write_inst_ok,read_inst_ok,inst_ok,lsu_ok,lsu_ok_t,reg_ok,rr_ok,rr_reg_ok,rr_cr_ok,rob_ok,bp_ok,ras_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
@@ -85,6 +88,7 @@ architecture arch of cpu_top is
 	--IO
 	signal iou_out : std_logic_vector(31 downto 0) := (others=>'0');
 	signal iou_enable :std_logic:='0';
+	signal io_read_buf_overrun :std_logic;
 	--FPU
 	signal fpu_out,fpu_out_buf1 : std_logic_vector(31 downto 0) := (others=>'0');
 	signal fpu_cmp :std_logic_vector(2 downto 0) := "000";
@@ -100,7 +104,9 @@ architecture arch of cpu_top is
 			
 	signal pc_next,jmp_stop,jmp,predict_taken_hist,predict_taken,bp_miss : std_logic :='0';
 	
-   	signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
+   signal leddata : std_logic_vector(31 downto 0);
+   signal leddotdata : std_logic_vector(7 downto 0);
+   signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
    signal jmp_ex,jmp_op,jal_op,jr_op,jal,jal_ex,jr_miss,jr_ex,cr_mask,cr_mask_p,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
    signal debug :std_logic_vector(7 downto 0) := (others=>'1');
    signal jmp_num :std_logic_vector(2 downto 0) := (others=>'1');
@@ -118,29 +124,26 @@ architecture arch of cpu_top is
    signal reg_s1_b,reg_s2_b : std_logic := '0';
 
 begin
-  	ROC0 : ROC port map (O => rst);
-  	
-	CLOCK0 : CLOCK port map (
-  		clkin     => CLKIN,
-    	clkout2x    => clk,
-		clkout2x90 => clk90,
-		clkout2x180 => clk180,
-		clkout2x270 => clk270,
-		clkout4x => clk2x,
-		clkout1x => clk50,
-  		locked    => locked0);
---  		
---  	CLOCK0 : CLOCK port map (
---  		clkin     => CLKIN,
---    	clkout0    => clk,
---		clkout90 => clk90,
---		clkout180 => clk180,
---		clkout270 => clk270,
---		clkout2x => clk2x,
---  		locked    => locked0);
---  	clk50 <= not clk;
-
-
+--  	ROC0 : ROC port map (O => rst);
+--	CLOCK0 : CLOCK port map (
+--		clkin     => CLKIN,
+--		clkout2x    => clk,
+--		clkout2x90 => clk90,
+--		clkout2x180 => clk180,
+--		clkout2x270 => clk270,
+--		clkout4x => clk2x,
+--		clkout1x => clk66,
+--		locked    => locked0);
+  clockgenerator_inst : clockgenerator port map(
+    CLK_66M,
+    CLK_RST,
+	clock66    => clk66,
+	clock66_90 => clk90,
+	clock66_180 => clk180,
+	clock66_270 => clk270,
+	clock133 => clk2x,
+    reset => rst);
+    clk<=clk66;
   
   	----------------------------------
 	-- 
@@ -164,12 +167,22 @@ begin
    	clk,clk,clk180,clk180,
    	next_pc,inst,jmp_flgs,inst_ok,
    	ls_f,ls_address,store_data,load_data,lsu_ok
-	,SRAMAA,SRAMIOA,SRAMIOPA
-	,SRAMRWA,SRAMBWA
-	,SRAMCLKMA0,SRAMCLKMA1
-	,SRAMADVLDA,SRAMCEA
-	,SRAMCELA1X,SRAMCEHA1X,SRAMCEA2X,SRAMCEA2
-	,SRAMLBOA,SRAMXOEA,SRAMZZA
+		,
+      XE1,
+      E2A,
+      XE3,
+      ZZA,
+      XGA,
+      XZCKE,
+      ADVA,
+      XLBO,
+      ZCLKMA,
+      XFT,
+      XWA,
+      XZBE,
+      ZA,
+      ZDP,
+      ZD
    );
 
    jmp_ex <= jmp_taken or jmp_not_taken;
@@ -381,21 +394,20 @@ begin
 	----------------------------------
 	
 
-	ledout <= "00000000";
---	LED_OUT :process(clk,rst)
---	begin
---		if rst = '1' then
---			ledout <= (others => '0');
---		elsif rising_edge(clk) then
---			if (unit_op_buf0 = op_unit_iou) then 
---				if sub_op_buf0 = iou_op_ledi then
---					ledout <= not ext_im_buf0(7 downto 0);
---				elsif sub_op_buf0 = iou_op_led then
---					ledout <= not data_s1(7 downto 0);
---				end if;
---			end if;
---		end if;
---	end process LED_OUT;
+      leddata<=x"00000000";
+      leddotdata<="1111111" & (not io_read_buf_overrun);
+  led_inst : ledextd2 port map (
+      leddata,
+      leddotdata,
+      outdata0,
+      outdata1,
+      outdata2,
+      outdata3,
+      outdata4,
+      outdata5,
+      outdata6,
+      outdata7
+    );
 
 	ALU0 : alu port map (
 		clk,sub_op_buf0,
@@ -410,13 +422,13 @@ begin
 	
 	iou_enable <= '1' when unit_op_buf0 = op_unit_iou else '0';
 	IOU0 : IOU port map (
-		clk,clk50,iou_enable,
+		clk,clk66,iou_enable,
 		sub_op_buf0,
 		data_s1,ext_im_buf0(4 downto 0),
 		iou_out,
-		USBWR,USBRDX,USBTXEX,USBSIWU,USBRXFX,USBRST,USBD
+		RS_RX,RS_TX,
+		io_read_buf_overrun
 	);
-	
 	FPU0 : FPU port map (
 	    clk,sub_op_buf0,
 	    data_s1,data_s2,

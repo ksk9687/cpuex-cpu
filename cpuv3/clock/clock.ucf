@@ -1,0 +1,21 @@
+CONFIG PART=5VLX50TFF1136-1 ;
+
+#///////////////////////////////////////
+#// Clock connection.
+#///////////////////////////////////////
+
+#// = Inputs. =
+#NET  CLK_48M	LOC=H17 | IOSTANDARD = LVTTL; # CLK48M
+NET  CLK_66M	LOC=J16 | IOSTANDARD = LVTTL; # MCLK1
+NET  CLK_RST	LOC=H18 | IOSTANDARD = LVTTL; # XRST
+
+#NET "u_mig/u_infrastructure/sys_clk_ibufg" TNM_NET =  "SYS_CLK";
+NET "clk66"	TNM_NET = "SYS_CLK66";
+TIMESPEC "TS_SYS_CLK66" = PERIOD "SYS_CLK66" 14.52 ns HIGH 50 %;
+
+#NET "clk133"	TNM_NET = "SYS_CLK133";
+#TIMESPEC "TS_SYS_CLK133" = PERIOD "SYS_CLK133" 9.2 ns HIGH 50 %;
+
+#NET "clk150"	TNM_NET = "SYS_CLK150";
+#TIMESPEC "TS_SYS_CLK150" = PERIOD "SYS_CLK150" 7.0 ns HIGH 50 %;
+

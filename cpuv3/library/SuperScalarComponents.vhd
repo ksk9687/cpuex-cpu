@@ -185,19 +185,16 @@ end component;
 
 component IOU is
 	port  (
-		clk,clk50,enable : in std_logic;
+		clk,clk66,enable : in std_logic;
 		iou_op : in std_logic_vector(2 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		no : in std_logic_vector(4 downto 0);
 		readdata : out std_logic_vector(31 downto 0)
 		
-		;USBWR : out  STD_LOGIC
-		;USBRDX : out  STD_LOGIC
-		;USBTXEX : in  STD_LOGIC
-		;USBSIWU : out  STD_LOGIC
-		;USBRXFX : in  STD_LOGIC
-		;USBRSTX : out  STD_LOGIC
-		;USBD		: inout  STD_LOGIC_VECTOR (7 downto 0)
+		;RSRXD : in STD_LOGIC
+		;RSTXD : out STD_LOGIC
+		
+		;io_read_buf_overrun : out STD_LOGIC
 	);
 end component;
 
@@ -233,7 +230,7 @@ end component;
 
 
 component memory is 
-port (
+    Port (
     clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
     pc : in std_logic_vector(14 downto 0);
@@ -246,30 +243,24 @@ port (
     store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
     ls_ok : out std_logic;
-    
-	--SRAM
-	SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
-	;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
-	;SRAMIOPA : inout  STD_LOGIC_VECTOR (3 downto 0) --パリティー
-	
-	;SRAMRWA : out  STD_LOGIC	--read=>1,write=>0
-	;SRAMBWA : out  STD_LOGIC_VECTOR (3 downto 0)--書き込みバイトの指定
 
-	;SRAMCLKMA0 : out  STD_LOGIC	--SRAMクロック
-	;SRAMCLKMA1 : out  STD_LOGIC	--SRAMクロック
-	
-	;SRAMADVLDA : out  STD_LOGIC	--バーストアクセス
-	;SRAMCEA : out  STD_LOGIC --clock enable
-	
-	;SRAMCELA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-	;SRAMCEHA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-	;SRAMCEA2X : out  STD_LOGIC	--SRAMを動作させるかどうか
-	;SRAMCEA2 : out  STD_LOGIC	--SRAMを動作させるかどうか
-
-	;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
-	;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
-	;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
-    ); 
+		--SRAM
+    XE1 : out STD_LOGIC; -- 0
+    E2A : out STD_LOGIC; -- 1
+    XE3 : out STD_LOGIC; -- 0
+    ZZA : out STD_LOGIC; -- 0
+    XGA : out STD_LOGIC; -- 0
+    XZCKE : out STD_LOGIC; -- 0
+    ADVA : out STD_LOGIC; -- we do not use (0)
+    XLBO : out STD_LOGIC; -- no use of ADV, so what ever
+    ZCLKMA : out STD_LOGIC_VECTOR(1 downto 0); -- clk
+    XFT : out STD_LOGIC; -- FT(0) or pipeline(1)
+    XWA : out STD_LOGIC; -- read(1) or write(0)
+    XZBE : out STD_LOGIC_VECTOR(3 downto 0); -- write pos
+    ZA : out STD_LOGIC_VECTOR(19 downto 0); -- Address
+    ZDP : inout STD_LOGIC_VECTOR(3 downto 0); -- parity
+    ZD : inout STD_LOGIC_VECTOR(31 downto 0) -- bus
+	);
 end component;
 
 
@@ -327,66 +318,94 @@ end component;
 component sram_controller is
     Port (
 		CLK : in STD_LOGIC
-		;SRAMCLK : in STD_LOGIC
+		;CLK_180 : in STD_LOGIC
 		
-		;i_d    : in  std_logic_vector(2 downto 0)
+		
 		;ADDR    : in  std_logic_vector(19 downto 0)
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
-		;RW      : in  std_logic
+		;RW      : in  std_logic --0ならwrite,1ならread
 		
+		;i_d    : in  std_logic_vector(2 downto 0)
 		;i_d_buf    : out  std_logic_vector(2 downto 0)
 		;ADDRBUF    : out  std_logic_vector(19 downto 0)
-		
+
+	;
 		--SRAM
-		;SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
-		;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
-		;SRAMIOPA : inout  STD_LOGIC_VECTOR (3 downto 0) --パリティー
-		
-		;SRAMRWA : out  STD_LOGIC	--read=>1,write=>0
-		;SRAMBWA : out  STD_LOGIC_VECTOR (3 downto 0)--書き込みバイトの指定
-
-		;SRAMCLKMA0 : out  STD_LOGIC	--SRAMクロック
-		;SRAMCLKMA1 : out  STD_LOGIC	--SRAMクロック
-		
-		;SRAMADVLDA : out  STD_LOGIC	--バーストアクセス
-		;SRAMCEA : out  STD_LOGIC --clock enable
-		
-		;SRAMCELA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-		;SRAMCEHA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-		;SRAMCEA2X : out  STD_LOGIC	--SRAMを動作させるかどうか
-		;SRAMCEA2 : out  STD_LOGIC	--SRAMを動作させるかどうか
-
-		;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
-		;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
-		;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
+    XE1 : out STD_LOGIC; -- 0
+    E2A : out STD_LOGIC; -- 1
+    XE3 : out STD_LOGIC; -- 0
+    ZZA : out STD_LOGIC; -- 0
+    XGA : out STD_LOGIC; -- 0
+    XZCKE : out STD_LOGIC; -- 0
+    ADVA : out STD_LOGIC; -- we do not use (0)
+    XLBO : out STD_LOGIC; -- no use of ADV, so what ever
+    ZCLKMA : out STD_LOGIC_VECTOR(1 downto 0); -- clk
+    XFT : out STD_LOGIC; -- FT(0) or pipeline(1)
+    XWA : out STD_LOGIC; -- read(1) or write(0)
+    XZBE : out STD_LOGIC_VECTOR(3 downto 0); -- write pos
+    ZA : out STD_LOGIC_VECTOR(19 downto 0); -- Address
+    ZDP : inout STD_LOGIC_VECTOR(3 downto 0); -- parity
+    ZD : inout STD_LOGIC_VECTOR(31 downto 0) -- bus
 	);
 end component;
 
 
-component usbbufio is
-    Port (
-           clk50 : in STD_LOGIC;
-           clk : in STD_LOGIC;
-           RST : in STD_LOGIC;
-           -- こちらを使用
-           USBBUF_RD : in STD_LOGIC;     -- read 制御:1にすると、バッファから1個消す
-           USBBUF_RData : out STD_LOGIC_VECTOR(7 downto 0);      -- read data
-           USBBUF_RC : out STD_LOGIC;    -- read 完了:1の時読んでよい
-           USBBUF_WD : in STD_LOGIC;     -- write 制御:1にすると、データを取り込む
-           USBBUF_WData : in STD_LOGIC_VECTOR(7 downto 0);       -- write data
-           USBBUF_WC : out STD_LOGIC;    -- write 完了:1の時書き込んでよい
-           --ledout : out STD_LOGIC_VECTOR(7 downto 0);
-           -- FT245BM 側につなぐ
-           USBRD : out  STD_LOGIC;
-           USBRXF : in  STD_LOGIC;
-           USBWR : out  STD_LOGIC;
-           
-           USBTXE : in  STD_LOGIC;
-           USBSIWU : out  STD_LOGIC;
-           USBRST : out  STD_LOGIC;
-           USBD : inout  STD_LOGIC_VECTOR (7 downto 0)
-         );
+component rs232cio is
+  generic (
+    READBITLEN    : integer := 1160;    -- 1bitにかかるクロックより少し大きい値
+    READPADBITLEN : integer := 100;     -- データの採取間隔
+    MERGINLEN     : integer := 10;      -- データの読み込み開始の余白
+    STOPBACK      : integer := 50;     -- STOPBITをどれぐらい待たないか
+    READBUFLENLOG : integer := 4;      -- バッファの大きさ
+
+    WRITEBITLEN : integer := 1157;      -- 1bitにかかるクロックより少し小さい値
+    NULLAFTSTOP : integer := 100;       -- STOPを送った後に念のために送る余白
+    WRITEBUFLENLOG : integer := 10      -- バッファの大きさ
+    );
+  Port (
+    CLK : in STD_LOGIC;
+    BUFCLK : in STD_LOGIC;
+    RST : in STD_LOGIC;
+    -- こちら側を使う
+    RSIO_RD : in STD_LOGIC;     -- read 制御線
+    RSIO_RData : out STD_LOGIC_VECTOR(7 downto 0);  -- read data
+    RSIO_RC : out STD_LOGIC;    -- read 完了線
+    RSIO_OVERRUN : out STD_LOGIC;    -- OVERRUN時1
+    RSIO_WD : in STD_LOGIC;     -- write 制御線
+    RSIO_WData : in STD_LOGIC_VECTOR(7 downto 0);   -- write data
+    RSIO_WC : out STD_LOGIC;    -- write 完了線
+    -- ledout : out STD_LOGIC_VECTOR(7 downto 0);
+    -- RS232Cポート 側につなぐ
+    RSRXD : in STD_LOGIC;
+    RSTXD : out STD_LOGIC
+    );
+end component;
+
+component ledextd2 is
+  Port (
+    leddata   : in std_logic_vector(31 downto 0);
+    leddotdata: in std_logic_vector(7 downto 0);
+    outdata0 : out std_logic_vector(7 downto 0);
+    outdata1 : out std_logic_vector(7 downto 0);
+    outdata2 : out std_logic_vector(7 downto 0);
+    outdata3 : out std_logic_vector(7 downto 0);
+    outdata4 : out std_logic_vector(7 downto 0);
+    outdata5 : out std_logic_vector(7 downto 0);
+    outdata6 : out std_logic_vector(7 downto 0);
+    outdata7 : out std_logic_vector(7 downto 0)
+    );
+end component;
+
+component clockgenerator is
+  Port ( globalclk : in  STD_LOGIC;
+         globalrst : in  STD_LOGIC;
+         clock66 : out  STD_LOGIC;
+         clock66_90 : out  STD_LOGIC;
+         clock66_180 : out  STD_LOGIC;
+         clock66_270 : out  STD_LOGIC;
+         clock133 : out  STD_LOGIC;
+         reset : out  STD_LOGIC);
 end component;
 
 end package;

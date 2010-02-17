@@ -18,7 +18,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 entity memory is 
-port (
+    Port (
     clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
     pc : in std_logic_vector(14 downto 0);
@@ -31,30 +31,24 @@ port (
     store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
     ls_ok : out std_logic;
-    
-	--SRAM
-	SRAMAA : out  STD_LOGIC_VECTOR (19 downto 0)	--アドレス
-	;SRAMIOA : inout  STD_LOGIC_VECTOR (31 downto 0)	--データ
-	;SRAMIOPA : inout  STD_LOGIC_VECTOR (3 downto 0) --パリティー
-	
-	;SRAMRWA : out  STD_LOGIC	--read=>1,write=>0
-	;SRAMBWA : out  STD_LOGIC_VECTOR (3 downto 0)--書き込みバイトの指定
 
-	;SRAMCLKMA0 : out  STD_LOGIC	--SRAMクロック
-	;SRAMCLKMA1 : out  STD_LOGIC	--SRAMクロック
-	
-	;SRAMADVLDA : out  STD_LOGIC	--バーストアクセス
-	;SRAMCEA : out  STD_LOGIC --clock enable
-	
-	;SRAMCELA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-	;SRAMCEHA1X : out  STD_LOGIC	--SRAMを動作させるかどうか
-	;SRAMCEA2X : out  STD_LOGIC	--SRAMを動作させるかどうか
-	;SRAMCEA2 : out  STD_LOGIC	--SRAMを動作させるかどうか
-
-	;SRAMLBOA : out  STD_LOGIC	--バーストアクセス順
-	;SRAMXOEA : out  STD_LOGIC	--IO出力イネーブル
-	;SRAMZZA : out  STD_LOGIC	--スリープモードに入る
-    ); 
+		--SRAM
+    XE1 : out STD_LOGIC; -- 0
+    E2A : out STD_LOGIC; -- 1
+    XE3 : out STD_LOGIC; -- 0
+    ZZA : out STD_LOGIC; -- 0
+    XGA : out STD_LOGIC; -- 0
+    XZCKE : out STD_LOGIC; -- 0
+    ADVA : out STD_LOGIC; -- we do not use (0)
+    XLBO : out STD_LOGIC; -- no use of ADV, so what ever
+    ZCLKMA : out STD_LOGIC_VECTOR(1 downto 0); -- clk
+    XFT : out STD_LOGIC; -- FT(0) or pipeline(1)
+    XWA : out STD_LOGIC; -- read(1) or write(0)
+    XZBE : out STD_LOGIC_VECTOR(3 downto 0); -- write pos
+    ZA : out STD_LOGIC_VECTOR(19 downto 0); -- Address
+    ZDP : inout STD_LOGIC_VECTOR(3 downto 0); -- parity
+    ZD : inout STD_LOGIC_VECTOR(31 downto 0) -- bus
+	);
 end memory;
         
 
@@ -277,18 +271,29 @@ begin
 	SRAMC : sram_controller port map(
 		 sramcclk
 		,sramclk
-		,i_d_in
 		,ADDR
 		,DATAIN
 		,DATAOUT
 		,RW
-		,i_d_out,addr_out
-		,SRAMAA,SRAMIOA,SRAMIOPA
-		,SRAMRWA,SRAMBWA
-		,SRAMCLKMA0,SRAMCLKMA1
-		,SRAMADVLDA,SRAMCEA
-		,SRAMCELA1X,SRAMCEHA1X,SRAMCEA2X,SRAMCEA2
-		,SRAMLBOA,SRAMXOEA,SRAMZZA
+		,i_d_in
+		,i_d_out
+		,addr_out
+		,
+      XE1,
+      E2A,
+      XE3,
+      ZZA,
+      XGA,
+      XZCKE,
+      ADVA,
+      XLBO,
+      ZCLKMA,
+      XFT,
+      XWA,
+      XZBE,
+      ZA,
+      ZDP,
+      ZD
 	);
 	
 	ICACHE: block_cache port map(

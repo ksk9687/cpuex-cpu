@@ -1,0 +1,52 @@
+
+[内容]
+単に16進のデータに直すだけ
+
+[使い方]
+    leddata   : in std_logic_vector(31 downto 0);--16進データ
+    leddotdata: in std_logic_vector(7 downto 0);--ドットのデータ(0で光るので注意)
+    outdata0 : out std_logic_vector(7 downto 0);
+    outdata1 : out std_logic_vector(7 downto 0);
+    outdata2 : out std_logic_vector(7 downto 0);
+    outdata3 : out std_logic_vector(7 downto 0);
+    outdata4 : out std_logic_vector(7 downto 0);
+    outdata5 : out std_logic_vector(7 downto 0);
+    outdata6 : out std_logic_vector(7 downto 0);
+    outdata7 : out std_logic_vector(7 downto 0)
+
+
+-------------------------------------------------------------------
+
+xyx
+ 0000
+1    2
+1    2
+ 3333
+4    5
+4    5
+ 6666  7
+
+mogella
+ 0000
+1    5
+1    5
+ 6666
+2    4
+2    4
+ 3333 7
+
+
+mogella -> xyx
+ 0 -> 0
+ 1 -> 1
+ 2 -> 4
+ 3 -> 6
+ 4 -> 5
+ 5 -> 2
+ 6 -> 3
+ 7 -> 7
+
+
+
+
+
