@@ -1,0 +1,8 @@
+# Output products list for <dcache_2048x32>
+dcache_2048x32.ngc
+dcache_2048x32.vhd
+dcache_2048x32.vho
+dcache_2048x32.xco
+dcache_2048x32_blk_mem_gen_v2_8_xst_1.ngc_xst.xrpt
+dcache_2048x32_flist.txt
+dcache_2048x32_xmdf.tcl
