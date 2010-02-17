@@ -35,7 +35,9 @@ component dcache_tag_2048x10
 	dina: IN std_logic_VECTOR(9 downto 0);
 	addra: IN std_logic_VECTOR(10 downto 0);
 	wea: IN std_logic_VECTOR(0 downto 0);
-	douta: OUT std_logic_VECTOR(9 downto 0));
+	clkb: IN std_logic;
+	addrb: IN std_logic_VECTOR(10 downto 0);
+	doutb: OUT std_logic_VECTOR(9 downto 0));
 end component;
 
 -- COMP_TAG_END ------ End COMPONENT Declaration ------------
@@ -50,7 +52,9 @@ your_instance_name : dcache_tag_2048x10
 			dina => dina,
 			addra => addra,
 			wea => wea,
-			douta => douta);
+			clkb => clkb,
+			addrb => addrb,
+			doutb => doutb);
 -- INST_TAG_END ------ End INSTANTIATION Template ------------
 
 -- You must compile the wrapper file dcache_tag_2048x10.vhd when simulating

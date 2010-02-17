@@ -46,7 +46,9 @@ ENTITY dcache_tag_2048x10 IS
 	dina: IN std_logic_VECTOR(9 downto 0);
 	addra: IN std_logic_VECTOR(10 downto 0);
 	wea: IN std_logic_VECTOR(0 downto 0);
-	douta: OUT std_logic_VECTOR(9 downto 0));
+	clkb: IN std_logic;
+	addrb: IN std_logic_VECTOR(10 downto 0);
+	doutb: OUT std_logic_VECTOR(9 downto 0));
 END dcache_tag_2048x10;
 
 ARCHITECTURE dcache_tag_2048x10_a OF dcache_tag_2048x10 IS
@@ -57,7 +59,9 @@ component wrapped_dcache_tag_2048x10
 	dina: IN std_logic_VECTOR(9 downto 0);
 	addra: IN std_logic_VECTOR(10 downto 0);
 	wea: IN std_logic_VECTOR(0 downto 0);
-	douta: OUT std_logic_VECTOR(9 downto 0));
+	clkb: IN std_logic;
+	addrb: IN std_logic_VECTOR(10 downto 0);
+	doutb: OUT std_logic_VECTOR(9 downto 0));
 end component;
 
 -- Configuration specification 
@@ -65,16 +69,16 @@ end component;
 		generic map(
 			c_has_regceb => 0,
 			c_has_regcea => 0,
-			c_mem_type => 0,
+			c_mem_type => 1,
 			c_prim_type => 1,
 			c_sinita_val => "0",
 			c_read_width_b => 10,
 			c_family => "virtex5",
 			c_read_width_a => 10,
 			c_disable_warn_bhv_coll => 0,
-			c_write_mode_b => "WRITE_FIRST",
+			c_write_mode_b => "READ_FIRST",
 			c_init_file_name => "no_coe_file_loaded",
-			c_write_mode_a => "WRITE_FIRST",
+			c_write_mode_a => "READ_FIRST",
 			c_mux_pipeline_stages => 0,
 			c_has_mem_output_regs_b => 0,
 			c_load_init_file => 0,
@@ -117,7 +121,9 @@ U0 : wrapped_dcache_tag_2048x10
 			dina => dina,
 			addra => addra,
 			wea => wea,
-			douta => douta);
+			clkb => clkb,
+			addrb => addrb,
+			doutb => doutb);
 -- synthesis translate_on
 
 END dcache_tag_2048x10_a;

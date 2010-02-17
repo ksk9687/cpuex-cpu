@@ -16,7 +16,6 @@ entity sram_controller is
 		CLK : in STD_LOGIC
 		;CLK_180 : in STD_LOGIC
 		
-		
 		;ADDR    : in  std_logic_vector(19 downto 0)
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
@@ -94,6 +93,7 @@ begin
       old2RW <= oldRW;
       old2addr <= oldaddr;
       old2i_d <= oldi_d;
+      
       
       if oldRW = '1' then
         busreaddata <= ZD;

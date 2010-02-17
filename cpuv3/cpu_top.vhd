@@ -32,12 +32,17 @@ entity cpu_top is
     ZZA : out STD_LOGIC; -- 0
     XGA : out STD_LOGIC; -- 0
     XZCKE : out STD_LOGIC; -- 0
+    
     ADVA : out STD_LOGIC; -- we do not use (0)
     XLBO : out STD_LOGIC; -- no use of ADV, so what ever
+    
     ZCLKMA : out STD_LOGIC_VECTOR(1 downto 0); -- clk
     XFT : out STD_LOGIC; -- FT(0) or pipeline(1)
+
     XWA : out STD_LOGIC; -- read(1) or write(0)
+
     XZBE : out STD_LOGIC_VECTOR(3 downto 0); -- write pos
+    -- 
     ZA : out STD_LOGIC_VECTOR(19 downto 0); -- Address
     ZDP : inout STD_LOGIC_VECTOR(3 downto 0); -- parity
     ZD : inout STD_LOGIC_VECTOR(31 downto 0); -- bus
@@ -143,7 +148,7 @@ begin
 	clock66_270 => clk270,
 	clock133 => clk2x,
     reset => rst);
-    clk<=clk66;
+    clk <= clk66;
   
   	----------------------------------
 	-- 

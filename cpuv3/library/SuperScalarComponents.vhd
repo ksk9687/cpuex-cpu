@@ -119,20 +119,15 @@ component baka_dcache is
 end component;
 
 
-component CLOCK is
-  port (
-    clkin       : in  std_logic;
-    clkout0     : out std_logic;
-    clkout90    : out std_logic;
-    clkout180   : out std_logic;
-    clkout270   : out std_logic;
-    clkout2x    : out std_logic;
-    clkout2x90 	: out std_logic;
-    clkout2x180 : out std_logic;
-    clkout2x270 : out std_logic;
-    clkout4x	: out std_logic;
-    clkout1x	: out std_logic;
-    locked      : out std_logic);
+component clockgenerator is
+  Port ( globalclk : in  STD_LOGIC;
+         globalrst : in  STD_LOGIC;
+         clock66 : out  STD_LOGIC;
+         clock66_90 : out  STD_LOGIC;
+         clock66_180 : out  STD_LOGIC;
+         clock66_270 : out  STD_LOGIC;
+         clock133 : out  STD_LOGIC;
+         reset : out  STD_LOGIC);
 end component;
 
 
@@ -206,6 +201,22 @@ component IROM is
 		inst : out std_logic_vector(31 downto 0);
 		jmp_flgs : out std_logic_vector(2 downto 0)
 	);
+end component;
+
+
+component ledextd2 is
+  Port (
+    leddata   : in std_logic_vector(31 downto 0);
+    leddotdata: in std_logic_vector(7 downto 0);
+    outdata0 : out std_logic_vector(7 downto 0);
+    outdata1 : out std_logic_vector(7 downto 0);
+    outdata2 : out std_logic_vector(7 downto 0);
+    outdata3 : out std_logic_vector(7 downto 0);
+    outdata4 : out std_logic_vector(7 downto 0);
+    outdata5 : out std_logic_vector(7 downto 0);
+    outdata6 : out std_logic_vector(7 downto 0);
+    outdata7 : out std_logic_vector(7 downto 0)
+    );
 end component;
 
 
@@ -315,42 +326,6 @@ component returnAddressStack is
 end component;
 
 
-component sram_controller is
-    Port (
-		CLK : in STD_LOGIC
-		;CLK_180 : in STD_LOGIC
-		
-		
-		;ADDR    : in  std_logic_vector(19 downto 0)
-		;DATAIN  : in  std_logic_vector(31 downto 0)
-		;DATAOUT : out std_logic_vector(31 downto 0)
-		;RW      : in  std_logic --0ならwrite,1ならread
-		
-		;i_d    : in  std_logic_vector(2 downto 0)
-		;i_d_buf    : out  std_logic_vector(2 downto 0)
-		;ADDRBUF    : out  std_logic_vector(19 downto 0)
-
-	;
-		--SRAM
-    XE1 : out STD_LOGIC; -- 0
-    E2A : out STD_LOGIC; -- 1
-    XE3 : out STD_LOGIC; -- 0
-    ZZA : out STD_LOGIC; -- 0
-    XGA : out STD_LOGIC; -- 0
-    XZCKE : out STD_LOGIC; -- 0
-    ADVA : out STD_LOGIC; -- we do not use (0)
-    XLBO : out STD_LOGIC; -- no use of ADV, so what ever
-    ZCLKMA : out STD_LOGIC_VECTOR(1 downto 0); -- clk
-    XFT : out STD_LOGIC; -- FT(0) or pipeline(1)
-    XWA : out STD_LOGIC; -- read(1) or write(0)
-    XZBE : out STD_LOGIC_VECTOR(3 downto 0); -- write pos
-    ZA : out STD_LOGIC_VECTOR(19 downto 0); -- Address
-    ZDP : inout STD_LOGIC_VECTOR(3 downto 0); -- parity
-    ZD : inout STD_LOGIC_VECTOR(31 downto 0) -- bus
-	);
-end component;
-
-
 component rs232cio is
   generic (
     READBITLEN    : integer := 1160;    -- 1bitにかかるクロックより少し大きい値
@@ -382,30 +357,39 @@ component rs232cio is
     );
 end component;
 
-component ledextd2 is
-  Port (
-    leddata   : in std_logic_vector(31 downto 0);
-    leddotdata: in std_logic_vector(7 downto 0);
-    outdata0 : out std_logic_vector(7 downto 0);
-    outdata1 : out std_logic_vector(7 downto 0);
-    outdata2 : out std_logic_vector(7 downto 0);
-    outdata3 : out std_logic_vector(7 downto 0);
-    outdata4 : out std_logic_vector(7 downto 0);
-    outdata5 : out std_logic_vector(7 downto 0);
-    outdata6 : out std_logic_vector(7 downto 0);
-    outdata7 : out std_logic_vector(7 downto 0)
-    );
-end component;
 
-component clockgenerator is
-  Port ( globalclk : in  STD_LOGIC;
-         globalrst : in  STD_LOGIC;
-         clock66 : out  STD_LOGIC;
-         clock66_90 : out  STD_LOGIC;
-         clock66_180 : out  STD_LOGIC;
-         clock66_270 : out  STD_LOGIC;
-         clock133 : out  STD_LOGIC;
-         reset : out  STD_LOGIC);
+component sram_controller is
+    Port (
+		CLK : in STD_LOGIC
+		;CLK_180 : in STD_LOGIC
+		
+		;ADDR    : in  std_logic_vector(19 downto 0)
+		;DATAIN  : in  std_logic_vector(31 downto 0)
+		;DATAOUT : out std_logic_vector(31 downto 0)
+		;RW      : in  std_logic --0ならwrite,1ならread
+		
+		;i_d    : in  std_logic_vector(2 downto 0)
+		;i_d_buf    : out  std_logic_vector(2 downto 0)
+		;ADDRBUF    : out  std_logic_vector(19 downto 0)
+
+	;
+		--SRAM
+    XE1 : out STD_LOGIC; -- 0
+    E2A : out STD_LOGIC; -- 1
+    XE3 : out STD_LOGIC; -- 0
+    ZZA : out STD_LOGIC; -- 0
+    XGA : out STD_LOGIC; -- 0
+    XZCKE : out STD_LOGIC; -- 0
+    ADVA : out STD_LOGIC; -- we do not use (0)
+    XLBO : out STD_LOGIC; -- no use of ADV, so what ever
+    ZCLKMA : out STD_LOGIC_VECTOR(1 downto 0); -- clk
+    XFT : out STD_LOGIC; -- FT(0) or pipeline(1)
+    XWA : out STD_LOGIC; -- read(1) or write(0)
+    XZBE : out STD_LOGIC_VECTOR(3 downto 0); -- write pos
+    ZA : out STD_LOGIC_VECTOR(19 downto 0); -- Address
+    ZDP : inout STD_LOGIC_VECTOR(3 downto 0); -- parity
+    ZD : inout STD_LOGIC_VECTOR(31 downto 0) -- bus
+	);
 end component;
 
 end package;
