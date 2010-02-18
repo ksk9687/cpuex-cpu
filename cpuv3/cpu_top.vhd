@@ -94,6 +94,9 @@ architecture arch of cpu_top is
 	signal iou_out : std_logic_vector(31 downto 0) := (others=>'0');
 	signal iou_enable :std_logic:='0';
 	signal io_read_buf_overrun :std_logic;
+	signal iodebug_read_bufreadpos : STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0);
+   signal iodebug_read_bufwritepos : STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0);
+
 	--FPU
 	signal fpu_out,fpu_out_buf1 : std_logic_vector(31 downto 0) := (others=>'0');
 	signal fpu_cmp :std_logic_vector(2 downto 0) := "000";
@@ -399,7 +402,7 @@ begin
 	----------------------------------
 	
 
-      leddata<=x"00000000";
+      leddata<=iodebug_read_bufreadpos&iodebug_read_bufwritepos&'0'&pc;
       leddotdata<="1111111" & (not io_read_buf_overrun);
   led_inst : ledextd2 port map (
       leddata,
@@ -433,6 +436,8 @@ begin
 		iou_out,
 		RS_RX,RS_TX,
 		io_read_buf_overrun
+	   ,iodebug_read_bufreadpos
+      ,iodebug_read_bufwritepos
 	);
 	FPU0 : FPU port map (
 	    clk,sub_op_buf0,

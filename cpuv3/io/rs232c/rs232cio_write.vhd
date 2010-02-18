@@ -2,6 +2,9 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
+library work;
+use work.instruction.all;
+use work.SuperScalarComponents.all; 
 
 ---- Uncomment the following library declaration if instantiating
 ---- any Xilinx primitives in this code.
@@ -27,6 +30,9 @@ entity rs232cio_write is
     RSIO_WC : out STD_LOGIC;    -- write äÆóπê¸
     -- RS232CÉ|Å[Ég ë§Ç…Ç¬Ç»ÇÆ
     RSTXD : out STD_LOGIC
+    --for debug
+      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
+      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
     );
 end rs232cio_write;
 
@@ -62,6 +68,9 @@ architecture Behavioral of rs232cio_write is
   signal writingdata : STD_LOGIC;
   
 begin
+  iodebug_read_bufreadpos<=bufreadpos;
+  iodebug_read_bufwritepos<=bufwritepos;
+
   writetotaldata <= "1" & writedata & "0";
   --writetotaldata <= "11" & writedata & "0";
   

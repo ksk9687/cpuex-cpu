@@ -2,6 +2,9 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
+library work;
+use work.instruction.all;
+use work.SuperScalarComponents.all; 
 
 entity rs232cio is
   generic (
@@ -31,6 +34,8 @@ entity rs232cio is
     -- RS232Cポート 側につなぐ
     RSRXD : in STD_LOGIC;
     RSTXD : out STD_LOGIC
+      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
+      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
     );
 end rs232cio;
 
@@ -71,6 +76,8 @@ architecture Behavioral of rs232cio is
       RSIO_WC : out STD_LOGIC;    -- write 完了線
       -- RS232Cポート 側につなぐ
       RSTXD : out STD_LOGIC
+      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
+      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
       );
   end component;
 begin
@@ -104,6 +111,8 @@ begin
       RSIO_WData,
       RSIO_WC,
       RSTXD
+      ,iodebug_read_bufreadpos
+      ,iodebug_read_bufwritepos
       );
 end Behavioral;
 

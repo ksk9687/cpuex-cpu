@@ -2,6 +2,9 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_ARITH.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
+library work;
+use work.instruction.all;
+use work.SuperScalarComponents.all; 
 
 --下のほうにあるconstantsをいじってください。
 --バッファオーバーランする仕様です。
@@ -62,6 +65,9 @@ architecture Behavioral of rs232cio_read is
   signal bitbufmany : STD_LOGIC;  -- (bitbufmlt(0) and bitbufmlt(1)) or (bitbufmlt(1) and bitbufmlt(2)) or (bitbufmlt(2) and bitbufmlt(0))
 
   signal overflow : std_logic;
+  
+  --for debug
+  --signal totalreadbyte : integer := 0;
   
 begin
   bitbuf(0)<=RSRXD;

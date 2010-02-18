@@ -4,6 +4,9 @@ use ieee.std_logic_unsigned.all;
 
 package SuperScalarComponents is
 
+constant C_READBUFLENLOG : integer := 8;      -- バッファの大きさ
+
+
 component ALU is
   port (
     clk  : in std_logic;
@@ -190,6 +193,9 @@ component IOU is
 		;RSTXD : out STD_LOGIC
 		
 		;io_read_buf_overrun : out STD_LOGIC
+
+      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
+      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
 	);
 end component;
 
@@ -354,6 +360,8 @@ component rs232cio is
     -- RS232Cポート 側につなぐ
     RSRXD : in STD_LOGIC;
     RSTXD : out STD_LOGIC
+      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
+      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
     );
 end component;
 

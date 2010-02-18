@@ -20,11 +20,13 @@ entity IOU is
 		;RSTXD : out STD_LOGIC
 		
 		;io_read_buf_overrun : out STD_LOGIC
+      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
+      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
 	);
 end IOU;
 
 architecture arch of IOU is
-	constant rs: std_logic_vector := "00001";
+	constant usb: std_logic_vector := "00001";
 	constant rs232c: std_logic_vector := "00010";
 	constant nop: std_logic_vector := "11111";
 	constant error: std_logic_vector := x"0FFFFFFF";
@@ -71,15 +73,15 @@ begin
 	 	 
    RS232C0 : rs232cio
     generic map( -- 115200,66.66MHz
-    READBITLEN    => 580,    -- 1bitにかかるクロックより少し大きい値
+    READBITLEN    => 590,    -- 1bitにかかるクロックより少し大きい値
     READPADBITLEN => 50,     -- データの採取間隔
     MERGINLEN     => 10,      -- データの読み込み開始の余白
     STOPBACK      => 50,     -- STOPBITをどれぐらい待たないか
     READBUFLENLOG => 4,      -- バッファの大きさ
 
-    WRITEBITLEN => 575,      -- 1bitにかかるクロックより少し小さい値
+    WRITEBITLEN => 578,      -- 1bitにかかるクロックより少し小さい値
     NULLAFTSTOP => 100,       -- STOPを送った後に念のために送る余白
-    WRITEBUFLENLOG => 10      -- バッファの大きさ
+    WRITEBUFLENLOG => C_READBUFLENLOG      -- バッファの大きさ
     )
    port map (
    	clk66,clk,rst,
@@ -87,6 +89,9 @@ begin
    	rs_write,rs_writedata_buf,rs_write_end,
    	
 	RSRXD,RSTXD
+
+      ,iodebug_read_bufreadpos
+      ,iodebug_read_bufwritepos
    );
 	
 
