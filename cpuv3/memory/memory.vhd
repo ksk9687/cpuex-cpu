@@ -222,7 +222,7 @@ begin
 			case d_mem_state is
 				when idle =>
 					if i_d_in(0) = '1' then--miss Load
-						d_mem_state <= data_w1;
+						d_mem_state <= data_w5;
 						ls_buf0 <= "10";
 						ls_addr_buf <= ls_addr_buf_p1;
 					else
