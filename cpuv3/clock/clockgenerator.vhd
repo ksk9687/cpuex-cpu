@@ -12,27 +12,23 @@ entity clockgenerator is
   Port ( globalclk : in  STD_LOGIC;
          globalrst : in  STD_LOGIC;
          clock66 : out  STD_LOGIC;
-         clock66_90 : out  STD_LOGIC;
-         clock66_180 : out  STD_LOGIC;
-         clock66_270 : out  STD_LOGIC;
-         clock133 : out  STD_LOGIC;
+         clock : out  STD_LOGIC;
+         clock_180 : out  STD_LOGIC;
          reset : out  STD_LOGIC);
 end clockgenerator;
 
 architecture Behavioral of clockgenerator is
-  COMPONENT clockgen
-    PORT(
+	COMPONENT clockgen
+	PORT(
 		CLKIN_IN : IN std_logic;
 		RST_IN : IN std_logic;          
+		CLKFX_OUT : OUT std_logic;
+		CLKFX180_OUT : OUT std_logic;
 		CLKIN_IBUFG_OUT : OUT std_logic;
 		CLK0_OUT : OUT std_logic;
-		CLK2X_OUT : OUT std_logic;
-		CLK90_OUT : OUT std_logic;
-		CLK180_OUT : OUT std_logic;
-		CLK270_OUT : OUT std_logic;
 		LOCKED_OUT : OUT std_logic
-      );
-  END COMPONENT;
+		);
+	END COMPONENT;
   signal rst : std_logic;
   signal rocrst : std_logic;
   signal lock : std_logic;
@@ -43,16 +39,14 @@ begin
   roc_inst : roc port map (O => rocrst);
   rst <= rocrst or (not globalrst);
   reset <= rst or (not lock);
-  Inst_clockgen: clockgen PORT MAP(
-    CLKIN_IN => globalclk,
-    RST_IN => rst,
-    CLKIN_IBUFG_OUT => open,
+	Inst_clockgen: clockgen PORT MAP(
+		CLKIN_IN => globalclk,
+		RST_IN => rst,
+		CLKFX_OUT => clock,
+		CLKFX180_OUT => clock_180,
+		CLKIN_IBUFG_OUT => open,
 		CLK0_OUT => clock66,
-		CLK2X_OUT => clock133,
-		CLK90_OUT => clock66_90,
-		CLK180_OUT => clock66_180,
-		CLK270_OUT => clock66_270,
-    LOCKED_OUT => lock
-    );
+		LOCKED_OUT => lock
+	);
 end Behavioral;
 

@@ -4,9 +4,6 @@ use ieee.std_logic_unsigned.all;
 
 package SuperScalarComponents is
 
-constant C_READBUFLENLOG : integer := 8;      -- バッファの大きさ
-
-
 component ALU is
   port (
     clk  : in std_logic;
@@ -126,10 +123,8 @@ component clockgenerator is
   Port ( globalclk : in  STD_LOGIC;
          globalrst : in  STD_LOGIC;
          clock66 : out  STD_LOGIC;
-         clock66_90 : out  STD_LOGIC;
-         clock66_180 : out  STD_LOGIC;
-         clock66_270 : out  STD_LOGIC;
-         clock133 : out  STD_LOGIC;
+         clock : out  STD_LOGIC;
+         clock_180 : out  STD_LOGIC;
          reset : out  STD_LOGIC);
 end component;
 
@@ -183,7 +178,8 @@ end component;
 
 component IOU is
 	port  (
-		clk,clk66,enable : in std_logic;
+--		clk66,
+		clk,enable : in std_logic;
 		iou_op : in std_logic_vector(2 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
 		no : in std_logic_vector(4 downto 0);
@@ -193,9 +189,6 @@ component IOU is
 		;RSTXD : out STD_LOGIC
 		
 		;io_read_buf_overrun : out STD_LOGIC
-
-      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
-      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
 	);
 end component;
 
@@ -346,7 +339,7 @@ component rs232cio is
     );
   Port (
     CLK : in STD_LOGIC;
-    BUFCLK : in STD_LOGIC;
+--    BUFCLK : in STD_LOGIC;
     RST : in STD_LOGIC;
     -- こちら側を使う
     RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -360,8 +353,6 @@ component rs232cio is
     -- RS232Cポート 側につなぐ
     RSRXD : in STD_LOGIC;
     RSTXD : out STD_LOGIC
-      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
-      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
     );
 end component;
 

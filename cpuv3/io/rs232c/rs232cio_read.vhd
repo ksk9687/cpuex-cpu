@@ -20,7 +20,7 @@ entity rs232cio_read is
     READBUFLENLOG : integer := 4);      -- バッファの大きさ,分散RAMなので大きくしてはいけない
   Port (
     CLK : in STD_LOGIC;    -- 制御に使うクロック
-    BUFCLK : in STD_LOGIC; -- バッファへのアクセスに使うクロック
+--    BUFCLK : in STD_LOGIC; -- バッファへのアクセスに使うクロック
     RST : in STD_LOGIC;
     -- こちら側を使う
     RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -77,7 +77,7 @@ begin
   RSIO_RData <= readbuf(conv_integer(bufreadpos));        -- distributed RAM!!
   RSIO_RC <= '0' when bufreadpos = bufwritepos else '1';
   RSIO_OVERRUN <= overflow;
-  process (clk,bufclk , rst)
+  process (clk, rst)
   begin  -- process
     if rst = '1' then                   -- asynchronous reset
       state <= STATE_WAITSTART;
@@ -87,8 +87,8 @@ begin
       bufwritepos <= conv_std_logic_vector(0,buflenlog);
       overflow <= '0';
     else
---      if clk'event and clk = '1' then  -- rising clock edge
-      if bufclk'event and bufclk = '1' then  -- rising clock edge
+      if clk'event and clk = '1' then  -- rising clock edge
+--      if bufclk'event and bufclk = '1' then  -- rising clock edge
         if RSIO_RD = '1' then
           if bufreadpos = bufwritepos then
             bufreadpos <= bufreadpos;
@@ -96,8 +96,8 @@ begin
             bufreadpos <= bufreadpos + conv_std_logic_vector(1,buflenlog);
           end if;
         end if;
-      end if;
-      if clk'event and clk = '1' then  -- rising clock edge
+--      end if;
+--      if clk'event and clk = '1' then  -- rising clock edge
         bitbuf(4)<=bitbuf(3);
         bitbuf(3)<=bitbuf(2);
         bitbuf(2)<=bitbuf(1);

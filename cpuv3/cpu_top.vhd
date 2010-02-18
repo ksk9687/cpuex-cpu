@@ -55,7 +55,7 @@ entity cpu_top is
 end cpu_top;
 
 architecture arch of cpu_top is	
-   signal clk,clk66,clk90,clk180,clk270,clk2x,rst,locked0: std_logic := '0';
+   signal clk,clk66,clk180,rst: std_logic := '0';
    signal stall,reg_stall,flush,sleep,stall_b,stall_id,stall_rr,stall_rrx,stall_rd,stall_ex,flushed,bp_write: std_logic := '0';
    signal write_inst_ok,read_inst_ok,inst_ok,lsu_ok,lsu_ok_t,reg_ok,rr_ok,rr_reg_ok,rr_cr_ok,rob_ok,bp_ok,ras_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
@@ -94,8 +94,6 @@ architecture arch of cpu_top is
 	signal iou_out : std_logic_vector(31 downto 0) := (others=>'0');
 	signal iou_enable :std_logic:='0';
 	signal io_read_buf_overrun :std_logic;
-	signal iodebug_read_bufreadpos : STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0);
-   signal iodebug_read_bufwritepos : STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0);
 
 	--FPU
 	signal fpu_out,fpu_out_buf1 : std_logic_vector(31 downto 0) := (others=>'0');
@@ -132,26 +130,13 @@ architecture arch of cpu_top is
    signal reg_s1_b,reg_s2_b : std_logic := '0';
 
 begin
---  	ROC0 : ROC port map (O => rst);
---	CLOCK0 : CLOCK port map (
---		clkin     => CLKIN,
---		clkout2x    => clk,
---		clkout2x90 => clk90,
---		clkout2x180 => clk180,
---		clkout2x270 => clk270,
---		clkout4x => clk2x,
---		clkout1x => clk66,
---		locked    => locked0);
   clockgenerator_inst : clockgenerator port map(
     CLK_66M,
     CLK_RST,
 	clock66    => clk66,
-	clock66_90 => clk90,
-	clock66_180 => clk180,
-	clock66_270 => clk270,
-	clock133 => clk2x,
+	clock => clk,
+	clock_180 => clk180,
     reset => rst);
-    clk <= clk66;
   
   	----------------------------------
 	-- 
@@ -402,8 +387,9 @@ begin
 	----------------------------------
 	
 
-      leddata<=iodebug_read_bufreadpos&iodebug_read_bufwritepos&'0'&pc;
-      leddotdata<="1111111" & (not io_read_buf_overrun);
+  --    leddata<=iodebug_read_bufreadpos&iodebug_read_bufwritepos&'0'&pc;
+  leddata<=x"00000000";
+  leddotdata<="1111111" & (not io_read_buf_overrun);
   led_inst : ledextd2 port map (
       leddata,
       leddotdata,
@@ -416,6 +402,20 @@ begin
       outdata6,
       outdata7
     );
+--	LED_OUT :process(clk,rst)
+--	begin
+--		if rst = '1' then
+--			ledout <= (others => '0');
+--		elsif rising_edge(clk) then
+--			if (unit_op_buf0 = op_unit_iou) then 
+--				if sub_op_buf0 = iou_op_ledi then
+--					ledout <= not ext_im_buf0(7 downto 0);
+--				elsif sub_op_buf0 = iou_op_led then
+--					ledout <= not data_s1(7 downto 0);
+--				end if;
+--			end if;
+--		end if;
+--	end process LED_OUT;
 
 	ALU0 : alu port map (
 		clk,sub_op_buf0,
@@ -430,14 +430,13 @@ begin
 	
 	iou_enable <= '1' when unit_op_buf0 = op_unit_iou else '0';
 	IOU0 : IOU port map (
-		clk,clk66,iou_enable,
+--		clk66,
+		clk,iou_enable,
 		sub_op_buf0,
 		data_s1,ext_im_buf0(4 downto 0),
 		iou_out,
 		RS_RX,RS_TX,
 		io_read_buf_overrun
-	   ,iodebug_read_bufreadpos
-      ,iodebug_read_bufwritepos
 	);
 	FPU0 : FPU port map (
 	    clk,sub_op_buf0,

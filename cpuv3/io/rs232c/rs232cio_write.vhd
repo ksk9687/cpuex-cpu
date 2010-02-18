@@ -22,7 +22,7 @@ entity rs232cio_write is
     );
   Port (
     CLK : in STD_LOGIC;
-    BUFCLK : in STD_LOGIC;
+--    BUFCLK : in STD_LOGIC;
     RST : in STD_LOGIC;
     -- こちら側を使う
     RSIO_WD : in STD_LOGIC;     -- write 制御線
@@ -30,9 +30,6 @@ entity rs232cio_write is
     RSIO_WC : out STD_LOGIC;    -- write 完了線
     -- RS232Cポート 側につなぐ
     RSTXD : out STD_LOGIC
-    --for debug
-      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
-      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
     );
 end rs232cio_write;
 
@@ -68,8 +65,6 @@ architecture Behavioral of rs232cio_write is
   signal writingdata : STD_LOGIC;
   
 begin
-  iodebug_read_bufreadpos<=bufreadpos;
-  iodebug_read_bufwritepos<=bufwritepos;
 
   writetotaldata <= "1" & writedata & "0";
   --writetotaldata <= "11" & writedata & "0";
@@ -84,7 +79,7 @@ begin
   RSTXD <= writingdata;
   RSIO_WC <= writeenable;
 
-  process (clk,bufclk, rst)
+  process (clk, rst)
   begin  -- process
     if rst = '1' then                   -- asynchronous reset
       state <= STATE_WAITDATA;
@@ -93,8 +88,8 @@ begin
       bufreadpos <= conv_std_logic_vector(0,buflenlog);
       bufwritepos <= conv_std_logic_vector(0,buflenlog);
     else
---      if clk'event and clk = '1' then  -- rising clock edge
-      if bufclk'event and bufclk = '1' then  -- rising clock edge
+      if clk'event and clk = '1' then  -- rising clock edge
+--      if bufclk'event and bufclk = '1' then  -- rising clock edge
         if RSIO_WD = '1' then
           if writeenable = '1' then
             bufwritepos <= bufwritepos + conv_std_logic_vector(1,buflenlog);
@@ -103,8 +98,8 @@ begin
             bufwritepos <= bufwritepos;
           end if;
         end if;
-      end if;
-      if clk'event and clk = '1' then  -- rising clock edge
+--      end if;
+--      if clk'event and clk = '1' then  -- rising clock edge
         case state is
           when STATE_WAITDATA =>
             timecounter <= 0;

@@ -20,7 +20,7 @@ entity rs232cio is
     );
   Port (
     CLK : in STD_LOGIC;
-    BUFCLK : in STD_LOGIC;
+--    BUFCLK : in STD_LOGIC;
     RST : in STD_LOGIC;
     -- こちら側を使う
     RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -34,8 +34,6 @@ entity rs232cio is
     -- RS232Cポート 側につなぐ
     RSRXD : in STD_LOGIC;
     RSTXD : out STD_LOGIC
-      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
-      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
     );
 end rs232cio;
 
@@ -49,7 +47,7 @@ architecture Behavioral of rs232cio is
       READBUFLENLOG : integer );      -- バッファの大きさ
     Port (
       CLK : in STD_LOGIC;
-      BUFCLK : in STD_LOGIC;
+--      BUFCLK : in STD_LOGIC;
       RST : in STD_LOGIC;
       -- こちら側を使う
       RSIO_RD : in STD_LOGIC;     -- read 制御線
@@ -68,7 +66,7 @@ architecture Behavioral of rs232cio is
       );
     Port (
       CLK : in STD_LOGIC;
-      BUFCLK : in STD_LOGIC;
+--      BUFCLK : in STD_LOGIC;
       RST : in STD_LOGIC;
       -- こちら側を使う
       RSIO_WD : in STD_LOGIC;     -- write 制御線
@@ -76,8 +74,6 @@ architecture Behavioral of rs232cio is
       RSIO_WC : out STD_LOGIC;    -- write 完了線
       -- RS232Cポート 側につなぐ
       RSTXD : out STD_LOGIC
-      ;iodebug_read_bufreadpos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
-      ;iodebug_read_bufwritepos : out STD_LOGIC_VECTOR((C_READBUFLENLOG-1) downto 0)
       );
   end component;
 begin
@@ -90,7 +86,7 @@ begin
       READBUFLENLOG => READBUFLENLOG)
     port map (
       CLK,
-      BUFCLK,
+--      BUFCLK,
       RST,
       RSIO_RD,
       RSIO_RData,
@@ -105,14 +101,12 @@ begin
       WRITEBUFLENLOG => WRITEBUFLENLOG)
     port map (
       CLK,
-      BUFCLK,
+--      BUFCLK,
       RST,
       RSIO_WD,
       RSIO_WData,
       RSIO_WC,
       RSTXD
-      ,iodebug_read_bufreadpos
-      ,iodebug_read_bufwritepos
       );
 end Behavioral;
 
