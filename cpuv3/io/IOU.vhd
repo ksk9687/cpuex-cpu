@@ -77,7 +77,7 @@ begin
     READPADBITLEN => 50,     -- データの採取間隔
     MERGINLEN     => 10,      -- データの読み込み開始の余白
     STOPBACK      => 50,     -- STOPBITをどれぐらい待たないか
-    READBUFLENLOG => 4,      -- バッファの大きさ
+    READBUFLENLOG => 8,      -- バッファの大きさ
 
     WRITEBITLEN => 578,      -- 1bitにかかるクロックより少し小さい値
     NULLAFTSTOP => 100,       -- STOPを送った後に念のために送る余白
