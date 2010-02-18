@@ -48,10 +48,10 @@ begin
     RST_IN => rst,
     CLKIN_IBUFG_OUT => open,
 		CLK0_OUT => clock66,
-		CLK2X_OUT => clock66_90,
-		CLK90_OUT => clock66_180,
-		CLK180_OUT => clock66_270,
-		CLK270_OUT => clock133,
+		CLK2X_OUT => clock133,
+		CLK90_OUT => clock66_90,
+		CLK180_OUT => clock66_180,
+		CLK270_OUT => clock66_270,
     LOCKED_OUT => lock
     );
 end Behavioral;
