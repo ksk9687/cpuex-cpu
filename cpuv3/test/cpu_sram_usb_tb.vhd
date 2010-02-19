@@ -130,7 +130,7 @@ begin
 	process 
 	begin
 		CLK <= not CLK;
-		wait for 8 ns;
+		wait for 7.5 ns;
 	end process;
 
 	CPU_TOP0 : cpu_top port map(
