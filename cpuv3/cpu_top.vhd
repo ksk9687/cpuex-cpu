@@ -387,8 +387,9 @@ begin
 	----------------------------------
 	
 
-  --    leddata<=iodebug_read_bufreadpos&iodebug_read_bufwritepos&'0'&pc;
-  leddata<=x"00000000";
+  --leddata<=iodebug_read_bufreadpos&iodebug_read_bufwritepos&'0'&pc;
+  --leddata<=x"00000000";
+  leddata<=x"0000"&'0'&pc;
   leddotdata<="1111111" & (not io_read_buf_overrun);
   led_inst : ledextd2 port map (
       leddata,
