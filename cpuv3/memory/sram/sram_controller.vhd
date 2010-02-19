@@ -45,6 +45,8 @@ entity sram_controller is
 	);
 end sram_controller;
 
+-- pp mode
+
 architecture Behavioral of sram_controller is
   signal oldRW : STD_LOGIC;
   signal oldaddr : STD_LOGIC_VECTOR(19 downto 0);
@@ -53,8 +55,13 @@ architecture Behavioral of sram_controller is
 
   signal old2RW : STD_LOGIC;
   signal old2addr : STD_LOGIC_VECTOR(19 downto 0);
+  signal old2writedata : STD_LOGIC_VECTOR(31 downto 0);
   signal old2i_d : STD_LOGIC_VECTOR(2 downto 0);
   
+  signal old3RW : STD_LOGIC;
+  signal old3addr : STD_LOGIC_VECTOR(19 downto 0);
+  signal old3i_d : STD_LOGIC_VECTOR(2 downto 0);
+
   signal busreaddata : STD_LOGIC_VECTOR(31 downto 0);
 begin
   XE1<='0';
@@ -66,7 +73,7 @@ begin
   XLBO<='0';
   ZCLKMA(0)<=clk_180;
   ZCLKMA(1)<=clk_180;
-  XFT<='0';
+  XFT<='1';
 
   XWA <= RW;
   XZBE <= (others => '0');              -- 書き込む領域を指定するならここを変更
@@ -75,11 +82,11 @@ begin
   
   --パリティは使わない
   DATAOUT <= busreaddata;
-  ZD <= oldwritedata when oldRW = '0' else (others => 'Z');
+  ZD <= old2writedata when old2RW = '0' else (others => 'Z');
   ZDP <= (others => 'Z');
   
-  ADDRBUF <= old2addr;
-  i_d_buf <= old2i_d;
+  ADDRBUF <= old3addr;
+  i_d_buf <= old3i_d;
   
   process (clk)
   begin  -- process
@@ -92,10 +99,15 @@ begin
       
       old2RW <= oldRW;
       old2addr <= oldaddr;
+      old2writedata <= oldwritedata;
       old2i_d <= oldi_d;
+
+      old3RW <= old2RW;
+      old3addr <= old2addr;
+      old3i_d <= old2i_d;
       
       
-      if oldRW = '1' then
+      if old2RW = '1' then
         busreaddata <= ZD;
       end if;
     end if;
