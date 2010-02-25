@@ -1,3 +1,56 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+library work;
+use work.instruction.all; 
+
+entity full_cache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(13 downto 0);
+		set_addr: in std_logic_vector(13 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		jmp_flgs : out std_logic_vector(2 downto 0)
+	);
+end full_cache;
+
+
+architecture arch of full_cache is
+    signal jr,jal,jmp : std_logic := '0';
+    signal write_data,out_data : std_logic_vector(35 downto 0) := (others => '0');
+    signal set_d : std_logic_vector(0 downto 0) := (others => '0');
+
+	component cache_16384 IS
+		port (
+		clka: IN std_logic;
+		dina: IN std_logic_VECTOR(35 downto 0);
+		addra: IN std_logic_VECTOR(13 downto 0);
+		wea: IN std_logic_VECTOR(0 downto 0);
+		clkb: IN std_logic;
+		addrb: IN std_logic_VECTOR(13 downto 0);
+		doutb: OUT std_logic_VECTOR(35 downto 0));
+	END component;
+begin
+  CACHE0 : cache_16384 port map(
+  	clk,write_data,set_addr(13 downto 0),set_d,
+  	clk,address(13 downto 0),out_data
+  );
+
+  set_d(0) <= set;
+  	write_data <= '0'&jmp&jal&jr&set_data;
+	read_data <= out_data(31 downto 0);
+	jmp_flgs <=  out_data(34 downto 32);
+	
+	jmp <= '1' when set_data(31 downto 26) = op_jmp else '0';
+	jal <= '1' when set_data(31 downto 26) = op_jal else '0';
+	jr <= '1' when set_data(31 downto 26) = op_jr else '0';
+
+end arch;
+
+
 --馬鹿キャッシュ
 library ieee;
 use ieee.std_logic_1164.all;

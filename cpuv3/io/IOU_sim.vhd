@@ -1,0 +1,63 @@
+--IOƒ†ƒjƒbƒg‚Ì
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+library work;
+use work.instruction.all;
+use work.SuperScalarComponents.all; 
+library UNISIM;
+use UNISIM.VComponents.all;
+
+
+entity IOU is
+	port  (
+		clk,enable : in std_logic;
+		iou_op : in std_logic_vector(2 downto 0);
+		writedata : in std_logic_vector(31 downto 0);
+		no : in std_logic_vector(4 downto 0);
+		readdata : out std_logic_vector(31 downto 0)
+		
+		;RSRXD : in STD_LOGIC
+		;RSTXD : out STD_LOGIC
+		
+		;io_read_buf_overrun : out STD_LOGIC
+	);
+end IOU;
+
+architecture arch of IOU is
+	
+	  type ram_type is array (0 to 127) of std_logic_vector (7 downto 0); 
+    signal RAM : ram_type := 
+    (
+x"00", x"00", x"00", x"1F", x"00", x"00", x"00", x"00", x"00", x"0F", x"50", x"00", x"0B", x"DF", x"40", x"04",
+x"0B", x"DF", x"80", x"03", x"E0", x"00", x"00", x"05", x"00", x"0F", x"81", x"00", x"00", x"00", x"40", x"01",
+x"60", x"00", x"80", x"1E", x"E4", x"00", x"00", x"0C", x"A8", x"20", x"00", x"00", x"A4", x"2F", x"00", x"01",
+x"E0", x"00", x"00", x"0B", x"28", x"20", x"40", x"00", x"E0", x"40", x"00", x"1B", x"07", x"EF", x"80", x"03",
+x"6B", x"E0", x"BF", x"FD", x"6B", x"EF", x"FF", x"FF", x"04", x"20", x"BF", x"FF", x"E4", x"00", x"00", x"0C",
+x"6B", x"E0", x"BF", x"FE", x"63", x"E0", x"BF", x"FD", x"04", x"20", x"BF", x"FE", x"E4", x"00", x"00", x"0C",
+x"63", x"E0", x"FF", x"FE", x"20", x"20", x"C2", x"00", x"63", x"EF", x"FF", x"FF", x"07", x"EF", x"BF", x"FD",
+x"A4", x"2F", x"00", x"01", x"EB", x"F0", x"00", x"00", x"00", x"00", x"10", x"00", x"00", x"00", x"00", x"0A"
+);
+    signal readdata_p : std_logic_vector(31 downto 0) := (others => '0');
+    signal pointer : std_logic_vector(6 downto 0) := (others => '0');
+begin
+  	RSTXD <= '0';
+  	io_read_buf_overrun <= '0';
+  	
+	readdata_p <= x"000000"&RAM(conv_integer(pointer));
+
+	process(clk)
+	begin
+		if rising_edge(clk) then
+			readdata <= readdata_p;
+			if (iou_op = iou_op_read) and (enable = '1') then
+				pointer <= pointer + '1';
+			end if;
+		end if;
+	end process;
+	 	 
+	
+
+end arch;
+

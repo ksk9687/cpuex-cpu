@@ -24,9 +24,8 @@ entity memory is
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
     jmp_flgs : out std_logic_vector(2 downto 0);
-    inst_ok : out std_logic;
     
-    ls_flg : in std_logic_vector(1 downto 0);
+    ls_flg : in std_logic_vector(2 downto 0);
     ls_addr : in std_logic_vector(19 downto 0);
     store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
@@ -89,7 +88,7 @@ architecture synth of memory is
 	signal inst_select : std_logic_vector(2 downto 0) := (others => '0');
 	signal i_mem_req,i_halt : std_logic := '0';
 	
-	signal i_d_out,i_d_in : std_logic_vector(2 downto 0) := "000";
+	signal i_d_out,i_d_in : std_logic_vector(0 downto 0) := "0";
 	signal jmp_flgs_ir,jmp_flgs_ic : std_logic_vector(2 downto 0) := "000";
 
 	
@@ -98,7 +97,6 @@ begin
 
   	ROC0 : ROC port map (O => rst);
 
-	inst_ok <= 	cache_hit or rom_access;
 	inst <= inst_i;
 	
 	jmp_flgs <= jmp_flgs_ic when rom_access = '0' else
@@ -111,9 +109,8 @@ begin
 	load_data <= --DATAOUT when ls_addr = addr_out else
 	dcache_out;
 	
-	cache_set_tag <= i_d_out(2);
-	cache_set <= i_d_out(1);
-	set_addr <= addr_out(13 downto 0);
+	cache_set <= (ls_flg(2));
+	set_addr <= ls_addr(13 downto 0);
 	
 	--データキャッシュアドレス
 	d_set_addr <= ls_addr when ls_flg(0) = '1' else--store,missload
@@ -125,10 +122,8 @@ begin
 	--データキャッシュセット　MissLoad,Store
 	dcache_set <= i_d_out(0) or (ls_flg(0));
 	
-	
 	--SRAMアドレス
-	ADDR <= ls_addr_buf when dac = '1' else
-	"000000"&pc_buf;
+	ADDR <= ls_addr_buf;
 	
 	--SRAM書き込みデータ
 	DATAIN <= store_data_buf;
@@ -137,23 +132,11 @@ begin
 	RW <= not ls_buf0(0);
 	
 	dac <= ls_buf0(0) or (ls_buf0(1) and (not dcache_hit_tag));
-	-- 
-	--ICACHE FILL
-	i_d_in(2) <= '1' when i_mem_state = inst_w7 else '0';
-	
-	--ROMでない　かつ　Iキャッシュミス　かつ　Dアクセスでない
-	i_d_in(1) <=
-	((not rom_access) and ((not cache_hit_tag) or ipref)) and (not dac);
 	
 	--DCACHE FILL
 	---DmissLoad
 	i_d_in(0) <= ls_buf0(1) and (not dcache_hit_tag);
 	--ls_buf0(1) and (not ls_buf0(0)) and ((not dcache_hit) or dpref);
-	
-	pc_buf_p1 <= pc_buf(13 downto 3)&(pc_buf(2 downto 0) + '1') when (i_mem_state /= inst_w7) and i_d_in(1) = '1' else
-	pc_buf when (i_mem_state /= idle) and ((i_mem_state /= inst_w7) or i_d_in(1) = '0') else
-	pc(13 downto 0);
-	
 	
 	IMEM : process(clk,rst)
 	begin
@@ -162,51 +145,7 @@ begin
 			ipref <= '0';
 			rom_access <= '1';
 		elsif rising_edge(clk) then
-			case i_mem_state is
-				when idle		=>
-					if i_d_in(1) = '1' then
-						ipref <= '1';
-						i_mem_state <= inst_w1;
-					else
-						ipref <= '0';
-					end if;
-				when inst_w1	=>
-					if i_d_in(1) = '1' then
-						i_mem_state <= inst_w2;
-					end if;
-				when inst_w2	=>
-					if i_d_in(1) = '1' then
-						i_mem_state <= inst_w3;
-					end if;
-				when inst_w3	=>
-					if i_d_in(1) = '1' then
-						i_mem_state <= inst_w4;
-					end if;
-				when inst_w4	=>
-					if i_d_in(1) = '1' then
-						i_mem_state <= inst_w5;
-					end if;
-				when inst_w5	=>
-					if i_d_in(1) = '1' then
-						i_mem_state <= inst_w6;
-					end if;
-				when inst_w6	=>
-					if i_d_in(1) = '1' then
-						i_mem_state <= inst_w7;
-					end if;
-				when inst_w7	=>
-					if i_d_in(1) = '1' then
-						ipref <= '0';
-						i_mem_state <= idle;
-					end if;
-				when others =>
-					ipref <= '0';
-					i_mem_state <= idle;
-			end case;
-			
-			pc_buf <= pc_buf_p1;
-			--ipref <= '0';
-			--pc_buf <= pc(13 downto 0);
+			pc_buf <= pc(13 downto 0);
 			rom_access <= pc(14);
 		end if;
 	end process;
@@ -227,7 +166,7 @@ begin
 						ls_addr_buf <= ls_addr_buf_p1;
 					else
 						ls_addr_buf <= ls_addr;
-						ls_buf0 <= ls_flg;
+						ls_buf0 <= ls_flg(1 downto 0);
 					end if;
 				when data_w1 =>
 						d_mem_state <= data_w2;
@@ -251,12 +190,9 @@ begin
 						d_mem_state <= idle;
 					end if;
 				when others	=>
-					ls_buf0 <= ls_flg;
+					ls_buf0 <= ls_flg(1 downto 0);
 					d_mem_state <= idle;
 				end case;
-						
-			--ls_buf0 <= ls_flg;
-			--ls_addr_buf <= ls_addr;
 			
 			store_data_buf <= store_data;
 		end if;
@@ -296,16 +232,14 @@ begin
       ZD
 	);
 	
-	ICACHE: block_cache port map(
+	ICACHE: full_cache port map(
 		clk,clk
 		,pc(13 downto 0)
 		,set_addr
-		,DATAOUT
-		,cache_set,cache_set_tag
+		,store_data
+		,cache_set
 		,cache_out
 		,jmp_flgs_ic
-		,cache_hit
-		,cache_hit_tag
 	);
 	
 	

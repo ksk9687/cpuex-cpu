@@ -21,10 +21,9 @@ entity sram_controller is
 		;DATAOUT : out std_logic_vector(31 downto 0)
 		;RW      : in  std_logic --0‚È‚çwrite,1‚È‚çread
 		
-		;i_d    : in  std_logic_vector(2 downto 0)
-		;i_d_buf    : out  std_logic_vector(2 downto 0)
+		;i_d    : in  std_logic_vector(0 downto 0)
+		;i_d_buf    : out  std_logic_vector(0 downto 0)
 		;ADDRBUF    : out  std_logic_vector(19 downto 0)
-
 	;
 		--SRAM
     XE1 : out STD_LOGIC; -- 0
@@ -51,16 +50,14 @@ architecture Behavioral of sram_controller is
   signal oldRW : STD_LOGIC;
   signal oldaddr : STD_LOGIC_VECTOR(19 downto 0);
   signal oldwritedata : STD_LOGIC_VECTOR(31 downto 0);
-  signal oldi_d : STD_LOGIC_VECTOR(2 downto 0);
+  signal oldi_d,old2i_d,old3i_d : STD_LOGIC_VECTOR(0 downto 0);
 
   signal old2RW : STD_LOGIC;
   signal old2addr : STD_LOGIC_VECTOR(19 downto 0);
   signal old2writedata : STD_LOGIC_VECTOR(31 downto 0);
-  signal old2i_d : STD_LOGIC_VECTOR(2 downto 0);
   
   signal old3RW : STD_LOGIC;
   signal old3addr : STD_LOGIC_VECTOR(19 downto 0);
-  signal old3i_d : STD_LOGIC_VECTOR(2 downto 0);
 
   signal busreaddata : STD_LOGIC_VECTOR(31 downto 0);
 begin

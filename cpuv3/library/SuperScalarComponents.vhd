@@ -36,6 +36,18 @@ component branchPredictor is
 end component;
 
 
+component full_cache is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(13 downto 0);
+		set_addr: in std_logic_vector(13 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		jmp_flgs : out std_logic_vector(2 downto 0)
+	);
+end component;
+
 component baka_cache is
 	port  (
 		clk,clkfast : in std_logic;
@@ -228,7 +240,7 @@ component lsu is
     	ls_addr_in : in std_logic_vector(19 downto 0);--
     	ls_addr_out : out std_logic_vector(19 downto 0);--
     	
-    	ls_flg : out std_logic_vector(1 downto 0);--
+    	ls_flg : out std_logic_vector(2 downto 0);--
     	reg_d : out std_logic_vector(5 downto 0);
     	
     	lsu_in : in std_logic_vector(31 downto 0);--
@@ -246,9 +258,8 @@ component memory is
     pc : in std_logic_vector(14 downto 0);
     inst : out std_logic_vector(31 downto 0);
     jmp_flgs : out std_logic_vector(2 downto 0);
-    inst_ok : out std_logic;
     
-    ls_flg : in std_logic_vector(1 downto 0);
+    ls_flg : in std_logic_vector(2 downto 0);
     ls_addr : in std_logic_vector(19 downto 0);
     store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
@@ -367,10 +378,9 @@ component sram_controller is
 		;DATAOUT : out std_logic_vector(31 downto 0)
 		;RW      : in  std_logic --0‚È‚çwrite,1‚È‚çread
 		
-		;i_d    : in  std_logic_vector(2 downto 0)
-		;i_d_buf    : out  std_logic_vector(2 downto 0)
+		;i_d    : in  std_logic_vector(0 downto 0)
+		;i_d_buf    : out  std_logic_vector(0 downto 0)
 		;ADDRBUF    : out  std_logic_vector(19 downto 0)
-
 	;
 		--SRAM
     XE1 : out STD_LOGIC; -- 0

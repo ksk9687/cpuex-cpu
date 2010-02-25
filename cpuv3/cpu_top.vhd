@@ -69,7 +69,7 @@ architecture arch of cpu_top is
    signal op_type : std_logic_vector(3 downto 0) := (others=>'0');
    
    --LS
-   signal ls_f,ls_f_p : std_logic_vector(1 downto 0) := (others=>'0');
+   signal ls_f,ls_f_p : std_logic_vector(2 downto 0) := (others=>'0');
    signal lsu_out,lsu_in,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
    signal ls_address,ls_address_p :std_logic_vector(19 downto 0) := (others=>'0');
    signal lsu_read,lsu_write,lsu_load_ok,lsu_full,lsu_may_full : std_logic := '0';
@@ -130,13 +130,34 @@ architecture arch of cpu_top is
    signal reg_s1_b,reg_s2_b : std_logic := '0';
 
 begin
+--  	ROC0 : ROC port map (O => rst);
+--	CLOCK0 : CLOCK port map (
+--		clkin     => CLKIN,
+--		clkout2x    => clk,
+--		clkout2x90 => clk90,
+--		clkout2x180 => clk180,
+--		clkout2x270 => clk270,
+--		clkout4x => clk2x,
+--		clkout1x => clk66,
+--		locked    => locked0);
+  	ROC0 : ROC port map (O => rst);
+  	
+--	CLOCK0 : CLOCK port map (
+--		clkin     => CLKIN,
+--		clkout2x    => clk,
+--		clkout2x90 => clk90,
+--		clkout2x180 => clk180,
+--		clkout2x270 => clk270,
+--		clkout4x => clk2x,
+--		clkout1x => clk66,
+--		locked    => locked0);
   clockgenerator_inst : clockgenerator port map(
     CLK_66M,
     CLK_RST,
 	clock66    => clk66,
 	clock => clk,
 	clock_180 => clk180,
-    reset => rst);
+    reset => open);
   
   	----------------------------------
 	-- 
@@ -158,7 +179,7 @@ begin
 --  
   MEMORY0 : memory port map (
    	clk,clk,clk180,clk180,
-   	next_pc,inst,jmp_flgs,inst_ok,
+   	next_pc,inst,jmp_flgs,
    	ls_f,ls_address,store_data,load_data,lsu_ok
 		,
       XE1,
@@ -183,9 +204,9 @@ begin
    (jmp_not_taken and predict_taken_hist);
    flush <= bp_miss or jr_miss;
    
-   pc_next <= (write_inst_ok) and (inst_ok);
+   pc_next <= (write_inst_ok);
    
-   ib_write <= (not jmp_flg) and (write_inst_ok) and (inst_ok);
+   ib_write <= (not jmp_flg) and (write_inst_ok);
 
    jmp_op <= jmp_flgs(2);
    jal_op <= jmp_flgs(1);
@@ -213,9 +234,7 @@ begin
 	   		pc_p1 <= "100"&x"001";
 	   		jmp_flg <= '0';
 	   elsif rising_edge(clk) then
-	   		--jmp_flg <= flush or jal or jr or (jmp and predict_taken);
 	   		jmp_flg <= flush or jal or (jmp and predict_taken);
-			--if flush = '1' or ((jmp = '1') and (predict_taken = '1')) or (jal = '1') or (jr = '1') then
 			if flush = '1' or ((jmp = '1') and (predict_taken = '1')) or (jal = '1') then
 				pc <= jmp_addr_next;
 				pc_p1 <= jmp_addr_next;
@@ -448,10 +467,10 @@ begin
 	
 	with sub_op_buf0 select
 	ls_address_p <= data_s1(19 downto 0) + data_s2(19 downto 0) when lsu_op_loadr,
-	data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when others;--loadr
+	data_s1(19 downto 0) + ext_im_buf0(19 downto 0) when others;
 	
 	with sub_op_buf0 select
-	lsu_in <= data_s2 when lsu_op_store,
+	lsu_in <= data_s2 when lsu_op_store|lsu_op_store_inst,
 	x"000000"&"00"&reg_d_buf0 when others;--load,loadr
 	
     lsu_write <= '1' when unit_op_buf0 = op_unit_lsu else '0';

@@ -1,0 +1,8 @@
+# Output products list for <cache_16384>
+cache_16384.ngc
+cache_16384.vhd
+cache_16384.vho
+cache_16384.xco
+cache_16384_blk_mem_gen_v2_8_xst_1.ngc_xst.xrpt
+cache_16384_flist.txt
+cache_16384_xmdf.tcl

@@ -34,7 +34,7 @@ architecture arch of IROM is
     "000"&op_cmpi & o"14" & o"00" &"00"&x"000",    
     "100"&op_jmp & "001"&"100" & x"0000F",--if r14 <= 0
     "010"&op_jal& "00" & x"004020",
-    "000"&op_store & o"10" & o"01" &"00"&x"000",
+    "000"&op_store_inst & o"10" & o"01" &"00"&x"000",
     
     "000"&op_addi  & o"10" & o"10" &"00"&x"001",
     "000"&op_addi  & o"14" & o"14" &"11"&x"FFF",
