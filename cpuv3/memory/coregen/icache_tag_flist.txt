@@ -1,8 +1,0 @@
-# Output products list for <icache_tag>
-icache_tag.ngc
-icache_tag.vhd
-icache_tag.vho
-icache_tag.xco
-icache_tag_dist_mem_gen_v3_4_xst_1.ngc_xst.xrpt
-icache_tag_flist.txt
-icache_tag_xmdf.tcl
