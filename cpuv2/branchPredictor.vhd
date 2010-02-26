@@ -78,7 +78,7 @@ begin
 				branch_hist_buf <= branch_hist_buf(7 downto 0) & b_taken;
 				counter_table(conv_integer(pc_buf2)) <= newcounter;
 			end if;
-			pc_buf <= (pc(12 downto 4) xor branch_hist_buf(8 downto 0))& pc(3 downto 0);
+			pc_buf <= (pc(12 downto 5) xor branch_hist_buf(7 downto 0))& pc(4 downto 0);
 		end if;
 	end process;
 

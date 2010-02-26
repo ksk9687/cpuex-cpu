@@ -253,7 +253,7 @@ begin
 						ls_addr_buf <= ls_addr_buf_p1;
 				when data_w5	=>
 					ls_buf0 <= "00";
-					if dcache_hit_tag = '1' then
+					if dcache_hit = '1' then
 						d_mem_state <= idle;
 					end if;
 				when others	=>

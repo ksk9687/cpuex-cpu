@@ -18,8 +18,10 @@ entity sram_controller is
 		
 		;i_d    : in  std_logic_vector(2 downto 0)
 		;ADDR    : in  std_logic_vector(19 downto 0)
+		
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
+		
 		;RW      : in  std_logic
 		
 		;i_d_buf    : out  std_logic_vector(2 downto 0)
@@ -161,13 +163,11 @@ begin
       i_d_buf1 <= i_d_buf0;
       i_d_buf2 <= i_d_buf1;
       i_d_buf3 <= i_d_buf2;
-      i_d_buf4 <= i_d_buf3;
       
       ADDR_BUF0 <= ADDR;
       ADDR_BUF1 <= ADDR_BUF0;
       ADDR_BUF2 <= ADDR_BUF1;
       ADDR_BUF3 <= ADDR_BUF2;
-      ADDR_BUF4 <= ADDR_BUF3;
       
 	  
 	  DATAOUT <= data_out;
@@ -179,7 +179,7 @@ begin
   process (sramclk)
   begin
     if rising_edge(sramclk) then
-		data_out <= SRAMIOA;		
+		data_out <= SRAMIOA;
 		--DATAOUT <= SRAMIOA;
 	end if;
   end process;

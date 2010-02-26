@@ -410,15 +410,9 @@ begin
 	
 	hit_p1 <= '1' when entry_p(3 downto 0) = address(14 downto 11) else '0';
 	hit_p2 <= '1' when entry_p(8 downto 4) = address(19 downto 15) else '0';
-	
-	process (clk)
+	process (clkfast)
 	begin
-	    if rising_edge(clk) then
-	    	hit1 <= hit_p1;
-	    	hit2 <= hit_p2;
-	    	hit3 <= entry_p(9);
-	    	data <= data_p;
-	    	
+	    if rising_edge(clkfast) then
 	    	if set_addr(10 downto 0) = address(10 downto 0) then
 	    		conflict <= set;
 		    	conflict1 <= conflict or set;
@@ -428,6 +422,16 @@ begin
 		    	conflict1 <= conflict;
 		    	conflict2 <= conflict or conflict1;
 	    	end if;
+	    end if;
+	end process;
+		
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	    	hit1 <= hit_p1;
+	    	hit2 <= hit_p2;
+	    	hit3 <= entry_p(9) and conflict1;
+	    	data <= data_p;
 	    end if;
 	end process;
 end arch;

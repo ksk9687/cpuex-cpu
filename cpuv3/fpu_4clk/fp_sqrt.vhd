@@ -24,7 +24,7 @@ end FP_SQRT;
 architecture STRUCTURE of FP_SQRT is
 
   -- 1st stage
-  signal C, X : std_logic_vector(23 downto 0);
+  signal C, C_p, X : std_logic_vector(23 downto 0);
   signal OE1 : std_logic_vector(7 downto 0);
   signal IS0 : boolean;
 
@@ -53,10 +53,18 @@ begin  -- STRUCTURE
   -----------------------------------------------------------------------------
 
   -- ï\à¯Ç´ÇµÇΩÇË xor ÇµÇΩÇËÇµÇƒèÊéZÇ…îıÇ¶ÇÈ
+  
+  process(clk)
+  begin
+    if falling_edge(clk) then
+      C_p <= table(CONV_INTEGER((not A(23)) & A(22 downto 13)));
+    end if;
+  end process;
+  
   process(clk)
   begin
     if rising_edge(clk) then
-      C <= table(CONV_INTEGER((not A(23)) & A(22 downto 13)));
+      C <= C_p;
       X <= "1" & A(22 downto 12) & (not A(12)) & A(11 downto 1);
       IS0 <= (A(30 downto 23) = 0);
 

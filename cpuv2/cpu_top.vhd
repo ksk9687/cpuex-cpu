@@ -51,7 +51,7 @@ architecture arch of cpu_top is
    signal stall,reg_stall,flush,sleep,stall_b,stall_id,stall_rr,stall_rrx,stall_rd,stall_ex,flushed,bp_write: std_logic := '0';
    signal write_inst_ok,read_inst_ok,inst_ok,lsu_ok,lsu_ok_t,reg_ok,rr_ok,rr_reg_ok,rr_cr_ok,rob_ok,bp_ok,ras_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
-   signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
+   signal ext_im,data_s1,data_s1_t,data_s2_t,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
    signal jr_pc,jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1,jr_addr : std_logic_vector(14 downto 0) := "100"&x"000";
    signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
@@ -115,7 +115,7 @@ architecture arch of cpu_top is
    signal jmp_flgs : std_logic_vector(2 downto 0) := (others=>'0');
    
    signal reg_d_ok,reg_s1_ok,reg_s2_ok,reg_cr_ok,rob_s1_ok,rob_s2_ok,dec_write : std_logic := '0';
-   signal reg_s1_b,reg_s2_b : std_logic := '0';
+   signal reg_s1_b,reg_s2_b,bypass_s1,bypass_s2,bypass_s1_p,bypass_s2_p : std_logic := '0';
 
 begin
   	ROC0 : ROC port map (O => rst);
@@ -262,12 +262,16 @@ begin
 	reg_alloc <= rr_reg_ok and read_inst_data(37) and path1_ok and (not lsu_full);
 	
 	--オペランドがそろっているか
-	rr_reg_ok <= ((not read_inst_data(30)) or reg_s1_ok or reg_s1_b) and
-	((not read_inst_data(23)) or reg_s2_ok or reg_s2_b)
+	rr_reg_ok <= ((not read_inst_data(30)) or reg_s1_ok or reg_s1_b or bypass_s1_p) and
+	((not read_inst_data(23)) or reg_s2_ok or reg_s2_b or bypass_s2_p)
    and (reg_d_ok or (not read_inst_data(37)));
 	
 	reg_s1_b <= path1_0(3) when path1_0(9 downto 4) = read_inst_data(29 downto 24) else '0';
 	reg_s2_b <= path1_0(3) when path1_0(9 downto 4) = read_inst_data(22 downto 17) else '0';
+	
+	bypass_s1_p <= path1_1(3) when path1_1(9 downto 4) = read_inst_data(22 downto 17) and (path1_1(2 downto 0) = op_unit_alui) else '0';
+	bypass_s2_p <= path1_1(3) when path1_1(9 downto 4) = read_inst_data(22 downto 17) and (path1_1(2 downto 0) = op_unit_alui) else '0';
+	
 	
 	--CRが準備出来ているか
 	rr_cr_ok <= reg_cr_ok;
@@ -313,6 +317,9 @@ begin
 	data_s2_p <= data_d when reg_s2_b = '1' else
 	data_s2_reg_p;
 	
+
+	
+	
 	ext_im <= sign_extention( read_inst_data(14 downto 0));
 	
 	short_inst <= read_inst_data(46);
@@ -352,23 +359,28 @@ begin
 			cr_flg_buf0 <= "00";
 			ext_im_buf0 <= (others=> '0');
 			reg_d_buf0 <= (others=> '0');
-			data_s1 <= (others=> '0');
-			data_s2 <= (others=> '0');
+			data_s1_t <= (others=> '0');
+			data_s2_t <= (others=> '0');
 		elsif rising_edge(clk) then
 			if stall_rrx = '0' then--nop
 				unit_op_buf0 <= op_unit_sp;
 				sub_op_buf0 <= sp_op_nop;
 				reg_write_buf0 <= '0';
 				cr_flg_buf0 <= "00";
+				bypass_s1 <= '0';
+				bypass_s2 <= '0';
 			else
+				bypass_s1 <= bypass_s1_p;
+				bypass_s2 <=bypass_s2_p;
+				
 				unit_op_buf0 <= read_inst_data(43 downto 41);
 				sub_op_buf0 <= read_inst_data(40 downto 38);
 				reg_write_buf0 <= read_inst_data(37);
 				cr_flg_buf0 <= read_inst_data(16 downto 15);
 			end if;
 			ext_im_buf0 <= ext_im;
-			data_s1 <= data_s1_p;
-			data_s2 <= data_s2_p;
+			data_s1_t <= data_s1_p;
+			data_s2_t <= data_s2_p;
 			reg_d_buf0 <= read_inst_data(36 downto 31);
 		end if;
 	end process RR;
@@ -380,7 +392,11 @@ begin
 	-- 
 	----------------------------------
 	
-
+	data_s1 <= alu_im_out_buf1 when bypass_s1 = '1' else
+	data_s1_t;
+	data_s2 <= alu_im_out_buf1 when bypass_s2 = '1' else
+	data_s2_t;
+	
 	ledout <= "00000000";
 --	LED_OUT :process(clk,rst)
 --	begin

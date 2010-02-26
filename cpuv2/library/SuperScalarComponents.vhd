@@ -331,8 +331,10 @@ component sram_controller is
 		
 		;i_d    : in  std_logic_vector(2 downto 0)
 		;ADDR    : in  std_logic_vector(19 downto 0)
+		
 		;DATAIN  : in  std_logic_vector(31 downto 0)
 		;DATAOUT : out std_logic_vector(31 downto 0)
+		
 		;RW      : in  std_logic
 		
 		;i_d_buf    : out  std_logic_vector(2 downto 0)

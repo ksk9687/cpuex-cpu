@@ -8,13 +8,18 @@ entity sram_ft1 is
     clk : in STD_LOGIC;                 -- <= 133.33MHz
     clk_180 : in STD_LOGIC;
     rst : in STD_LOGIC;
+    
     readmode : in STD_LOGIC; -- read制御線
     writemode : in STD_LOGIC; -- write制御線,read が優先
+
     addr : in STD_LOGIC_VECTOR(19 downto 0);  -- アドレス
+
     writedata : in STD_LOGIC_VECTOR(31 downto 0);  -- 書き込みデータ
     writedatap : in STD_LOGIC_VECTOR(3 downto 0);  -- 書き込みデータパリティ
+
     readcmp : out STD_LOGIC;            -- read完了線
     readretaddr : out STD_LOGIC_VECTOR(19 downto 0); -- 完了時にデータとともに返す
+    
     readdata : out STD_LOGIC_VECTOR(31 downto 0); -- 読み込んだデータ
     readdatap : out STD_LOGIC_VECTOR(3 downto 0); -- 読み込んだデータパリティ
     

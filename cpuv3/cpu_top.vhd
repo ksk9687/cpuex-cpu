@@ -140,7 +140,7 @@ begin
 --		clkout4x => clk2x,
 --		clkout1x => clk66,
 --		locked    => locked0);
-  	ROC0 : ROC port map (O => rst);
+--  	ROC0 : ROC port map (O => rst);
   	
 --	CLOCK0 : CLOCK port map (
 --		clkin     => CLKIN,
@@ -157,7 +157,7 @@ begin
 	clock66    => clk66,
 	clock => clk,
 	clock_180 => clk180,
-    reset => open);
+    reset => rst);
   
   	----------------------------------
 	-- 
