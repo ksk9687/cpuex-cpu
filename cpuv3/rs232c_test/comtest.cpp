@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 		unsigned char c=com_getc();
 		fprintf(stderr,"get:0x%x\n",c);
 		i++;
-		fprintf(stderr,"\r%d byte read.");
+		fprintf(stderr,"\r byte read.");
 	}
 
 	i=0;
