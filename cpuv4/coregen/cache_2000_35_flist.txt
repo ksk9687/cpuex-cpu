@@ -1,0 +1,8 @@
+# Output products list for <cache_2000_35>
+cache_2000_35.ngc
+cache_2000_35.vhd
+cache_2000_35.vho
+cache_2000_35.xco
+cache_2000_35_blk_mem_gen_v2_8_xst_1.ngc_xst.xrpt
+cache_2000_35_flist.txt
+cache_2000_35_xmdf.tcl
