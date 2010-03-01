@@ -18,18 +18,17 @@ use UNISIM.VComponents.all;
 
 entity reg is 
 port (
-    clk,reg_alloc,cr_alloc			: in	  std_logic;
+    clk,flush,rob_alloc1,rob_alloc2: in	  std_logic;
+
+    pd,pd2 : in std_logic_vector(6 downto 0);
+    s1,s2,s12,s22 : in std_logic_vector(5 downto 0);
+       
+    dflg: in std_logic;
     d: in std_logic_vector(5 downto 0);
-    pd,s1,s2 : in std_logic_vector(6 downto 0);
-    dflg: in	  std_logic;
-    crflg,pcrflg : in std_logic_vector(1 downto 0);
-    
-    cr_d : in std_logic_vector(2 downto 0);
     data_d : in std_logic_vector(31 downto 0);
-    data_s1,data_s2 : out std_logic_vector(31 downto 0);
+    data_s1,data_s2,data_s12,data_s22 : out std_logic_vector(31 downto 0);
     
-    cr : out std_logic_vector(2 downto 0);
-    d_ok,s1_ok,s2_ok,cr_ok: out std_logic
+    s1_ok,s2_ok,s12_ok,s22_ok: out std_logic
     ); 
     
 end reg;
@@ -39,59 +38,68 @@ architecture synth of reg is
     type reg is array (0 to 63) of std_logic_vector (31 downto 0);
 	signal registers : reg;
 	
-    type using_table_t is array (0 to 63) of std_logic;
-	signal using	:	using_table_t := (others => '0');
+    type using_table_t is array (0 to 63) of std_logic_vector (2 downto 0);
+	signal using	:	using_table_t := (others => (others => '0'));
+	signal rst	:	std_logic := '0';
 	
-	signal cr_a :std_logic_vector (2 downto 0) := "000";
-	signal cr_using,rst :std_logic:= '0';
 begin
   	ROC0 : ROC port map (O => rst);
     --read
     data_s1 <= registers(conv_integer(s1(5 downto 0)));
     data_s2 <= registers(conv_integer(s2(5 downto 0)));
-    cr <= cr_d when crflg(0) = '1' else cr_a;
+    data_s12 <= registers(conv_integer(s12(5 downto 0)));
+    data_s22 <= registers(conv_integer(s22(5 downto 0)));
     
-    --オペランドが使用可能か
-    s1_ok <= not using(conv_integer(s1(5 downto 0)));
-    s2_ok <= not using(conv_integer(s2(5 downto 0)));
-    d_ok <= not using(conv_integer(pd(5 downto 0)));
+    --どこから値を読めばよいか
+    --0:リオーダバッファ 1:レジスタファイル
+    s1_ok <= '1' when using(conv_integer(s1(5 downto 0))) = "000" else '0';
+    s2_ok <= '1' when using(conv_integer(s2(5 downto 0))) = "000" else '0';
     
-    --crが正しいかどうか
-    cr_ok <= (not (pcrflg(1) and cr_using)) or crflg(0);
+    s12_ok <= '1' when using(conv_integer(s12(5 downto 0))) = "000" else '0';
+    s22_ok <= '1' when using(conv_integer(s22(5 downto 0))) = "000" else '0';
     
-    WRITE : process (clk,rst)
+    WRITE : process (rst)
      begin
-     	if rst = '1'then
-     		using <= (others => '0');
-	     	cr_using <= '0';
-	     	cr_a <= "000";
-	    elsif rising_edge(clk) then
-	     	if dflg = '1' then
-	     		registers(conv_integer(d(5 downto 0))) <= data_d;
-	     	end if;
-	     	
---     		if (pd(5 downto 0) = d(5 downto 0)) and dflg = '1' and reg_alloc = '1' then
---				
---     		else
-     			if dflg = '1' then
-     				using(conv_integer(d(5 downto 0))) <= '0';
-     			end if;
-     			if reg_alloc = '1' then
- 	     			using(conv_integer(pd(5 downto 0))) <= '1';
-     			end if;
---			end if;
-	    	
-	     	--Crの書き換え
-	     	if crflg(0) = '1' then
-	     		cr_a <= cr_d;
-	     	end if;
-	     	
-	     	if (cr_alloc = '1') and (pcrflg(0) = '1') then
-     			cr_using <= '1';
-     		elsif crflg(0) = '1' then
-	     		cr_using <= '0';
-	     	end if;
-	     	
+     	if rising_edge(clk) then
+	    	if flush = '1' then
+	    		using <= others => (others => '0'));
+	    	else
+		     	if dflg = '1' then
+		     		registers(conv_integer(d(5 downto 0))) <= data_d;
+		     	end if;
+		     	
+		     	
+		     	if (pd(5 downto 0) = pd2(5 downto 0)) and rob_alloc1 = '1' and rob_alloc2 = '1' then
+	     			if (pd(5 downto 0) = d(5 downto 0)) and dflg = '1' then
+						using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
+		     		else
+		     			if dflg = '1' then
+		     				using(conv_integer(d(5 downto 0))) <= using(conv_integer(d(5 downto 0))) - '1';
+		     			end if;	     			
+	 	     			using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + "10";
+					end if;
+	     		else
+	     			if (pd(5 downto 0) = d(5 downto 0)) and dflg = '1' and rob_alloc1 = '1' then
+						if rob_alloc2 = '1' then
+		 	     			using(conv_integer(pd2(5 downto 0))) <= using(conv_integer(pd2(5 downto 0))) + '1';
+		     			end if;
+		     		elsif (pd2(5 downto 0) = d(5 downto 0)) and dflg = '1' and rob_alloc2 = '1' then
+		     			if rob_alloc1 = '1' then
+		 	     			using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
+		     			end if;
+		  	     	else
+		     			if dflg = '1' then
+		     				using(conv_integer(d(5 downto 0))) <= using(conv_integer(d(5 downto 0))) - '1';
+		     			end if;
+		     			if rob_alloc1 = '1' then
+		 	     			using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
+		     			end if;
+		     			if rob_alloc2 = '1' then
+		 	     			using(conv_integer(pd2(5 downto 0))) <= using(conv_integer(pd2(5 downto 0))) + '1';
+		     			end if;
+					end if;
+	     		end if;
+     		end if;
      	end if;
      end process WRITE;
     	

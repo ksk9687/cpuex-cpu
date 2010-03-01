@@ -1,4 +1,5 @@
 # Output products list for <cache_16384>
+cache_16384.mif
 cache_16384.ngc
 cache_16384.vhd
 cache_16384.vho

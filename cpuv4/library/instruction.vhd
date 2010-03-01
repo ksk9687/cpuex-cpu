@@ -11,41 +11,34 @@ use ieee.std_logic_1164.all;
 library work;
 
 package instruction is
-
-
-   constant op_unit_alui	: std_logic_vector(2 downto 0) := o"0";
-   constant op_unit_alu		: std_logic_vector(2 downto 0) := o"1";
-   constant op_unit_fpu		: std_logic_vector(2 downto 0) := o"2";
-   constant op_unit_lsu		: std_logic_vector(2 downto 0) := o"3";
-   constant op_unit_hsmu	: std_logic_vector(2 downto 0) := o"4";
-   constant op_unit_iou		: std_logic_vector(2 downto 0) := o"5";
-   constant op_unit_sp		: std_logic_vector(2 downto 0) := o"6";
-   constant op_unit_jmp 	: std_logic_vector(2 downto 0) := o"7";
    
    
    constant op_li	:	std_logic_vector(5 downto 0) := o"00";
    constant op_addi	:	std_logic_vector(5 downto 0) := o"01";
-   constant op_sll	:	std_logic_vector(5 downto 0) := o"02";
-   constant op_cmpi	:	std_logic_vector(5 downto 0) := o"03";
-   
-   constant op_add	:	std_logic_vector(5 downto 0) := o"10";
-   constant op_sub	:	std_logic_vector(5 downto 0) := o"11";
-   constant op_cmp	:	std_logic_vector(5 downto 0) := o"12";
+   constant op_subi	:	std_logic_vector(5 downto 0) := o"02";
+   constant op_mv	:	std_logic_vector(5 downto 0) := o"04";
+   constant op_add	:	std_logic_vector(5 downto 0) := o"05";
+   constant op_sub	:	std_logic_vector(5 downto 0) := o"06";
 
-   constant op_fadd	:	std_logic_vector(5 downto 0) := o"20";
-   constant op_fsub	:	std_logic_vector(5 downto 0) := o"21";
-   constant op_fmul :	std_logic_vector(5 downto 0) := o"22";
-   constant op_finv :	std_logic_vector(5 downto 0) := o"23";
-   constant op_fsqrt:	std_logic_vector(5 downto 0) := o"24";
-   constant op_fcmp	:	std_logic_vector(5 downto 0) := o"25";
+   constant op_fadd	:	std_logic_vector(5 downto 0) := o"10";
+   constant op_fsub	:	std_logic_vector(5 downto 0) := o"11";
+   constant op_fmul :	std_logic_vector(5 downto 0) := o"12";
+   constant op_finv :	std_logic_vector(5 downto 0) := o"13";
+   constant op_fsqrt:	std_logic_vector(5 downto 0) := o"14";
+   constant op_fmov	:	std_logic_vector(5 downto 0) := o"15";
    
-   constant op_fabs	:	std_logic_vector(5 downto 0) := o"06";
-   constant op_fneg	:	std_logic_vector(5 downto 0) := o"07";
    
-   constant op_load :	std_logic_vector(5 downto 0) := o"30";
+   constant op_load :	std_logic_vector(5 downto 0) := o"20";
+   constant op_loadr :	std_logic_vector(5 downto 0) := o"21";
+   constant op_store:	std_logic_vector(5 downto 0) := o"22";
+   constant op_fload :	std_logic_vector(5 downto 0) := o"20";
+   constant op_floadr :	std_logic_vector(5 downto 0) := o"21";
+   constant op_fstore:	std_logic_vector(5 downto 0) := o"22";
+   
+   constant op_load :	std_logic_vector(5 downto 0) := o"20";
    constant op_loadr :	std_logic_vector(5 downto 0) := o"31";
-   constant op_store:	std_logic_vector(5 downto 0) := o"32";
-   constant op_store_inst:	std_logic_vector(5 downto 0) := o"33";
+   constant op_load :	std_logic_vector(5 downto 0) := o"20";
+   constant op_store_inst:	std_logic_vector(5 downto 0) := o"23";
    
    constant op_hsread :	std_logic_vector(5 downto 0) := o"40";
    constant op_hswrite :std_logic_vector(5 downto 0) := o"41";
