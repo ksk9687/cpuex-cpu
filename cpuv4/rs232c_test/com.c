@@ -27,10 +27,10 @@ static void setup_comm_parameters(HANDLE hcom, const com_settings *cs)
    */
   dcb.BaudRate = cs->baud;
   dcb.fBinary = TRUE;
-  dcb.fParity = (cs->parity_type != NOPARITY);
-  dcb.fOutxCtsFlow = cs->do_cts_control;
+  dcb.fParity = FALSE;
+  dcb.fOutxCtsFlow = FALSE;
   dcb.fOutxDsrFlow = FALSE;
-  dcb.fDtrControl = DTR_CONTROL_ENABLE;
+  dcb.fDtrControl = DTR_CONTROL_DISABLE;
   dcb.fDsrSensitivity = FALSE;
   dcb.fTXContinueOnXoff = FALSE;
   dcb.fOutX = FALSE;
@@ -38,14 +38,14 @@ static void setup_comm_parameters(HANDLE hcom, const com_settings *cs)
   dcb.fErrorChar = FALSE;
   
   dcb.fNull = FALSE;
-  dcb.fRtsControl = RTS_CONTROL_ENABLE;
+  dcb.fRtsControl = RTS_CONTROL_DISABLE;
   dcb.fAbortOnError = FALSE;
           
   dcb.XonLim = 2048;
   dcb.XoffLim = 512;
-  dcb.ByteSize = cs->n_databits;
-  dcb.Parity = cs->parity_type;
-  dcb.StopBits = cs->stopbit_len;
+  dcb.ByteSize = 8;
+  dcb.Parity = NOPARITY;
+  dcb.StopBits = ONESTOPBIT;
   dcb.XonChar = 0x11;
   dcb.XoffChar = 0x13;
   dcb.ErrorChar= 0x00;
@@ -76,14 +76,14 @@ static void setup_comm_timeout(HANDLE hcom)
 void setup_comm(const com_settings* cs)
 {
   char comport_name[16];
-  if(!IS_IN_RANGE(cs->comport_id, 1, 4)){
+  if(!IS_IN_RANGE(cs->comport_id, 1, 9)){//9‚Ü‚Å‹–‰ÂA10ˆÈã‚Í“ÁŽêˆµ‚¢‚É‚È‚é‚Ì‚ÅŽg‚í‚È‚¢•û‚ª‚æ‚¢
     error("%d : illegal COM port ID\n", cs->comport_id);
     exit(1);
   }
   
   sprintf(comport_name, "COM%c", cs->comport_id + '0');
   
-  hCom = CreateFile(comport_name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  hCom = CreateFile(comport_name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);//FILE_ATTRIBUTE_NORMAL‚ð’Ç‰Á
   if (hCom == INVALID_HANDLE_VALUE) {
     windows_error("Cannot Open COM%d port : ", cs->comport_id);
     exit(1);

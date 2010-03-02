@@ -486,42 +486,12 @@ static void recv_ppm_data(FILE* out)
  *  main part
  ******************************************************************************/
 
-static int parse_parity_type(const char* optarg)
-{
-  if(!strcmp(optarg, "odd"))
-    return ODDPARITY;
-  else if(!strcmp(optarg, "even"))
-    return EVENPARITY;
-  else if(!strcmp(optarg, "none"))
-    return NOPARITY;
-  else if(!strcmp(optarg, "mark"))
-    return MARKPARITY;
-  else if(!strcmp(optarg, "space"))
-    return SPACEPARITY;
-  else
-    error("%s : no such parity mode\n", optarg);
-  return NOPARITY;
-}
-
-static int parse_stopbit_len(const char* optarg)
-{
-  if(!strcmp(optarg, "1"))
-    return ONESTOPBIT;
-  else if(!strcmp(optarg, "1.5"))
-    return ONE5STOPBITS;
-  else if(!strcmp(optarg, "2"))
-    return TWOSTOPBITS;
-  else
-    error("%s : not such stopbit length\n", optarg);
-  return ONESTOPBIT;
-}
-
 static int parse_options(int argc, char* argv[], app_settings* as)
 {
   int c;
   int tmp;
   opterr = 0;
-  while ((c = getopt(argc, argv, "bB:c:Cp:s:S:")) != EOF)
+  while ((c = getopt(argc, argv, "bB:c:S:")) != EOF)
     switch (c) {
     case 'b':
       as->sld_big_endian = TRUE;
@@ -533,24 +503,13 @@ static int parse_options(int argc, char* argv[], app_settings* as)
       
     case 'c':
       tmp = ec_strtol(optarg, 10);
-      if(IS_IN_RANGE(tmp, 1, 4)){
+      if(IS_IN_RANGE(tmp, 1, 9)){
         as->cs.comport_id = tmp;
       } else {
         error("%d : invalid comport ID\n", tmp);
       }
       break;
 
-    case 'C':
-      as->cs.do_cts_control = TRUE;
-      break;
-      
-    case 'p':
-      as->cs.parity_type = parse_parity_type(optarg);
-      break;
-      
-    case 's':
-      as->cs.stopbit_len = parse_stopbit_len(optarg);
-      break;
     case 'S':
       as->bin_exist = TRUE;
       as->bin_filename = optarg;
@@ -570,10 +529,6 @@ static void parse_arguments(int argc, char* argv[], app_settings* as)
 
   as->cs.comport_id = 1;
   as->cs.baud = 115200;
-  as->cs.stopbit_len = ONESTOPBIT;
-  as->cs.parity_type = NOPARITY;
-  as->cs.n_databits = 8;
-  as->cs.do_cts_control = FALSE;
   
   as->ppm_filename = NULL;
   as->sld_filename = NULL;
@@ -606,11 +561,7 @@ static void parse_arguments(int argc, char* argv[], app_settings* as)
             "usage: %s \n"
             "          [-b]                ; send SLD in big endian format\n"
             "          [-B <baud>]         ; BAUD, default 115200\n"
-            "          [-c <port id>]      ; COMport ID, 1-4, default 1\n"
-            "          [-C]                ; enable CTS flow control\n"
-            "          [-p <parity_type>]  ; parity type : odd | even | none | mark | space\n"
-            "                              ; default : none\n"
-            "          [-s <stop bit len>] ; Stop bit length : 1 or 1.5 or 2, default : 1\n"
+            "          [-c <port id>]      ; COMport ID, 1-9, default 1\n"
             "          [-S <source bin>]   ; program file name\n"
             "          <input sld>         ; input sld file name\n"
             "          <output ppm>        ; output ppm file name\n",

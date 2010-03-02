@@ -21,13 +21,13 @@ int main(int argc, char* argv[])
 	
 	com_settings cs;
 
-	cs.comport_id = 1;
-	//cs.baud = 460800;
-	cs.baud = 115200;
-	cs.stopbit_len = ONESTOPBIT;
-	cs.parity_type = NOPARITY;
-	cs.n_databits = 8;
-	cs.do_cts_control = FALSE;
+	cs.comport_id = 9;
+	cs.baud = 460800;
+	//cs.baud = 115200;
+	//cs.stopbit_len = ONESTOPBIT;
+	//cs.parity_type = NOPARITY;
+	//cs.n_databits = 8;
+	//cs.do_cts_control = FALSE;
 
 	setup_comm(&cs);
 
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 		unsigned char c=com_getc();
 		fprintf(stderr,"get:0x%x\n",c);
 		i++;
-		fprintf(stderr,"\r%d byte read.");
+		fprintf(stderr,"\r byte read.");
 	}
 
 	i=0;
