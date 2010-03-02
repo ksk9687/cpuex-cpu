@@ -10,7 +10,7 @@ entity full_cache is
 		clk,clkfast : in std_logic;
 		address: in std_logic_vector(12 downto 0);
 		set_addr: in std_logic_vector(12 downto 0);
-		set_data : in std_logic_vector(35 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data1 : out std_logic_vector(35 downto 0);
 		read_data2 : out std_logic_vector(35 downto 0)
@@ -43,7 +43,8 @@ begin
 
 	set_d(0) <= set when count = "10" else '0';
   	write_data <= buf1(7 downto 0)&buf2&set_data;
-	read_data <= out_data;
+	read_data1 <= out_data(71 downto 36);
+	read_data2 <= out_data(35 downto 0);
 	
 	process(clk)
 	begin
@@ -68,53 +69,58 @@ begin
 end arch;
 
 
---馬鹿キャッシュ
+--ROM
 library ieee;
 use ieee.std_logic_1164.all;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
+use ieee.std_logic_unsigned.all;
 
 library work;
 use work.instruction.all; 
-entity baka_cache is
+
+library UNISIM;
+use UNISIM.VComponents.all;
+
+entity irom is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
+		address: in std_logic_vector(12 downto 0);
+		set_addr: in std_logic_vector(12 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		jmp_flgs : out std_logic_vector(2 downto 0);
-		hit : out std_logic
+		read_data1 : out std_logic_vector(35 downto 0);
+		read_data2 : out std_logic_vector(35 downto 0)
 	);
-end baka_cache;
+end irom;
 
 
-architecture arch of baka_cache is
-    signal jmps : std_logic_vector(2 downto 0) := (others => '0');
-    signal read,data_buf : std_logic_vector(31 downto 0) := (others => '0');
-    signal hit_buf,hit_p,read_f_buf,jmp,jal,jr : std_logic := '0';
-    signal address_buf,address_buf1 : std_logic_vector(13 downto 0) := (others => '1');
+architecture arch of irom is
+    type rom_t is array (0 to 7) of std_logic_vector (35 downto 0); 
+    
+	signal ROM : rom_t := (
+    	"00000000"&"000000"&"000000"&"000000"&"0000000001",
+    	"00000100"&"000000"&"000001"&"000000"&"0000000010",
+    	"00000100"&"000001"&"000010"&"000000"&"0000000011",
+    	"00000100"&"000000"&"000011"&"000000"&"0000000100",
+    	
+    	"00000100"&"000011"&"000100"&"000000"&"0000000101",
+    	"00000100"&"000100"&"000101"&"000000"&"0000000110",
+    	"00000100"&"000000"&"000110"&"000000"&"0000000111",
+    	"00000100"&"000110"&"000111"&"000000"&"0000001000"
+    );
+	
+    signal i1,i2 : std_logic_vector(35 downto 0) := nop_inst;
 begin
-	read_data <= data_buf;
-	hit_p <= '1' when address = address_buf else '0';
-	jmp_flgs <= jmps;
-	
-	jmp <= '1' when set_data(31 downto 26) = op_jmp else '0';
-	jal <= '1' when set_data(31 downto 26) = op_jal else '0';
-	jr <= '1' when set_data(31 downto 26) = op_jr else '0';
-	
-	process (clk)
+    
+	i1 <= ROM(conv_integer(address(1 downto 0)&'0'));
+	i2 <= ROM(conv_integer(address(1 downto 0)&'1'));
+	process(clk)
 	begin
-	    if rising_edge(clk) then
-	    	hit <= hit_p;
-	    	if (set = '1') then
-	    		address_buf <= set_addr;
-	    		data_buf <= set_data;
-	    		jmps <= jmp&jal&jr;
-	    	end if;
-	    end if;
+		if rising_edge(clk) then
+		 	read_data1 <= i1;
+		 	read_data2 <= i2;
+		end if;
 	end process;
+
 end arch;
 
 

@@ -83,7 +83,7 @@ void setup_comm(const com_settings* cs)
   
   sprintf(comport_name, "COM%c", cs->comport_id + '0');
   
-  hCom = CreateFile(comport_name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+  hCom = CreateFile(comport_name, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (hCom == INVALID_HANDLE_VALUE) {
     windows_error("Cannot Open COM%d port : ", cs->comport_id);
     exit(1);

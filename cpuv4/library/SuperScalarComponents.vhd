@@ -7,10 +7,9 @@ package SuperScalarComponents is
 component ALU is
   port (
     clk  : in std_logic;
-    op   : in std_logic_vector(2 downto 0);
+    op   : in std_logic_vector(1 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
-    O    : out std_logic_vector(31 downto 0);
-    cmp  : out std_logic_vector(2 downto 0));
+    O    : out std_logic_vector(31 downto 0));
 end component;
 
 
@@ -39,50 +38,24 @@ end component;
 component full_cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
+		address: in std_logic_vector(12 downto 0);
+		set_addr: in std_logic_vector(12 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		jmp_flgs : out std_logic_vector(2 downto 0)
+		read_data1 : out std_logic_vector(35 downto 0);
+		read_data2 : out std_logic_vector(35 downto 0)
 	);
 end component;
 
-component baka_cache is
+component irom is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
+		address: in std_logic_vector(12 downto 0);
+		set_addr: in std_logic_vector(12 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		jmp_flgs : out std_logic_vector(2 downto 0);
-		hit : out std_logic
-	);
-end component;
-
-component block_l_cache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
-	);
-end component;
-
-component block_cache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set,set_tag : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		jmp_flgs : out std_logic_vector(2 downto 0);
-		hit,hit_tag : out std_logic
+		read_data1 : out std_logic_vector(35 downto 0);
+		read_data2 : out std_logic_vector(35 downto 0)
 	);
 end component;
 
@@ -143,17 +116,9 @@ end component;
 
 component decoder is 
 port (
-    clk,write			: in	  std_logic;
-    inst : in std_logic_vector(31 downto 0)
-    ;write_op : out std_logic_vector(5 downto 0)
-    
-    --レジスタの指定
-    ;reg_d,reg_s1,reg_s2 : out std_logic_vector(5 downto 0)
-    ;reg_s1_use,reg_s2_use : out std_logic
-    ;reg_write : out std_logic
-    
-    ;cr_flg : out std_logic_vector(1 downto 0)
-    ;op_type : out std_logic_vector(3 downto 0)
+    inst : in std_logic_vector(35 downto 0);
+    r1,r2 : out std_logic_vector(1 downto 0);
+    d : out std_logic_vector(4 downto 0)
     );
 end component;
 
@@ -205,16 +170,6 @@ component IOU is
 end component;
 
 
-component IROM is
-	port  (
-		clk : in std_logic;
-		pc : in std_logic_vector(13 downto 0);
-		inst : out std_logic_vector(31 downto 0);
-		jmp_flgs : out std_logic_vector(2 downto 0)
-	);
-end component;
-
-
 component ledextd2 is
   Port (
     leddata   : in std_logic_vector(31 downto 0);
@@ -255,9 +210,9 @@ component memory is
     Port (
     clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
-    pc : in std_logic_vector(14 downto 0);
-    inst : out std_logic_vector(31 downto 0);
-    jmp_flgs : out std_logic_vector(2 downto 0);
+    pc : in std_logic_vector(12 downto 0);
+    inst1 : out std_logic_vector(35 downto 0);
+    inst2 : out std_logic_vector(35 downto 0);
     
     ls_flg : in std_logic_vector(2 downto 0);
     ls_addr : in std_logic_vector(19 downto 0);
@@ -287,18 +242,17 @@ end component;
 
 component reg is 
 port (
-    clk,reg_alloc,cr_alloc			: in	  std_logic;
+    clk,flush,rob_alloc1,rob_alloc2: in	  std_logic;
+
+    pd,pd2 : in std_logic_vector(5 downto 0);
+    s1,s2,s12,s22 : in std_logic_vector(5 downto 0);
+       
+    dflg: in std_logic;
     d: in std_logic_vector(5 downto 0);
-    pd,s1,s2 : in std_logic_vector(6 downto 0);
-    dflg: in	  std_logic;
-    crflg,pcrflg : in std_logic_vector(1 downto 0);
-    
-    cr_d : in std_logic_vector(2 downto 0);
     data_d : in std_logic_vector(31 downto 0);
-    data_s1,data_s2 : out std_logic_vector(31 downto 0);
+    data_s1,data_s2,data_s12,data_s22 : out std_logic_vector(31 downto 0);
     
-    cr : out std_logic_vector(2 downto 0);
-    d_ok,s1_ok,s2_ok,cr_ok: out std_logic
+    s1_ok,s2_ok,s12_ok,s22_ok: out std_logic
     ); 
     
 end component;
@@ -306,21 +260,51 @@ end component;
 
 component reorderBuffer is
 	port  (
-		clk,rst : in std_logic;
-		write : in std_logic;
-		writeok: out std_logic;
+		clk,flush : in std_logic;
+		write1,write2,regwrite1,regwrite2 : in std_logic;
+		write1ok,write2ok: out std_logic;
 		
-		reg_d,reg_s1,reg_s2 : in std_logic_vector(5 downto 0);
-		reg_s1_ok,reg_s2_ok : out std_logic;
-		reg_s1_data,reg_s2_data : out std_logic_vector(31 downto 0);
-		newtag : out std_logic_vector(2 downto 0);
+		op,op2 : in std_logic_vector(1 downto 0);
+		reg_d,reg_d2,reg_s1,reg_s2,reg_s12,reg_s22 : in std_logic_vector(5 downto 0);
 		
+		reg_s1_ok,reg_s2_ok,reg_s12_ok,reg_s22_ok : out std_logic;
+		reg_s1_data,reg_s2_data,reg_s12_data,reg_s22_data : out std_logic_vector(31 downto 0);
+		s1tag,s2tag,s12tag,s22tag : out std_logic_vector(2 downto 0);
+		newtag1,newtag2 : out std_logic_vector(2 downto 0);
+		
+		read: in std_logic;
 		readok: out std_logic;
 		reg_num : out std_logic_vector(5 downto 0);
 		reg_data : out std_logic_vector(31 downto 0);
+		outop : out std_logic_vector(1 downto 0);
+		
+		dwrite1,dwrite2 : in std_logic;
+		dtag1,dtag2 : in std_logic_vector(3 downto 0);
+		value1,value2 : in std_logic_vector(31 downto 0)
+	);
+end component;
+
+
+component reservationStation is
+	port  (
+		clk : in std_logic;
+		write : in std_logic;
+		writeok: out std_logic;
+		read : in std_logic;
+		readok : out std_logic;
+			
+		inop: in std_logic_vector(3 downto 0);
+		indtag: in std_logic_vector(4 downto 0);
+		ins1: in std_logic_vector(32 downto 0);
+		ins2: in std_logic_vector(32 downto 0);
+		
+		outop: out std_logic_vector(3 downto 0);
+		outdtag: out std_logic_vector(4 downto 0);
+		outs1: out std_logic_vector(31 downto 0);
+		outs2: out std_logic_vector(31 downto 0);
 		
 		write1,write2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(2 downto 0);
+		dtag1,dtag2 : in std_logic_vector(3 downto 0);
 		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end component;

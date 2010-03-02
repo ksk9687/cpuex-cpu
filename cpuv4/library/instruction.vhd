@@ -16,7 +16,7 @@ package instruction is
    constant op_li	:	std_logic_vector(5 downto 0) := o"00";
    constant op_addi	:	std_logic_vector(5 downto 0) := o"01";
    constant op_subi	:	std_logic_vector(5 downto 0) := o"02";
-   constant op_mv	:	std_logic_vector(5 downto 0) := o"04";
+   constant op_mov	:	std_logic_vector(5 downto 0) := o"04";
    constant op_add	:	std_logic_vector(5 downto 0) := o"05";
    constant op_sub	:	std_logic_vector(5 downto 0) := o"06";
 
@@ -28,31 +28,34 @@ package instruction is
    constant op_fmov	:	std_logic_vector(5 downto 0) := o"15";
    
    
-   constant op_load :	std_logic_vector(5 downto 0) := o"20";
-   constant op_loadr :	std_logic_vector(5 downto 0) := o"21";
-   constant op_store:	std_logic_vector(5 downto 0) := o"22";
-   constant op_fload :	std_logic_vector(5 downto 0) := o"24";
-   constant op_floadr :	std_logic_vector(5 downto 0) := o"25";
-   constant op_fstore:	std_logic_vector(5 downto 0) := o"26";
-   constant op_itof :	std_logic_vector(5 downto 0) := o"23";
-   constant op_ftoi:	std_logic_vector(5 downto 0) := o"27";
+   constant op_load :	std_logic_vector(5 downto 0) := o"40";
+   constant op_loadr :	std_logic_vector(5 downto 0) := o"41";
+   constant op_store:	std_logic_vector(5 downto 0) := o"42";
+   constant op_fload :	std_logic_vector(5 downto 0) := o"44";
+   constant op_floadr :	std_logic_vector(5 downto 0) := o"45";
+   constant op_fstore:	std_logic_vector(5 downto 0) := o"46";
+   constant op_itof :	std_logic_vector(5 downto 0) := o"43";
+   constant op_ftoi:	std_logic_vector(5 downto 0) := o"47";
    
    constant op_read	:	std_logic_vector(5 downto 0) := o"30";
    constant op_write:	std_logic_vector(5 downto 0) := o"32";
    constant op_led	:	std_logic_vector(5 downto 0) := o"34";
    constant op_ledi	:	std_logic_vector(5 downto 0) := o"36";
    
-   constant op_nop	:	std_logic_vector(5 downto 0) := o"40";
+   constant op_nop	:	std_logic_vector(5 downto 0) := o"57";
    
-   constant op_cmpjmp	:	std_logic_vector(5 downto 0) := o"61";
-   constant op_cmpjmp	:	std_logic_vector(5 downto 0) := o"60";
-   constant op_cmpijmp	:	std_logic_vector(5 downto 0) := o"64";
-   constant op_cmpijmp	:	std_logic_vector(5 downto 0) := o"65";
-   constant op_cmpfjmp	:	std_logic_vector(5 downto 0) := o"70";
-   constant op_cmpfjmp	:	std_logic_vector(5 downto 0) := o"71";
+   constant op_cmpjmp1	:	std_logic_vector(5 downto 0) := o"61";
+   constant op_cmpjmp2	:	std_logic_vector(5 downto 0) := o"60";
+   constant op_cmpijmp1	:	std_logic_vector(5 downto 0) := o"64";
+   constant op_cmpijmp2	:	std_logic_vector(5 downto 0) := o"65";
+   constant op_cmpfjmp1	:	std_logic_vector(5 downto 0) := o"70";
+   constant op_cmpfjmp2	:	std_logic_vector(5 downto 0) := o"71";
    
-   constant op_jal	:	std_logic_vector(5 downto 0) := o"74";
-   constant op_jr	:	std_logic_vector(5 downto 0) := o"76"; 	
+   constant op_call	:	std_logic_vector(5 downto 0) := o"74";
+   constant op_ret	:	std_logic_vector(5 downto 0) := o"76"; 	
+   
+   
+   constant nop_inst	:	std_logic_vector(35 downto 0) := x"BC0000000";
 end package instruction;  
  
 

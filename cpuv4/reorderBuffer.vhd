@@ -4,6 +4,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+library UNISIM;
+use UNISIM.VComponents.all;
 entity reorderBuffer is
 	port  (
 		clk,flush : in std_logic;
@@ -12,8 +14,10 @@ entity reorderBuffer is
 		
 		op,op2 : in std_logic_vector(1 downto 0);
 		reg_d,reg_d2,reg_s1,reg_s2,reg_s12,reg_s22 : in std_logic_vector(5 downto 0);
+		
 		reg_s1_ok,reg_s2_ok,reg_s12_ok,reg_s22_ok : out std_logic;
 		reg_s1_data,reg_s2_data,reg_s12_data,reg_s22_data : out std_logic_vector(31 downto 0);
+		s1tag,s2tag,s12tag,s22tag : out std_logic_vector(2 downto 0);
 		newtag1,newtag2 : out std_logic_vector(2 downto 0);
 		
 		read: in std_logic;
@@ -23,12 +27,14 @@ entity reorderBuffer is
 		outop : out std_logic_vector(1 downto 0);
 		
 		dwrite1,dwrite2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(2 downto 0);
+		dtag1,dtag2 : in std_logic_vector(3 downto 0);
 		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end reorderBuffer;
 
 architecture arch of reorderBuffer is
+	signal rst :std_logic := '0';
+	
 	constant init_entry : std_logic_vector(40 downto 0) := (others => '0');
 	type entry_t is array (0 to 7) of std_logic_vector (40 downto 0);
 	signal buf : entry_t := (others => init_entry);
@@ -45,6 +51,8 @@ architecture arch of reorderBuffer is
 	signal s1_tag,s2_tag,s12_tag,s22_tag :std_logic_vector(2 downto 0) := (others => '0');
 begin
 
+  	ROC0 : ROC port map (O => rst);
+  	
 	write1ok <= write1ok_in;
 	write2ok <= write2ok_in;
 	write1ok_in <= '0' when read_pointer = (write_pointer + '1') else '1';
@@ -56,6 +64,11 @@ begin
 	outop <= "00" when read_pointer = write_pointer else buf(conv_integer(read_pointer))(40 downto 39);
 	readok_in <= '0' when read_pointer = write_pointer else
 	buf(conv_integer(read_pointer))(38);
+	
+	s1tag <= s1_tag;
+	s2tag <= s2_tag;
+	s12tag <= s12_tag;
+	s22tag <= s22_tag;
 	
 	s1_tag <= bufmap(conv_integer(reg_s1));
 	s2_tag <= bufmap(conv_integer(reg_s2));
@@ -94,7 +107,11 @@ begin
 	
 	process(clk)
 	begin
-		if rising_edge(clk) then
+		if rst = '1' then
+				read_pointer <= (others => '0');
+				write_pointer <= (others => '0');
+			
+		elsif rising_edge(clk) then
 			if flush = '1' then
 				read_pointer <= (others => '0');
 				write_pointer <= (others => '0');
@@ -105,7 +122,7 @@ begin
 				elsif (write1 = '1') then
 					write_pointer <= write_pointer + '1';
 				end if;
-				if reg_d = reg_d2 and (write1 = '1') and (write2 = '1') then
+				if reg_d = reg_d2 and (regwrite1 = '1') and (regwrite2 = '1') then
 					bufmap(conv_integer(reg_d2)) <= write_pointer + '1';
 				else
 					if (regwrite1 = '1') then

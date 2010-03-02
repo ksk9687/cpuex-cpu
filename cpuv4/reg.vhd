@@ -20,7 +20,7 @@ entity reg is
 port (
     clk,flush,rob_alloc1,rob_alloc2: in	  std_logic;
 
-    pd,pd2 : in std_logic_vector(6 downto 0);
+    pd,pd2 : in std_logic_vector(5 downto 0);
     s1,s2,s12,s22 : in std_logic_vector(5 downto 0);
        
     dflg: in std_logic;
@@ -45,57 +45,58 @@ architecture synth of reg is
 begin
   	ROC0 : ROC port map (O => rst);
     --read
-    data_s1 <= registers(conv_integer(s1(5 downto 0)));
-    data_s2 <= registers(conv_integer(s2(5 downto 0)));
-    data_s12 <= registers(conv_integer(s12(5 downto 0)));
-    data_s22 <= registers(conv_integer(s22(5 downto 0)));
+    data_s1 <= registers(conv_integer(s1));
+    data_s2 <= registers(conv_integer(s2));
+    data_s12 <= registers(conv_integer(s12));
+    data_s22 <= registers(conv_integer(s22));
     
     --どこから値を読めばよいか
     --0:リオーダバッファ 1:レジスタファイル
-    s1_ok <= '1' when using(conv_integer(s1(5 downto 0))) = "000" else '0';
-    s2_ok <= '1' when using(conv_integer(s2(5 downto 0))) = "000" else '0';
+    s1_ok <= '1' when using(conv_integer(s1)) = "000" else '0';
+    s2_ok <= '1' when using(conv_integer(s2)) = "000" else '0';
     
-    s12_ok <= '1' when using(conv_integer(s12(5 downto 0))) = "000" else '0';
-    s22_ok <= '1' when using(conv_integer(s22(5 downto 0))) = "000" else '0';
+    s12_ok <= '1' when using(conv_integer(s12)) = "000" else '0';
+    s22_ok <= '1' when using(conv_integer(s22)) = "000" else '0';
     
-    WRITE : process (rst)
+    WRITE : process (clk,rst)
      begin
-     	if rising_edge(clk) then
+     	if rst = '1' then
+     		using <= (others => (others => '0'));
+     	elsif rising_edge(clk) then
 	    	if flush = '1' then
-	    		using <= others => (others => '0'));
+	    		using <= (others => (others => '0'));
 	    	else
 		     	if dflg = '1' then
-		     		registers(conv_integer(d(5 downto 0))) <= data_d;
+		     		registers(conv_integer(d)) <= data_d;
 		     	end if;
 		     	
-		     	
-		     	if (pd(5 downto 0) = pd2(5 downto 0)) and rob_alloc1 = '1' and rob_alloc2 = '1' then
-	     			if (pd(5 downto 0) = d(5 downto 0)) and dflg = '1' then
-						using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
+		     	if (pd = pd2) and (rob_alloc1 = '1') and (rob_alloc2 = '1') then
+	     			if (pd = d) and (dflg = '1') then
+						using(conv_integer(pd)) <= using(conv_integer(pd)) + '1';
 		     		else
 		     			if dflg = '1' then
-		     				using(conv_integer(d(5 downto 0))) <= using(conv_integer(d(5 downto 0))) - '1';
-		     			end if;	     			
-	 	     			using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + "10";
+		     				using(conv_integer(d)) <= using(conv_integer(d)) - '1';
+		     			end if;
+	 	     			using(conv_integer(pd)) <= using(conv_integer(pd)) + "10";
 					end if;
 	     		else
-	     			if (pd(5 downto 0) = d(5 downto 0)) and dflg = '1' and rob_alloc1 = '1' then
+	     			if (pd = d) and (dflg = '1') and (rob_alloc1 = '1') then
 						if rob_alloc2 = '1' then
-		 	     			using(conv_integer(pd2(5 downto 0))) <= using(conv_integer(pd2(5 downto 0))) + '1';
+		 	     			using(conv_integer(pd2)) <= using(conv_integer(pd2)) + '1';
 		     			end if;
-		     		elsif (pd2(5 downto 0) = d(5 downto 0)) and dflg = '1' and rob_alloc2 = '1' then
+		     		elsif (pd2 = d) and (dflg = '1') and (rob_alloc2 = '1') then
 		     			if rob_alloc1 = '1' then
-		 	     			using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
+		 	     			using(conv_integer(pd)) <= using(conv_integer(pd)) + '1';
 		     			end if;
 		  	     	else
 		     			if dflg = '1' then
-		     				using(conv_integer(d(5 downto 0))) <= using(conv_integer(d(5 downto 0))) - '1';
+		     				using(conv_integer(d)) <= using(conv_integer(d)) - '1';
 		     			end if;
 		     			if rob_alloc1 = '1' then
-		 	     			using(conv_integer(pd(5 downto 0))) <= using(conv_integer(pd(5 downto 0))) + '1';
+		 	     			using(conv_integer(pd)) <= using(conv_integer(pd)) + '1';
 		     			end if;
 		     			if rob_alloc2 = '1' then
-		 	     			using(conv_integer(pd2(5 downto 0))) <= using(conv_integer(pd2(5 downto 0))) + '1';
+		 	     			using(conv_integer(pd2)) <= using(conv_integer(pd2)) + '1';
 		     			end if;
 					end if;
 	     		end if;

@@ -20,11 +20,11 @@ architecture arch of branchPredictor is
 	type counter_table_t is array (0 to 8191) of std_logic_vector (1 downto 0);
 	signal counter_table	:	counter_table_t := (others => "01");
 	
-	type counter_hist_table_t is array (0 to 15) of std_logic_vector (15 downto 0);
+	type counter_hist_table_t is array (0 to 7) of std_logic_vector (15 downto 0);
 	signal counter_hist_table	:	counter_hist_table_t := (others => (others => '0'));
 	
-	signal read_pointer :std_logic_vector(3 downto 0) := (others => '0');
-	signal write_pointer :std_logic_vector(3 downto 0) := (others => '0');
+	signal read_pointer :std_logic_vector(2 downto 0) := (others => '0');
+	signal write_pointer :std_logic_vector(2 downto 0) := (others => '0');
 	
 	signal stop,taken_in,hist : std_logic;
 	signal counter,counter_buf,newcounter,newcounter_p,newcounter_m : std_logic_vector(1 downto 0);

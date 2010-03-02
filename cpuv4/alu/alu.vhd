@@ -18,8 +18,7 @@ begin
   with op select
   Ob <=	A + B when "01",--add
   		A - B when "10",--sub
-  		A when "00",--mv
-		B when others;--li
+		A when others;--mv li
 		
 	process(clk)
 	begin

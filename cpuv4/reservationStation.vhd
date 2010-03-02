@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
+library UNISIM;
+use UNISIM.VComponents.all;
 entity reservationStation is
 	port  (
 		clk : in std_logic;
@@ -21,13 +23,14 @@ entity reservationStation is
 		outs2: out std_logic_vector(31 downto 0);
 		
 		write1,write2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(4 downto 0);
+		dtag1,dtag2 : in std_logic_vector(3 downto 0);
 		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end reservationStation;
 
 architecture arch of reservationStation is
-
+	signal rst :std_logic := '0';
+	
 	constant op_valid : integer := 9;
 
 	type s_t is array (0 to 3) of std_logic_vector (32 downto 0);
@@ -43,6 +46,8 @@ architecture arch of reservationStation is
 	signal go : std_logic_vector(3 downto 0) := (others => '0');
 	signal newline : std_logic_vector(3 downto 0) := (others => '0');
 begin
+  	ROC0 : ROC port map (O => rst);
+  	
 	writeok <= not (op(0)(op_valid) and op(1)(op_valid) and op(2)(op_valid) and op(3)(op_valid));
 	readok <= readyop(73);
 	outop <= readyop(72 downto 69);
@@ -64,38 +69,39 @@ begin
 	--V‚µ‚­“ü‚ê‚é‚È‚ç‚Ç‚±‚©
 	newline(0) <= '1' when (op(0)(op_valid) = '0') or ((go(0) = '1') and (op(1)(op_valid) = '0')) else '0';
 	newline(1) <= '1' when (newline(0) = '0') and ((op(1)(op_valid) = '0') or ((go(1) = '1') and (op(2)(op_valid) = '0'))) else '0';
-	newline(2) <= '1' when (newline(1) = '0') and ((op(2)(op_valid) = '0') or ((go(0) = '1') and (op(1)(op_valid) = '0'))) else '0';
-	newline(3) <= '1' when (newline(2) = '0') and ((op(3)(op_valid) = '0') or ((go(0) = '1') and (op(1)(op_valid) = '0'))) else '0';
+	newline(2) <= '1' when (newline(0) = '0') and (newline(1) = '0') and ((op(2)(op_valid) = '0') or ((go(2) = '1') and (op(3)(op_valid) = '0'))) else '0';
+	newline(3) <= '1' when (newline(0) = '0') and (newline(1) = '0') and (newline(2) = '0') and ((op(3)(op_valid) = '0') or (go(3) = '1')) else '0';
 
-	s1_write(0) <= '1'&value1 when (s1(0)(32) = '0') and (write1 = '1') and (s1(0)(4 downto 0) = dtag1) else
-	'1'&value2 when (s1(0)(32) = '0') and (write2 = '1') and (s1(0)(4 downto 0) = dtag1) else
+	s1_write(0) <= '1'&value1 when (s1(0)(32) = '0') and (write1 = '1') and (s1(0)(3 downto 0) = dtag1) else
+	'1'&value2 when (s1(0)(32) = '0') and (write2 = '1') and (s1(0)(3 downto 0) = dtag1) else
 	s1(0);
-	s1_write(1) <= '1'&value1 when (s1(1)(32) = '0') and (write1 = '1') and (s1(1)(4 downto 0) = dtag1) else
-	'1'&value2 when (s1(1)(32) = '0') and (write2 = '1') and (s1(1)(4 downto 0) = dtag1) else
+	s1_write(1) <= '1'&value1 when (s1(1)(32) = '0') and (write1 = '1') and (s1(1)(3 downto 0) = dtag1) else
+	'1'&value2 when (s1(1)(32) = '0') and (write2 = '1') and (s1(1)(3 downto 0) = dtag1) else
 	s1(1);
-	s1_write(2) <= '1'&value1 when (s1(2)(32) = '0') and (write1 = '1') and (s1(2)(4 downto 0) = dtag1) else
-	'1'&value2 when (s1(2)(32) = '0') and (write2 = '1') and (s1(2)(4 downto 0) = dtag1) else
+	s1_write(2) <= '1'&value1 when (s1(2)(32) = '0') and (write1 = '1') and (s1(2)(3 downto 0) = dtag1) else
+	'1'&value2 when (s1(2)(32) = '0') and (write2 = '1') and (s1(2)(3 downto 0) = dtag1) else
 	s1(2);
-	s1_write(3) <= '1'&value1 when (s1(3)(32) = '0') and (write1 = '1') and (s1(3)(4 downto 0) = dtag1) else
-	'1'&value2 when (s1(3)(32) = '0') and (write2 = '1') and (s1(3)(4 downto 0) = dtag1) else
+	s1_write(3) <= '1'&value1 when (s1(3)(32) = '0') and (write1 = '1') and (s1(3)(3 downto 0) = dtag1) else
+	'1'&value2 when (s1(3)(32) = '0') and (write2 = '1') and (s1(3)(3 downto 0) = dtag1) else
 	s1(3);
 
-	s2_write(0) <= '1'&value1 when (s2(0)(32) = '0') and (write1 = '1') and (s2(0)(4 downto 0) = dtag1) else
-	'1'&value2 when (s2(0)(32) = '0') and (write2 = '1') and (s2(0)(4 downto 0) = dtag1) else
+	s2_write(0) <= '1'&value1 when (s2(0)(32) = '0') and (write1 = '1') and (s2(0)(3 downto 0) = dtag1) else
+	'1'&value2 when (s2(0)(32) = '0') and (write2 = '1') and (s2(0)(3 downto 0) = dtag1) else
 	s2(0);
-	s2_write(1) <= '1'&value1 when (s2(1)(32) = '0') and (write1 = '1') and (s2(1)(4 downto 0) = dtag1) else
-	'1'&value2 when (s2(1)(32) = '0') and (write2 = '1') and (s2(1)(4 downto 0) = dtag1) else
+	s2_write(1) <= '1'&value1 when (s2(1)(32) = '0') and (write1 = '1') and (s2(1)(3 downto 0) = dtag1) else
+	'1'&value2 when (s2(1)(32) = '0') and (write2 = '1') and (s2(1)(3 downto 0) = dtag1) else
 	s2(1);
-	s2_write(2) <= '1'&value1 when (s2(2)(32) = '0') and (write1 = '1') and (s2(2)(4 downto 0) = dtag1) else
-	'1'&value2 when (s2(2)(32) = '0') and (write2 = '1') and (s2(2)(4 downto 0) = dtag1) else
+	s2_write(2) <= '1'&value1 when (s2(2)(32) = '0') and (write1 = '1') and (s2(2)(3 downto 0) = dtag1) else
+	'1'&value2 when (s2(2)(32) = '0') and (write2 = '1') and (s2(2)(3 downto 0) = dtag1) else
 	s2(2);
-	s2_write(3) <= '1'&value1 when (s2(3)(32) = '0') and (write1 = '1') and (s2(3)(4 downto 0) = dtag1) else
-	'1'&value2 when (s2(3)(32) = '0') and (write2 = '1') and (s2(3)(4 downto 0) = dtag1) else
+	s2_write(3) <= '1'&value1 when (s2(3)(32) = '0') and (write1 = '1') and (s2(3)(3 downto 0) = dtag1) else
+	'1'&value2 when (s2(3)(32) = '0') and (write2 = '1') and (s2(3)(3 downto 0) = dtag1) else
 	s2(3);
 	
 	process(clk)
 	begin
-		if rising_edge(clk) then
+		if rst = '1' then
+		elsif rising_edge(clk) then
 			if go(0) = '1' then
 				readyop <= op(0)&s1_write(0)(31 downto 0)&s2_write(0)(31 downto 0);
 			elsif go(1) = '1' then

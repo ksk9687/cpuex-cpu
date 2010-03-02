@@ -27,7 +27,7 @@ entity memory is
     
     ls_flg : in std_logic_vector(2 downto 0);
     ls_addr : in std_logic_vector(19 downto 0);
-    store_data : in std_logic_vector(35 downto 0);
+    store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
     ls_ok : out std_logic;
 
@@ -147,7 +147,7 @@ begin
 					d_mem_state <= idle;
 				end case;
 			
-			store_data_buf <= store_data(31 downto 0);
+			store_data_buf <= store_data;
 		end if;
 	end process;	
 
@@ -179,7 +179,7 @@ begin
       ZD
 	);
 	
-	ICACHE: full_cache port map(
+	ICACHE: irom port map(
 		clk,clk
 		,pc
 		,set_addr(13 downto 1)
