@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
 
 	cs.comport_id = 1;
 	//cs.baud = 460800;
-	cs.baud = 115200;
+	cs.baud = 9600;
 	cs.stopbit_len = ONESTOPBIT;
 	cs.parity_type = NOPARITY;
 	cs.n_databits = 8;

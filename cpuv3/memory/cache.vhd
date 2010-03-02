@@ -457,12 +457,12 @@ begin
 	
 	read_data <= data;
 	
-	hit <= (not conflict1) and hit1 and hit2 and hit3;
-	hit_tag <= hit1 and hit2 and hit3;
+	hit <= (not conflict1) and hit3 when entry_buf(8 downto 0) = address(19 downto 11) else '0';
+	hit_tag <= hit3 when entry_buf(8 downto 0) = address(19 downto 11) else '0';
 	
 	
-	hit_p1 <= '1' when entry_p(3 downto 0) = address(14 downto 11) else '0';
-	hit_p2 <= '1' when entry_p(8 downto 4) = address(19 downto 15) else '0';
+	--hit_p1 <= '1' when entry_p(3 downto 0) = address(14 downto 11) else '0';
+	--hit_p2 <= '1' when entry_p(8 downto 4) = address(19 downto 15) else '0';
 	
 	process (clk)
 	begin
@@ -471,6 +471,9 @@ begin
 	    	hit2 <= hit_p2;
 	    	hit3 <= entry_p(9);
 	    	data <= data_p;
+	    	
+	    	entry_buf <= entry_p;
+	    	address_buf <= address;
 	    	
 	    	if set_addr(10 downto 0) = address(10 downto 0) then
 	    		conflict <= set;

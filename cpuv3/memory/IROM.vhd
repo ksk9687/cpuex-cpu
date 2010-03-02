@@ -20,7 +20,7 @@ architecture arch of IROM is
     type rom_t is array (0 to 63) of std_logic_vector (34 downto 0); 
 
     
-        signal ROM : rom_t :=(    
+        signal ROM : rom_t :=(
     "000"&op_nop & o"00" & x"00000",
     "000"&op_li  & o"00" & o"00" &"00"&x"000",
     "000"&op_li  & o"00" & o"10" &"00"&x"000",
