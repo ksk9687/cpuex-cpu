@@ -521,7 +521,7 @@ static int parse_options(int argc, char* argv[], app_settings* as)
   int c;
   int tmp;
   opterr = 0;
-  while ((c = getopt(argc, argv, "bB:c:Cp:s:S:")) != EOF)
+  while ((c = getopt(argc, argv, "bB:c:S:")) != EOF)
     switch (c) {
     case 'b':
       as->sld_big_endian = TRUE;
@@ -540,17 +540,6 @@ static int parse_options(int argc, char* argv[], app_settings* as)
       }
       break;
 
-    case 'C':
-      as->cs.do_cts_control = TRUE;
-      break;
-      
-    case 'p':
-      as->cs.parity_type = parse_parity_type(optarg);
-      break;
-      
-    case 's':
-      as->cs.stopbit_len = parse_stopbit_len(optarg);
-      break;
     case 'S':
       as->bin_exist = TRUE;
       as->bin_filename = optarg;
@@ -570,10 +559,6 @@ static void parse_arguments(int argc, char* argv[], app_settings* as)
 
   as->cs.comport_id = 1;
   as->cs.baud = 115200;
-  as->cs.stopbit_len = ONESTOPBIT;
-  as->cs.parity_type = NOPARITY;
-  as->cs.n_databits = 8;
-  as->cs.do_cts_control = FALSE;
   
   as->ppm_filename = NULL;
   as->sld_filename = NULL;
@@ -607,10 +592,6 @@ static void parse_arguments(int argc, char* argv[], app_settings* as)
             "          [-b]                ; send SLD in big endian format\n"
             "          [-B <baud>]         ; BAUD, default 115200\n"
             "          [-c <port id>]      ; COMport ID, 1-4, default 1\n"
-            "          [-C]                ; enable CTS flow control\n"
-            "          [-p <parity_type>]  ; parity type : odd | even | none | mark | space\n"
-            "                              ; default : none\n"
-            "          [-s <stop bit len>] ; Stop bit length : 1 or 1.5 or 2, default : 1\n"
             "          [-S <source bin>]   ; program file name\n"
             "          <input sld>         ; input sld file name\n"
             "          <output ppm>        ; output ppm file name\n",

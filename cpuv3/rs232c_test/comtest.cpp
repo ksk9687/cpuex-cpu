@@ -24,10 +24,10 @@ int main(int argc, char* argv[])
 	cs.comport_id = 1;
 	//cs.baud = 460800;
 	cs.baud = 115200;
-	cs.stopbit_len = ONESTOPBIT;
-	cs.parity_type = NOPARITY;
-	cs.n_databits = 8;
-	cs.do_cts_control = FALSE;
+	//cs.stopbit_len = ONESTOPBIT;
+	//cs.parity_type = NOPARITY;
+	//cs.n_databits = 8;
+	//cs.do_cts_control = FALSE;
 
 	setup_comm(&cs);
 

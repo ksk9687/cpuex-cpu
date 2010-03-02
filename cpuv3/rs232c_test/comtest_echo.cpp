@@ -9,7 +9,7 @@
 
 #include <windows.h>
 #include "util.h"
-#include "mycom.h"
+#include "com.h"
 
 
 #define READLEN 17
