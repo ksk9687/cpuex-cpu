@@ -9,7 +9,7 @@
 
 #include <windows.h>
 #include "util.h"
-#include "com.h"
+#include "mycom.h"
 
 
 #define READLEN 17
@@ -18,18 +18,20 @@ int main(int argc, char* argv[])
 {
 	com_settings cs;
 
-	cs.comport_id = 1;
+	cs.comport_id = 9;
 	//cs.baud = 460800;
 	cs.baud = 115200;
-	cs.stopbit_len = ONESTOPBIT;
-	cs.parity_type = NOPARITY;
-	cs.n_databits = 8;
-	cs.do_cts_control = FALSE;
+	//cs.stopbit_len = ONESTOPBIT;
+	//cs.parity_type = NOPARITY;
+	//cs.n_databits = 8;
+	//cs.do_cts_control = FALSE;
 
 	//c = com_getc();
 	//com_write((char*)sld_words, sld_n_words*sizeof(sld_words[0]));
 	
 	setup_comm(&cs);
+	
+	printf("start to echo test\n");
 	
 	long long count=0;
 	unsigned char readbuf[READLEN+1];
@@ -49,7 +51,7 @@ int main(int argc, char* argv[])
 			}
 		}
 		count++;
-		if(count%1000==0){
+		if(count%100==0){
 			printf("OK:%Ld\n",count);
 		}
 	}
