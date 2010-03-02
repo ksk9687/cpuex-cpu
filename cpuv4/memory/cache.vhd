@@ -8,45 +8,62 @@ use work.instruction.all;
 entity full_cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
+		address: in std_logic_vector(12 downto 0);
+		set_addr: in std_logic_vector(12 downto 0);
+		set_data : in std_logic_vector(35 downto 0);
 		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		jmp_flgs : out std_logic_vector(2 downto 0)
+		read_data1 : out std_logic_vector(35 downto 0);
+		read_data2 : out std_logic_vector(35 downto 0)
 	);
 end full_cache;
 
 
 architecture arch of full_cache is
-    signal jr,jal,jmp : std_logic := '0';
-    signal write_data,out_data : std_logic_vector(35 downto 0) := (others => '0');
+    signal write_data,out_data : std_logic_vector(71 downto 0) := (others => '0');
+    signal buf1,buf2 : std_logic_vector(31 downto 0) := (others => '0');
     signal set_d : std_logic_vector(0 downto 0) := (others => '0');
+    signal count : std_logic_vector(1 downto 0) := (others => '0');
 
 	component cache_16384 IS
 		port (
 		clka: IN std_logic;
-		dina: IN std_logic_VECTOR(35 downto 0);
-		addra: IN std_logic_VECTOR(13 downto 0);
+		dina: IN std_logic_VECTOR(71 downto 0);
+		addra: IN std_logic_VECTOR(12 downto 0);
 		wea: IN std_logic_VECTOR(0 downto 0);
 		clkb: IN std_logic;
-		addrb: IN std_logic_VECTOR(13 downto 0);
-		doutb: OUT std_logic_VECTOR(35 downto 0));
+		addrb: IN std_logic_VECTOR(12 downto 0);
+		doutb: OUT std_logic_VECTOR(71 downto 0));
 	END component;
 begin
+
   CACHE0 : cache_16384 port map(
-  	clk,write_data,set_addr(13 downto 0),set_d,
-  	clk,address(13 downto 0),out_data
+  	clk,write_data,set_addr,set_d,
+  	clk,address,out_data
   );
 
-  set_d(0) <= set;
-  	write_data <= '0'&jmp&jal&jr&set_data;
-	read_data <= out_data(31 downto 0);
-	jmp_flgs <=  out_data(34 downto 32);
+	set_d(0) <= set when count = "10" else '0';
+  	write_data <= buf1(7 downto 0)&buf2&set_data;
+	read_data <= out_data;
 	
-	jmp <= '1' when set_data(31 downto 26) = op_jmp else '0';
-	jal <= '1' when set_data(31 downto 26) = op_jal else '0';
-	jr <= '1' when set_data(31 downto 26) = op_jr else '0';
+	process(clk)
+	begin
+		if rising_edge(clk) then
+			if set = '1' then
+				if count = "10" then
+					count <= "00";
+				else
+					count <= count + '1';
+				end if;
+				if count = "00" then
+					buf1 <= set_data;
+				end if;
+				if count = "01" then
+					buf2 <= set_data;
+				end if;
+			end if;
+		end if;
+	end process;
+	
 
 end arch;
 
@@ -99,178 +116,6 @@ begin
 	    end if;
 	end process;
 end arch;
-
-
-
-library ieee;
-use ieee.std_logic_1164.all;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
-
-entity block_l_cache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		hit : out std_logic
-	);
-end block_l_cache;
-
-
-architecture arch of block_l_cache is
-    type cache_tag_type is array (0 to 4095) of std_logic_vector (2 downto 0);--3 + 1
-    type cache_data_type is array (0 to 4095) of std_logic_vector (31 downto 0); --32
-    
-   signal tag,tag_p,tag_p2,tag_write : std_logic_vector(2 downto 0) := '0'&"00";
-   signal cache : cache_tag_type := (others => '0'&"00");
-   signal cache_data : cache_data_type:= (others => (others => '0'));
-   
-    signal data : std_logic_vector(31 downto 0) := (others => '0');
-    signal read_addr : std_logic_vector(11 downto 0) := (others => '0');
-    signal cmp_addr : std_logic_vector(1 downto 0) := (others => '0');
-    signal addr_buf,set_addr_buf : std_logic_vector(13 downto 0) := (others => '0');
-    signal hit1,hit2,hit_p,hit_p2,conflict,conflict1,conflict2 : std_logic := '0';
-    signal set_data_buf : std_logic_vector(31 downto 0) := (others => '0');
-
-begin
-
-	tag_write <= '1'&set_addr(13 downto 12);
-	read_data <= cache_data(conv_integer(read_addr));
-	tag <= cache(conv_integer(read_addr));
-	hit <= tag(2) and (not conflict) and (not conflict1) when tag(1 downto 0) = cmp_addr(1 downto 0) else '0';
-	
-	process (clk)
-	begin
-	    if rising_edge(clk) then
-	        if set = '1' then
-	            cache(conv_integer(set_addr(11 downto 0))) <= tag_write;
-	            cache_data(conv_integer(set_addr(11 downto 0))) <= set_data;
-	        end if;
-	        read_addr <= address(11 downto 0);
-	        cmp_addr <= address(13 downto 12);
-			
-			if set_addr(11 downto 0) = address(11 downto 0) then
-			  conflict <= set;
-			 else
-			  conflict <= '0';
-			 end if;
-			conflict1 <= conflict;
-	    end if;
-	end process;
-end arch;
-
-
-library ieee;
-use ieee.std_logic_1164.all;
-use IEEE.STD_LOGIC_ARITH.ALL;
-use IEEE.STD_LOGIC_UNSIGNED.ALL;
-library work;
-use work.instruction.all; 
-
-entity block_cache is
-	port  (
-		clk,clkfast : in std_logic;
-		address: in std_logic_vector(13 downto 0);
-		set_addr: in std_logic_vector(13 downto 0);
-		set_data : in std_logic_vector(31 downto 0);
-		set,set_tag : in std_logic;
-		read_data : out std_logic_vector(31 downto 0);
-		jmp_flgs : out std_logic_vector(2 downto 0);
-		hit,hit_tag : out std_logic
-	);
-end block_cache;
-
-
-architecture arch of block_cache is
-    type cache_tag_type is array (0 to 255) of std_logic_vector (3 downto 0);--3 + 1
-    type cache_data_type is array (0 to 2047) of std_logic_vector (31 downto 0); --32
-    type cache_jmp_flgs_type is array (0 to 2047) of std_logic_vector (2 downto 0);
-        
-   signal tag,tag_p,tag_p2,tag_write : std_logic_vector(3 downto 0) := '0'&"000";
-   signal cache : cache_tag_type := (others => '0'&"000");
-   signal cache_data : cache_data_type:= (others => (others => '0'));
-   signal cache_jmp_flgs : cache_jmp_flgs_type:= (others => (others => '0'));
-   
-    signal data : std_logic_vector(31 downto 0) := (others => '0');
-    signal read_addr : std_logic_vector(10 downto 0) := (others => '0');
-    signal cmp_addr : std_logic_vector(2 downto 0) := (others => '0');
-    signal special : std_logic_vector(7 downto 0) := (others => '0');
-    signal addr_buf,set_addr_buf : std_logic_vector(13 downto 0) := (others => '0');
-    signal special_hit,hit_in,hit1,hit2,hit_p,hit_p2,conflict,conflict1,conflict2 : std_logic := '0';
-    signal set_data_buf : std_logic_vector(31 downto 0) := (others => '0');
-    signal jr,jal,jmp : std_logic := '0';
-    signal write_data,out_data : std_logic_vector(34 downto 0) := (others => '0');
-    signal set_d : std_logic_vector(0 downto 0) := (others => '0');
-
-	component cache_2000_35 IS
-		port (
-		clka: IN std_logic;
-		dina: IN std_logic_VECTOR(34 downto 0);
-		addra: IN std_logic_VECTOR(10 downto 0);
-		wea: IN std_logic_VECTOR(0 downto 0);
-		clkb: IN std_logic;
-		addrb: IN std_logic_VECTOR(10 downto 0);
-		doutb: OUT std_logic_VECTOR(34 downto 0));
-	END component;
-begin
-
-  CACHE0 : cache_2000_35 port map(
-  	clk,write_data,set_addr(10 downto 0),set_d,
-  	clk,address(10 downto 0),out_data
-  );
-  set_d(0) <= set;
-  	write_data <=jmp&jal&jr&set_data;
-	tag_write <= '1'&set_addr(13 downto 11);
-	read_data <= out_data(31 downto 0);
-	jmp_flgs <=  out_data(34 downto 32);
-	
-	tag_p <= cache(conv_integer(address(10 downto 3)));
-	--hit <= ((hit_p and hit_p2) or special_hit) and (not conflict1);
-	hit <= ((hit_p and hit_p2) or special_hit);
-	hit_tag <= ((hit_p and hit_p2) or special_hit);
-
-	jmp <= '1' when set_data(31 downto 26) = op_jmp else '0';
-	jal <= '1' when set_data(31 downto 26) = op_jal else '0';
-	jr <= '1' when set_data(31 downto 26) = op_jr else '0';
-	
-	process (clk)
-	begin
-	    if rising_edge(clk) then
-	        if set = '1' then
-	        	if set_tag = '1' then
-	            	cache(conv_integer(set_addr(10 downto 3))) <= tag_write;
-	            	special <= (others => '0');
-	            else
-	            	special(conv_integer(set_addr(2 downto 0))) <= '1';
-	            end if;
-	            --cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
-	            --cache_jmp_flgs(conv_integer(set_addr(10 downto 0))) <= jmp&jal&jr;
-	        end if;
-	        read_addr <= address(10 downto 0);
-			
-			--EARLY RESTART
-			if (address(13 downto 3) = set_addr(13 downto 3)) and (special(conv_integer(address(2 downto 0))) = '1') then
-				special_hit <= '1';
-			else
-				special_hit <= '0';
-			end if;
-			hit_p <= (not (tag_p(1) xor address(12))) and (not (tag_p(0) xor address(11)));
-			hit_p2 <= tag_p(3) and (not (tag_p(2) xor address(13)));
---			
---			if set_addr(10 downto 0) = address(10 downto 0) then
---			  	conflict <= set;
---			  	--conflict1 <= conflict or set;
---			 else
---			  	conflict <= '0';
---			  	--conflict1 <= conflict;
---			 end if;
-	    end if;
-	end process;
-end arch;
-
 
 
 --データキャッシュ

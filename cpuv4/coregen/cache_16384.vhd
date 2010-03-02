@@ -43,12 +43,12 @@ Library XilinxCoreLib;
 ENTITY cache_16384 IS
 	port (
 	clka: IN std_logic;
-	dina: IN std_logic_VECTOR(35 downto 0);
-	addra: IN std_logic_VECTOR(13 downto 0);
+	dina: IN std_logic_VECTOR(71 downto 0);
+	addra: IN std_logic_VECTOR(12 downto 0);
 	wea: IN std_logic_VECTOR(0 downto 0);
 	clkb: IN std_logic;
-	addrb: IN std_logic_VECTOR(13 downto 0);
-	doutb: OUT std_logic_VECTOR(35 downto 0));
+	addrb: IN std_logic_VECTOR(12 downto 0);
+	doutb: OUT std_logic_VECTOR(71 downto 0));
 END cache_16384;
 
 ARCHITECTURE cache_16384_a OF cache_16384 IS
@@ -56,12 +56,12 @@ ARCHITECTURE cache_16384_a OF cache_16384 IS
 component wrapped_cache_16384
 	port (
 	clka: IN std_logic;
-	dina: IN std_logic_VECTOR(35 downto 0);
-	addra: IN std_logic_VECTOR(13 downto 0);
+	dina: IN std_logic_VECTOR(71 downto 0);
+	addra: IN std_logic_VECTOR(12 downto 0);
 	wea: IN std_logic_VECTOR(0 downto 0);
 	clkb: IN std_logic;
-	addrb: IN std_logic_VECTOR(13 downto 0);
-	doutb: OUT std_logic_VECTOR(35 downto 0));
+	addrb: IN std_logic_VECTOR(12 downto 0);
+	doutb: OUT std_logic_VECTOR(71 downto 0));
 end component;
 
 -- Configuration specification 
@@ -72,34 +72,34 @@ end component;
 			c_mem_type => 1,
 			c_prim_type => 1,
 			c_sinita_val => "0",
-			c_read_width_b => 36,
+			c_read_width_b => 72,
 			c_family => "virtex5",
-			c_read_width_a => 36,
+			c_read_width_a => 72,
 			c_disable_warn_bhv_coll => 0,
 			c_write_mode_b => "READ_FIRST",
-			c_init_file_name => "no_coe_file_loaded",
+			c_init_file_name => "cache_16384.mif",
 			c_write_mode_a => "READ_FIRST",
 			c_mux_pipeline_stages => 0,
 			c_has_mem_output_regs_b => 0,
-			c_load_init_file => 0,
+			c_load_init_file => 1,
 			c_xdevicefamily => "virtex5",
 			c_has_mem_output_regs_a => 0,
-			c_write_depth_b => 16384,
-			c_write_depth_a => 16384,
+			c_write_depth_b => 8192,
+			c_write_depth_a => 8192,
 			c_has_ssrb => 0,
 			c_has_mux_output_regs_b => 0,
 			c_has_ssra => 0,
 			c_has_mux_output_regs_a => 0,
-			c_addra_width => 14,
-			c_addrb_width => 14,
+			c_addra_width => 13,
+			c_addrb_width => 13,
 			c_default_data => "0",
 			c_use_ecc => 0,
 			c_algorithm => 1,
 			c_disable_warn_bhv_range => 0,
-			c_write_width_b => 36,
-			c_write_width_a => 36,
-			c_read_depth_b => 16384,
-			c_read_depth_a => 16384,
+			c_write_width_b => 72,
+			c_write_width_a => 72,
+			c_read_depth_b => 8192,
+			c_read_depth_a => 8192,
 			c_byte_size => 9,
 			c_sim_collision_check => "ALL",
 			c_use_ramb16bwer_rst_bhv => 0,

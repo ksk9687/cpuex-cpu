@@ -20,11 +20,11 @@ architecture arch of branchPredictor is
 	type counter_table_t is array (0 to 8191) of std_logic_vector (1 downto 0);
 	signal counter_table	:	counter_table_t := (others => "01");
 	
-	type counter_hist_table_t is array (0 to 7) of std_logic_vector (15 downto 0);
+	type counter_hist_table_t is array (0 to 15) of std_logic_vector (15 downto 0);
 	signal counter_hist_table	:	counter_hist_table_t := (others => (others => '0'));
 	
-	signal read_pointer :std_logic_vector(2 downto 0) := (others => '0');
-	signal write_pointer :std_logic_vector(2 downto 0) := (others => '0');
+	signal read_pointer :std_logic_vector(3 downto 0) := (others => '0');
+	signal write_pointer :std_logic_vector(3 downto 0) := (others => '0');
 	
 	signal stop,taken_in,hist : std_logic;
 	signal counter,counter_buf,newcounter,newcounter_p,newcounter_m : std_logic_vector(1 downto 0);
@@ -58,13 +58,13 @@ begin
 	process(clk,rst)
 	begin
 		if rst = '1' then
-			read_pointer <= "000";
-			write_pointer <= "000";
+			read_pointer <= (others => '0');
+			write_pointer <= (others => '0');
 			branch_hist_buf <= (others => '0');
 		elsif rising_edge(clk) then
 			if flush = '1' then
-				read_pointer <= "000";
-				write_pointer <= "000";
+				read_pointer <= (others => '0');
+				write_pointer <= (others => '0');
 			else
 				if jmp = '1' then
 					counter_hist_table(conv_integer(write_pointer)) <= pc_buf&counter&taken_in;

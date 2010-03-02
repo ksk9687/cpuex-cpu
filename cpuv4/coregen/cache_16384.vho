@@ -32,12 +32,12 @@
 component cache_16384
 	port (
 	clka: IN std_logic;
-	dina: IN std_logic_VECTOR(35 downto 0);
-	addra: IN std_logic_VECTOR(13 downto 0);
+	dina: IN std_logic_VECTOR(71 downto 0);
+	addra: IN std_logic_VECTOR(12 downto 0);
 	wea: IN std_logic_VECTOR(0 downto 0);
 	clkb: IN std_logic;
-	addrb: IN std_logic_VECTOR(13 downto 0);
-	doutb: OUT std_logic_VECTOR(35 downto 0));
+	addrb: IN std_logic_VECTOR(12 downto 0);
+	doutb: OUT std_logic_VECTOR(71 downto 0));
 end component;
 
 -- COMP_TAG_END ------ End COMPONENT Declaration ------------

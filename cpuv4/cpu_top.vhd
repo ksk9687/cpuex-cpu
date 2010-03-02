@@ -56,13 +56,13 @@ end cpu_top;
 
 architecture arch of cpu_top is	
    signal clk,clk66,clk180,rst: std_logic := '0';
-   signal stall,reg_stall,flush,sleep,stall_b,stall_id,stall_rr,stall_rrx,stall_rd,stall_ex,flushed,bp_write: std_logic := '0';
+   signal stall_front,stall,reg_stall,flush,sleep,stall_b,stall_id,stall_rr,stall_rrx,stall_rd,stall_ex,flushed,bp_write: std_logic := '0';
    signal write_inst_ok,read_inst_ok,inst_ok,lsu_ok,lsu_ok_t,reg_ok,rr_ok,rr_reg_ok,rr_cr_ok,rob_ok,bp_ok,ras_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
    --Inst
-   signal jr_pc,jmp_addr_next,jmp_addr_pc,next_pc,pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1,jr_addr : std_logic_vector(14 downto 0) := "100"&x"000";
-   signal inst,inst_b : std_logic_vector(31 downto 0) := (others=>'0');
+   signal pc,ret_pc,jmp_addr_next,jmp_addr_pc,next_pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1,ret_addr : std_logic_vector(13 downto 0) := "00"&x"000";
+   signal inst1,inst2,inst1_b,inst2_b : std_logic_vector(35 downto 0) := (others=>'0');
    --Ibuf
    signal write_inst_data,read_inst_data : std_logic_vector(62 downto 0) := (others=>'0');
    signal write_inst_im : std_logic_vector(14 downto 0) := (others=>'0');
@@ -82,7 +82,7 @@ architecture arch of cpu_top is
    signal dflg,cr_flg,cr_flg_b,pcr_flg : std_logic_vector(1 downto 0) := (others=>'0');
    signal data_d,reg_data,data_s1_reg_p,data_s2_reg_p,data_s1_rob_p,data_s2_rob_p,value1,value1_lsu,value2,value3 : std_logic_vector(31 downto 0) := (others=>'0');
    signal rob_tag,dtag1,dtag2,dtag3,tag_buf0,tag_buf1,tag_buf2,tag_buf3,tag_buf4 : std_logic_vector(2 downto 0) := (others=>'0');
-   signal write_rob_1,write_rob_2,write_rob_3,rob_alloc :std_logic := '0';
+   signal write_rob_1,write_rob_2,write_rob_3,rob_alloc1,rob_alloc2 :std_logic := '0';
    
 	--ALU
 	signal alu_out,alu_out_buf1,alu_out_buf2,alu_out_buf3,alu_out_buf4 :std_logic_vector(31 downto 0) := (others=>'0');
@@ -112,10 +112,6 @@ architecture arch of cpu_top is
 	
    signal leddata : std_logic_vector(31 downto 0);
    signal leddotdata : std_logic_vector(7 downto 0);
-   signal led_buf1,led_buf2,led_buf3 : std_logic_vector(7 downto 0) := (others => '0');
-   signal jmp_ex,jmp_op,jal_op,jr_op,jal,jal_ex,jr_miss,jr_ex,cr_mask,cr_mask_p,ib_write,jmp_flg_p2,jmp_flg_p,jmp_flg,jr_buf,jr,jr_p,jmp_taken,jmp_not_taken,jmp_taken_p,jmp_not_taken_p : std_logic := '0';
-   signal debug :std_logic_vector(7 downto 0) := (others=>'1');
-   signal jmp_num :std_logic_vector(2 downto 0) := (others=>'1');
    
    signal path1_0,path1_1,path1_2,path1_3,path1_4,path1_5,path1_1_write,path1_2_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal path2_0,path2_1,path2_2,path2_3,path2_4,path2_5 :std_logic_vector(9 downto 0) := (others=>'0');
@@ -123,47 +119,54 @@ architecture arch of cpu_top is
    signal path1_ok,path1_1_ok,path1_4_ok : std_logic := '0';
    signal path1_unit : std_logic_vector(1 downto 0) := (others=>'0');
 
-   signal op_is_lsu,reg_alloc,cr_alloc,short_inst,long_inst,load_inst : std_logic := '0';
-   signal jmp_flgs : std_logic_vector(2 downto 0) := (others=>'0');
-   
    signal reg_d_ok,reg_s1_ok,reg_s2_ok,reg_cr_ok,rob_s1_ok,rob_s2_ok,dec_write : std_logic := '0';
    signal reg_s1_b,reg_s2_b : std_logic := '0';
+   
+   signal r11,r12,r21,r22 : std_logic_vector(1 downto 0) := (others=>'0');
 
 begin
---  	ROC0 : ROC port map (O => rst);
---	CLOCK0 : CLOCK port map (
---		clkin     => CLKIN,
---		clkout2x    => clk,
---		clkout2x90 => clk90,
---		clkout2x180 => clk180,
---		clkout2x270 => clk270,
---		clkout4x => clk2x,
---		clkout1x => clk66,
---		locked    => locked0);
---  	ROC0 : ROC port map (O => rst);
-  	
---	CLOCK0 : CLOCK port map (
---		clkin     => CLKIN,
---		clkout2x    => clk,
---		clkout2x90 => clk90,
---		clkout2x180 => clk180,
---		clkout2x270 => clk270,
---		clkout4x => clk2x,
---		clkout1x => clk66,
---		locked    => locked0);
   clockgenerator_inst : clockgenerator port map(
     CLK_66M,
     CLK_RST,
-	clock66    => clk66,
+	clock66 => clk66,
 	clock => clk,
 	clock_180 => clk180,
     reset => rst);
+  
+  
+  
   
   	----------------------------------
 	-- 
 	-- IF
 	-- 
 	----------------------------------
+   PC0:process(clk,rst)
+   begin
+	   if (rst = '1')then
+	   		pc <= "00"&x"000";
+	   		pc_p1 <= "00"&x"002";
+	   		jmp_flg <= '0';
+	   elsif rising_edge(clk) then
+	   		jmp_flg <= flush or call or (jmp and predict_taken);
+			if flush = '1' or ((jmp = '1') and (predict_taken = '1')) or (call = '1') then
+				pc <= jmp_addr_next;
+				pc_p1 <= jmp_addr_next;
+			else
+				pc <= next_pc;
+				pc_p1 <= next_pc + "10";
+			end if;
+	   end if;
+   end process PC0;
+   
+	
+  	MEMORY0 : memory port map (
+   	clk,clk,clk180,clk180,
+   	next_pc,inst1,inst2,
+   	ls_f,ls_address,store_data,load_data,lsu_ok,
+      XE1,E2A,XE3,ZZA,XGA,XZCKE,ADVA,XLBO,ZCLKMA,XFT,XWA,XZBE,ZA,ZDP,ZD
+   );
+
   BP0 : branchPredictor port map (
   	clk,rst,flush,bp_ok,
   	next_pc(13 downto 0),jmp_num,
@@ -171,79 +174,55 @@ begin
   	predict_taken,predict_taken_hist
   );
   
+   jmp_addr_next <= jmp_addr when bp_miss = '1' else
+   ret_addr when ret_miss = '1' else
+   --ret_pc when ret_op = '1' else
+   inst1(21 downto 18)&inst(9 downto 0);
+   
+   
 --  RAS0 : returnAddressStack port map (
 --  	clk,rst,
---  	jal,jr,
---  	pc_p1,jr_pc
+--  	call,ret,
+--  	pc_p1,ret_pc
 --  );
---  
-  MEMORY0 : memory port map (
-   	clk,clk,clk180,clk180,
-   	next_pc,inst,jmp_flgs,
-   	ls_f,ls_address,store_data,load_data,lsu_ok
-		,
-      XE1,
-      E2A,
-      XE3,
-      ZZA,
-      XGA,
-      XZCKE,
-      ADVA,
-      XLBO,
-      ZCLKMA,
-      XFT,
-      XWA,
-      XZBE,
-      ZA,
-      ZDP,
-      ZD
-   );
 
-   jmp_ex <= jmp_taken or jmp_not_taken;
-   bp_miss <= (jmp_taken and (not predict_taken_hist)) or
-   (jmp_not_taken and predict_taken_hist);
-   flush <= bp_miss or jr_miss;
+   flush <= bp_miss or ret_miss;
    
-   pc_next <= (write_inst_ok);
-   
-   ib_write <= (not jmp_flg) and (write_inst_ok);
+   pc_next <= not stall_front;
 
-   jmp_op <= jmp_flgs(2);
-   jal_op <= jmp_flgs(1);
-   jr_op <= jmp_flgs(0);
-   jmp <= ib_write and jmp_op;   
-   jal <= ib_write and jal_op;
-   jr <= ib_write and jr_op;
+   jmp_op <= inst1(35) and inst1(34) and (not (inst1(33) and inst1(32)));
+   call_op <= inst1(35) and inst1(34) and inst1(33) and inst1(32) and (not inst1(31));
+   ret_op <= inst1(35) and inst1(34) and inst1(33) and inst1(32) and inst1(31);
    
-   next_pc <= 
-   pc when pc_next = '0' else
+   jmp <= (not stall_front) and jmp_op;
+   call <= (not stall_front) and call_op;
+   ret <= (not stall_front) and ret_op;
+   
+   next_pc <= pc when pc_next = '0' else
    pc_p1;
    
-   jmp_addr_next <= jmp_addr when bp_miss = '1' else
-   jr_addr when jr_miss = '1' else
-   --jr_pc when jr_op = '1' else
-   inst(14 downto 0) when jal_op = '1'else
-   inst(23)&inst(13 downto 0);
    
-   dec_write <= ib_write and (not flush);
-   
-   PC0:process(clk,rst)
-   begin
-	   if (rst = '1')then
-	   		pc <= "100"&x"000";
-	   		pc_p1 <= "100"&x"001";
-	   		jmp_flg <= '0';
-	   elsif rising_edge(clk) then
-	   		jmp_flg <= flush or jal or (jmp and predict_taken);
-			if flush = '1' or ((jmp = '1') and (predict_taken = '1')) or (jal = '1') then
-				pc <= jmp_addr_next;
-				pc_p1 <= jmp_addr_next;
+
+   	process(clk)
+	begin
+		if rising_edge(clk) then
+			if flush = '1' then
+				inst1_buf <= nop
+				inst2_buf <= nop
+			elsif stall_front = '1' then
+				inst1_buf <= inst1_buf;
+				inst2_buf <= inst2_buf;
 			else
-				pc <= next_pc;
-				pc_p1 <= next_pc + '1';
+				inst1_buf <= inst1;
+				inst2_buf <= inst2;
+				r11 <= ;
+				r21 <= ;
+				r12 <= ;
+				r22 <= ;
 			end if;
-	   end if;
-   end process PC0;
+		end if;
+	end process;
+
    
    
    	----------------------------------
@@ -251,73 +230,9 @@ begin
 	-- ID
 	-- 
 	----------------------------------
-    DEC : decoder port map (
-   	clk,dec_write,inst,write_op,
-   	reg_d,reg_s1,reg_s2,
-   	reg_s1_use,reg_s2_use,
-   	regwrite,cr_flg,op_type
-   );
-   
-    write_inst_im <= pc_p1 when (jmp_op = '1' and predict_taken = '1') or (jal_op = '1') else
-    inst(23)&inst(13 downto 0) when jmp_op = '1' else
-    '0'&inst(13 downto 0) when inst(31 downto 26) = op_li else
-    inst(13)&inst(13 downto 0);
-    
-   
-    
-   write_inst_data <=  jr_pc&op_type&write_op & regwrite & reg_d & reg_s1_use & reg_s1 & reg_s2_use & reg_s2 & cr_flg & write_inst_im;
-   
-   IB0 : instructionBuffer port map (
-   	clk,flush,
-   	stall_rrx,ib_write,
-   	read_inst_ok,write_inst_ok,
-	read_inst_data,write_inst_data
-   );
-
-	----------------------------------
-	-- 
-	-- RR
-	-- 
-	----------------------------------
-	
-	--命令発行するかどうか
-    stall_rr <= not stall_rrx;
-	stall_rrx <= rr_cr_ok and (read_inst_data(47) or (rr_reg_ok and  path1_ok and (not lsu_full)));
-	
-	reg_alloc <= rr_reg_ok and read_inst_data(37) and path1_ok and (not lsu_full);
-	
-	--オペランドがそろっているか
-	rr_reg_ok <= ((not read_inst_data(30)) or reg_s1_ok or reg_s1_b) and
-	((not read_inst_data(23)) or reg_s2_ok or reg_s2_b)
-   and (reg_d_ok or (not read_inst_data(37)));
-	
-	reg_s1_b <= path1_0(3) when path1_0(9 downto 4) = read_inst_data(29 downto 24) else '0';
-	reg_s2_b <= path1_0(3) when path1_0(9 downto 4) = read_inst_data(22 downto 17) else '0';
-	
-	--CRが準備出来ているか
-	rr_cr_ok <= reg_cr_ok;
-	cr_mask <= ((read_inst_data(26) and cr_p(2)) or (read_inst_data(25) and cr_p(1)) or (read_inst_data(24) and cr_p(0)));
-	
-	--分岐
-	jmp_taken <= (not cr_mask) and rr_cr_ok when read_inst_data(43 downto 38) = op_jmp else '0';
-	jmp_not_taken <= cr_mask and rr_cr_ok when read_inst_data(43 downto 38) = op_jmp else '0';
-	jmp_addr <= read_inst_data(14 downto 0);
-	
-	--jr_miss <= jr_ex when jr_addr(13 downto 0) /= read_inst_data(61 downto 48) else '0';
-	jr_miss <= jr_ex;
-	jr_ex <= '1' when read_inst_data(43 downto 38) = op_jr else '0';
-	jal_ex <= '1' when read_inst_data(43 downto 38) = op_jal else '0';
-	
-	
-	RAS1 : returnAddressStack port map (
-  		clk,
-  		jal_ex,jr_ex,
-  		read_inst_data(14 downto 0),
-  		jr_addr
-  	);
-	
-	REGISTERS : reg port map (
-		clk,reg_alloc,stall_rrx,
+      
+	IREG0 : reg port map (
+		clk,flush,reg_alloc1,reg_alloc2,
 		reg_d_write,
 		read_inst_data(37 downto 31),
 		read_inst_data(30 downto 24),
@@ -332,73 +247,45 @@ begin
 		cr_p,
 		reg_d_ok,reg_s1_ok,reg_s2_ok,reg_cr_ok
 	);
+	IROB0 : reorderBuffer port map (
+		clk,rst,
+		rob_alloc,rob_ok,
+		read_inst_data(36 downto 31),
+		read_inst_data(29 downto 24),
+		read_inst_data(22 downto 17),
+		
+		rob_s1_ok,rob_s2_ok,
+		data_s1_rob_p,data_s2_rob_p,
+		rob_tag,
+		
+		rob_reg_write,
+		reg_num,
+		data_d,
+		write_rob_1,write_rob_2
+		dtag1,dtag2
+		value1,value2
+	);
 	
-	data_s1_p <= data_d when reg_s1_b = '1' else
-	data_s1_reg_p;
-	data_s2_p <= data_d when reg_s2_b = '1' else
-	data_s2_reg_p;
+	RSALU0 : reservationStation port map (
+		clk,write,writeok,
+		read,readok
+		inop,indtag,ins1,ins2,
+		outop,outdtag,outs1,outs2,
+		
+		write1,write2,dtag1,dtag2,value1,value2
+	);
 	
-	ext_im <= sign_extention( read_inst_data(14 downto 0));
-	
-	short_inst <= read_inst_data(46);
-	long_inst <= read_inst_data(45);
-	load_inst <= read_inst_data(44);
-	
-	path1_ok <= (not (short_inst and path1_2(3))) and (not (load_inst and path1_3(3)));
-	
-	path1_1_write(9 downto 4) <= read_inst_data(36 downto 31) when (path1_2(3) = '0') else path1_2(9 downto 4);
-	path1_1_write(3) <= short_inst and reg_alloc when (path1_2(3) = '0') else path1_2(3);
-	path1_1_write(2 downto 0) <= read_inst_data(43 downto 41)  when (path1_2(3) = '0') else path1_2(2 downto 0);
 
-	path1_2_write(9 downto 4) <= read_inst_data(36 downto 31) when (path1_3(3) = '0') else path1_3(9 downto 4);
-	path1_2_write(3) <= load_inst and reg_alloc when (path1_3(3) = '0') else path1_3(3);
-	path1_2_write(2 downto 0) <= read_inst_data(43 downto 41) when (path1_3(3) = '0') else path1_3(2 downto 0);
-
-	path1_5(9 downto 4) <= read_inst_data(36 downto 31);
-	path1_5(3) <= long_inst and reg_alloc;
-	path1_5(2 downto 0) <= read_inst_data(43 downto 41);
-	process(clk)
-	begin
-		if rising_edge(clk) then
-			path1_0 <= path1_1;
-			path1_1 <= path1_1_write;
-			path1_2 <= path1_2_write;
-			path1_3 <= path1_4;
-			path1_4 <= path1_5;
-		end if;
-	end process;
-	
-	RR : process(CLK,rst)
-	begin
-		if rst = '1' then
-			unit_op_buf0 <= op_unit_sp;
-			sub_op_buf0 <= sp_op_nop;
-			reg_write_buf0 <= '0';
-			cr_flg_buf0 <= "00";
-			ext_im_buf0 <= (others=> '0');
-			reg_d_buf0 <= (others=> '0');
-			data_s1 <= (others=> '0');
-			data_s2 <= (others=> '0');
-		elsif rising_edge(clk) then
-			if stall_rrx = '0' then--nop
-				unit_op_buf0 <= op_unit_sp;
-				sub_op_buf0 <= sp_op_nop;
-				reg_write_buf0 <= '0';
-				cr_flg_buf0 <= "00";
-			else
-				unit_op_buf0 <= read_inst_data(43 downto 41);
-				sub_op_buf0 <= read_inst_data(40 downto 38);
-				reg_write_buf0 <= read_inst_data(37);
-				cr_flg_buf0 <= read_inst_data(16 downto 15);
-			end if;
-			ext_im_buf0 <= ext_im;
-			data_s1 <= data_s1_p;
-			data_s2 <= data_s2_p;
-			reg_d_buf0 <= read_inst_data(36 downto 31);
-		end if;
-	end process RR;
 	
 	
+	RAS1 : returnAddressStack port map (
+  		clk,
+  		call_ex,ret_ex,
+  		read_inst_data(14 downto 0),
+  		ret_addr
+  	);
+	
+		
 	----------------------------------
 	-- 
 	-- EX
@@ -406,8 +293,6 @@ begin
 	----------------------------------
 	
 
-  --leddata<=iodebug_read_bufreadpos&iodebug_read_bufwritepos&'0'&pc;
-  --leddata<=x"00000000";
   leddata <= x"0000"&'0'&pc;
   leddotdata<="1111111" & (not io_read_buf_overrun);
   led_inst : ledextd2 port map (
@@ -422,31 +307,12 @@ begin
       outdata6,
       outdata7
     );
---	LED_OUT :process(clk,rst)
---	begin
---		if rst = '1' then
---			ledout <= (others => '0');
---		elsif rising_edge(clk) then
---			if (unit_op_buf0 = op_unit_iou) then 
---				if sub_op_buf0 = iou_op_ledi then
---					ledout <= not ext_im_buf0(7 downto 0);
---				elsif sub_op_buf0 = iou_op_led then
---					ledout <= not data_s1(7 downto 0);
---				end if;
---			end if;
---		end if;
---	end process LED_OUT;
 
 	ALU0 : alu port map (
 		clk,sub_op_buf0,
 		data_s1,data_s2,
 		alu_out,alu_cmp
 	);	
-	ALU_IM0 : alu_im port map (
-		clk,sub_op_buf0,
-		data_s1,ext_im_buf0,
-		alu_im_out,alui_cmp
-	);
 	
 	iou_enable <= '1' when unit_op_buf0 = op_unit_iou else '0';
 	IOU0 : IOU port map (
