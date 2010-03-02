@@ -21,9 +21,9 @@ int main(int argc, char* argv[])
 	
 	com_settings cs;
 
-	cs.comport_id = 1;
-	//cs.baud = 460800;
-	cs.baud = 115200;
+	cs.comport_id = 9;
+	cs.baud = 460800;
+	//cs.baud = 115200;
 	//cs.stopbit_len = ONESTOPBIT;
 	//cs.parity_type = NOPARITY;
 	//cs.n_databits = 8;
