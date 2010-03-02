@@ -49,7 +49,7 @@ begin
 	-- レジスタに書き込むかどうか
 	with op select
 	 reg_write <=  '0' when  op_cmp | op_cmpi | op_fcmp | 
-	 op_store |op_store_inst | op_hswrite | op_jmp | op_jr | op_jal | op_nop | op_halt |op_sleep| op_ledi | op_led,--書きこまない
+	 op_store | op_hswrite | op_jmp | op_jr | op_jal | op_nop | op_halt |op_sleep| op_ledi | op_led,--書きこまない
 	 '1' when others;
 	 
 	 --レジスタを読み込むかどうか
