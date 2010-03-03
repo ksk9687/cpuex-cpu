@@ -5,8 +5,8 @@ ALL_COMPONENT_FILES = tmp/*/*.cmp
 
 all : cpuv4
 
-cpuv4 : tmp/4/alu.cmp tmp/4/sramc.cmp tmp/4/cache.cmp tmp/4/reservationStation.cmp\
-	tmp/4/reg.cmp tmp/4/memory.cmp tmp/4/iou.cmp tmp/4/rs232c.cmp tmp/4/led.cmp\
+cpuv4 : tmp/4/alu.cmp tmp/4/sramc.cmp tmp/4/cache.cmp tmp/4/reservationStation.cmp tmp/4/reservationStationBru.cmp\
+	tmp/4/reg.cmp tmp/4/memory.cmp tmp/4/iou.cmp tmp/4/rs232c.cmp tmp/4/led.cmp tmp/4/bru.cmp\
 	tmp/4/branchPredictor.cmp tmp/4/lsu.cmp tmp/4/fpu.cmp tmp/4/reorderBuffer.cmp\
 	tmp/4/clock.cmp tmp/4/clock.cmp tmp/4/decoder.cmp tmp/4/dff.cmp tmp/4/returnAddressStack.cmp
 	$(CMD) -l 4 cpuv4/library/SuperScalarComponents.vhd  
@@ -72,7 +72,12 @@ tmp/4/returnAddressStack.cmp:cpuv4/returnAddressStack.vhd
 tmp/4/reservationStation.cmp:cpuv4/reservationStation.vhd
 	$(CMD) 4 $< $@
 
+tmp/4/reservationStationBru.cmp:cpuv4/reservationStationBru.vhd
+	$(CMD) 4 $< $@
 
+tmp/4/bru.cmp:cpuv4/bru.vhd
+	$(CMD) 4 $< $@
+	
 clean:
 	rm -f $(ALL_COMPONENT_FILES)
 	
