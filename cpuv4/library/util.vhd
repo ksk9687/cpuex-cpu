@@ -11,8 +11,6 @@ use IEEE.STD_LOGIC_ARITH.ALL;
 
 package util is
    function sign_extention (a:std_logic_vector) return std_logic_vector;
-   	
-	
 end package util;  
  
  

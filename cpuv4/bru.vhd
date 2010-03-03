@@ -10,16 +10,17 @@ entity bru is
     	hist   : in std_logic;
     	A, B : in  std_logic_vector(31 downto 0);
     	pc : in  std_logic_vector(13 downto 0);
-        jmpflg : out std_logic;
-        newpc : out std_logic_vector(13 downto 0)
+     jmpflg : out std_logic;
+     newpc : out std_logic_vector(13 downto 0)
 	);
 end bru;
 
 architecture arch of bru is
   signal g,e,l,z,r : std_logic := '0';
   signal op_buf : std_logic_vector(2 downto 0) := (others => '0');
-  signal cg,ce,cl,cfg,cfe,cfl,ret : std_logic := '0';
+  signal cg,ce,cl,cfg,cfe,cfl,ret,hist_buf : std_logic := '0';
   signal pc_buf : std_logic_vector(13 downto 0) := (others => '0');
+  signal mask_buf : std_logic_vector(2 downto 0) := (others => '0');
 begin
   	
 
@@ -27,13 +28,15 @@ begin
 	e <= '1' when ((not A(31))&A(30 downto 0)) = ((not B(31))&B(30 downto 0)) else '0';
 	l <= '1' when ((not A(31))&A(30 downto 0)) < ((not B(31))&B(30 downto 0)) else '0';
 	z <= '1' when (A(30 downto 23) = "00000000") and (B(30 downto 23) = "00000000") else '0';
-	r <= '1' when jr_addr /= pc else '0';
+	--r <= '1' when jr_addr /= pc else '0';
 	
 	process(clk)
 	begin
 		if rising_edge(clk) then
 			op_buf <= op;
 			pc_buf <= pc;
+			hist_buf <= hist;
+			mask_buf <= mask;
 			ret <= r;
 			
 			cg <= g;
@@ -55,8 +58,8 @@ begin
 	newpc <= pc_buf;
 	--•ªŠò‚µ‚È‚¨‚·•K—v‚ª‚ ‚é‚©
 	with op_buf select
-	 jmp <= hist xor (not ((mask(2) and cg) or (mask(1) and ce) or (mask(0) and cl))) when "000",--cmpi,cmp
-	 hist xor (not ((mask(2) and cfg) or (mask(1) and cfe) or (mask(0) and cfl))) when "001",--cmpf
+	 jmpflg <= hist_buf xor ((not ((mask_buf(2) and cg) or (mask_buf(1) and ce) or (mask_buf(0) and cl)))) when "000"|"001",--cmpi,cmp
+	 hist_buf xor (not ((mask_buf(2) and cfg) or (mask_buf(1) and cfe) or (mask_buf(0) and cfl))) when "010",--cmpf
 	 '0' when others;--call ret
 
 

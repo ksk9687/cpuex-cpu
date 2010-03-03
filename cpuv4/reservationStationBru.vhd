@@ -118,6 +118,7 @@ begin
 				op(1)(op_valid) <= '0';
 				op(2)(op_valid) <= '0';
 				op(3)(op_valid) <= '0';
+				readyop <= (others => '0');
 			else
 				if go(0) = '1' then
 					readyop <= op(0)&s1_write(0)(31 downto 0)&s2_write(0)(31 downto 0);

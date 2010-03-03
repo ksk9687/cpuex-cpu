@@ -114,6 +114,14 @@ begin
 			if flush = '1' then
 				read_pointer <= (others => '0');
 				write_pointer <= (others => '0');
+				buf(0)(38) <= '0';
+				buf(1)(38) <= '0';
+				buf(2)(38) <= '0';
+				buf(3)(38) <= '0';
+				buf(4)(38) <= '0';
+				buf(5)(38) <= '0';
+				buf(6)(38) <= '0';
+				buf(7)(38) <= '0';
 			else
 				--’Ç‰Á
 				if (write1 = '1') and (write2 = '1') then
@@ -137,7 +145,7 @@ begin
 					read_pointer <= read_pointer + '1';
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "000" then
+				if (read = '1') and read_pointer = "000" then
 					buf(0)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "000") then
 					buf(0)(38) <= '1';
@@ -161,7 +169,7 @@ begin
 					buf(0)(31 downto 0) <= value3;
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "001" then
+				if (read = '1') and read_pointer = "001" then
 					buf(1)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "001") then
 					buf(1)(38) <= '1';
@@ -185,7 +193,7 @@ begin
 					buf(1)(31 downto 0) <= value3;
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "010" then
+				if (read = '1') and read_pointer = "010" then
 					buf(2)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "010") then
 					buf(2)(38) <= '1';
@@ -209,7 +217,7 @@ begin
 					buf(2)(31 downto 0) <= value3;
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "011" then
+				if (read = '1') and read_pointer = "011" then
 					buf(3)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "011") then
 					buf(3)(38) <= '1';
@@ -233,7 +241,7 @@ begin
 					buf(3)(31 downto 0) <= value3;
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "100" then
+				if (read = '1') and read_pointer = "100" then
 					buf(4)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "100") then
 					buf(4)(38) <= '1';
@@ -257,7 +265,7 @@ begin
 					buf(4)(31 downto 0) <= value3;
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "101" then
+				if (read = '1') and read_pointer = "101" then
 					buf(5)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "101") then
 					buf(5)(38) <= '1';
@@ -281,7 +289,7 @@ begin
 					buf(5)(31 downto 0) <= value3;
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "110" then
+				if (read = '1') and read_pointer = "110" then
 					buf(6)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "110") then
 					buf(6)(38) <= '1';
@@ -305,7 +313,7 @@ begin
 					buf(6)(31 downto 0) <= value3;
 				end if;
 				
-				if (readok_in = '1') and read_pointer = "111" then
+				if (read = '1') and read_pointer = "111" then
 					buf(7)(38) <= '0';
 				elsif (dwrite1 = '1') and (dtag1 = "111") then
 					buf(7)(38) <= '1';

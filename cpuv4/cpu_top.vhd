@@ -74,6 +74,7 @@ architecture arch of cpu_top is
    signal firstreg,secondreg : std_logic_vector(4 downto 0) := (others=>'0');
 	signal canUseFirstUnit,canUseSecondUnit : std_logic := '0';
 	signal s1,s2,s3,s4 :std_logic_vector(5 downto 0) := (others=>'0');
+	signal ci :std_logic_vector(7 downto 0) := (others=>'0');
    --LS
    signal ls_f,ls_f_p : std_logic_vector(2 downto 0) := (others=>'0');
    signal lsu_out,lsu_in,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
@@ -145,7 +146,10 @@ begin
   	ROC0 : ROC port map (O => rst);
   
   
-   next_pc <= jmp_addr when flush = '1' else pc;
+   next_pc <= 
+   jmp_addr when flush = '1' else
+   pc when stall_fetch = '1' else
+   pc_p1;
   	----------------------------------
 	-- 
 	-- IF
@@ -156,14 +160,12 @@ begin
 	   if (rst = '1')then
 	   		pc <= "00"&x"000";
 	   elsif rising_edge(clk) then
-	   		if stall_fetch = '1' then
+			if next_pc(0) = '0' then
 				pc <= next_pc;
+				pc_p1 <= next_pc + "10";
 			else
-				if next_pc(0) = '0' then
-					pc <= next_pc + "10";
-				else
-					pc <= (next_pc(13 downto 1) + '1')&'0';
-				end if;
+				pc <= next_pc;
+				pc_p1 <= (next_pc(13 downto 1) + '1')&'0';
 			end if;
 	   end if;
    end process PC0;
@@ -279,7 +281,7 @@ begin
 	
 	s1_unit_p <= inst1_buf(35 downto 33) when r11 = "01" else unit_nop;
 	s2_unit_p <= inst1_buf(35 downto 33) when r21 = "01" else unit_nop;
-	s3_unit_p <= inst2_buf(35 downto 33) when r22 = "01" else unit_nop;
+	s3_unit_p <= inst2_buf(35 downto 33) when r12 = "01" else unit_nop;
 	s4_unit_p <= inst2_buf(35 downto 33) when r22 = "01" else unit_nop;
 	
    	process(clk,rst)
@@ -316,6 +318,10 @@ begin
 				end if;
 				firstunit <= secondunit;
 				firstreg <= secondreg;
+				s1 <= s3;
+				s2 <= s4;
+				s3 <= s3;
+				s4 <= s4;
 				s1_unit <= s3_unit;
 				s2_unit <= s4_unit;
 				s3_unit <= s3_unit;
@@ -329,10 +335,12 @@ begin
 				bru_inst <= bru_inst_p;
 				firstunit <= inst1_buf(35 downto 33);
 				firstreg <= d1;
+				s1 <= inst1_buf(27 downto 22);
+				s2 <= inst1_buf(15 downto 10);
+				s3 <= inst2_buf(27 downto 22);
+				s4 <= inst2_buf(15 downto 10);
 				s1_unit <= s1_unit_p;
 				s2_unit <= s2_unit_p;
-				s3_unit <= s3_unit_p;
-				s4_unit <= s4_unit_p;
 				
 				dr1 <= inst1_buf(21 downto 16);
 				dr2 <= inst2_buf(21 downto 16);
@@ -340,7 +348,11 @@ begin
 				if stall_id2 = '1' then
 					secondunit <= unit_nop;
 					secondreg <= (others => '0');
+					s3_unit <= unit_nop;
+					s4_unit <= unit_nop;
 				else
+					s3_unit <= s3_unit_p;
+					s4_unit <= s4_unit_p;
 					secondunit <= inst2_buf(35 downto 33);
 					secondreg <= d2;
 				end if;
@@ -379,7 +391,10 @@ begin
      rsalu0_write <= rob_alloc1 when firstunit = unit_alu else
      rob_alloc2 when secondunit = unit_alu else
      '0';
-    
+     rsbru_write <= rob_alloc1 when firstunit = unit_bru else
+     rob_alloc2 when secondunit = unit_bru else
+     '0';
+     
     rsalu0_inA <= '1'&data_s1_reg_p when (s1_unit = unit_alu) and (reg_s1_ok = '1') else
     '1'&data_s1_rob_p when  (s1_unit = unit_alu) and (rob_s1_ok = '1') else
     '0'&x"0000000"&'0'&s1tag when (s1_unit = unit_alu) else
@@ -407,15 +422,16 @@ begin
     '1'&data_s3_rob_p when  (s3_unit = unit_bru) and (rob_s3_ok = '1') else
     '0'&x"0000000"&'0'&s3tag;
 
-    rsbru_inB <= '1'&data_s2_reg_p when (s2_unit = unit_bru) and (reg_s2_ok = '1') else
-    '1'&data_s2_rob_p when  (s2_unit = unit_bru) and (rob_s2_ok = '1') else
+    rsbru_inB <= '1'&data_s2_reg_p when ((s2_unit = unit_bru) and (reg_s2_ok = '1')) else
+    '1'&data_s2_rob_p when  ((s2_unit = unit_bru) and (rob_s2_ok = '1')) else
     '0'&x"0000000"&'0'&s2tag when (s2_unit = unit_bru) else
-    '1'&data_s4_reg_p when (s4_unit = unit_bru) and (reg_s4_ok = '1') else
-    '1'&data_s4_rob_p when  (s4_unit = unit_bru) and (rob_s4_ok = '1') else
+    '1'&data_s4_reg_p when ((s4_unit = unit_bru) and (reg_s4_ok = '1')) else
+    '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_bru) else
-    '1'&sign_extention(bru_inst(17 downto 10));
+    '1'&sign_extention(ci);
     
-    rsbrudtag <= "0"&rob_tag1 when (firstunit = unit_alu) else "0"&rob_tag2;
+    ci <= bru_inst(17 downto 10);
+    rsbrudtag <= "0"&rob_tag1 when (firstunit = unit_bru) else "0"&rob_tag2;
     rsbruop <= bru_inst(21 downto 18)&bru_inst(9 downto 0)&bru_inst(33 downto 28)&'0';
     
 	IREG0 : reg port map (
@@ -451,10 +467,11 @@ begin
 		pi_value,pl_value,pb_value
 	);
 	write_reg <= rob_reg_ok when rob_op = "00" else '0';
-	flush <= '1' when (write_reg_data(0) = '1') and (rob_op = "01") and (rob_reg_ok = '1') else '0';
+	flush <= rob_reg_ok when (write_reg_data(0) = '1') and (rob_op = "01") else '0';
 	jmp_addr <= write_reg_data(14 downto 1);
-	rob_next <= '1' when rob_op = "01" else
-	'1' when rob_op /= "00" else rob_reg_ok;
+	rob_next <= rob_reg_ok when rob_op = "01" else--jmp
+	rob_reg_ok when rob_op /= "00" else
+	rob_reg_ok;
 	
 	
 	RSALU0 : reservationStation

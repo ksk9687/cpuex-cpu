@@ -46,8 +46,8 @@ package instruction is
    
    constant op_cmpjmp1	:	std_logic_vector(5 downto 0) := o"61";
    constant op_cmpjmp2	:	std_logic_vector(5 downto 0) := o"60";
-   constant op_cmpijmp1	:	std_logic_vector(5 downto 0) := o"64";
-   constant op_cmpijmp2	:	std_logic_vector(5 downto 0) := o"65";
+   constant op_cmpijmp1	:	std_logic_vector(5 downto 0) := o"62";
+   constant op_cmpijmp2	:	std_logic_vector(5 downto 0) := o"63";
    constant op_cmpfjmp1	:	std_logic_vector(5 downto 0) := o"70";
    constant op_cmpfjmp2	:	std_logic_vector(5 downto 0) := o"71";
    
