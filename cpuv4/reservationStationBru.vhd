@@ -9,7 +9,7 @@ entity reservationStationBru is
 		opbits : integer := 3 + 3 + 14 + 1
 	);
 	port  (
-		clk : in std_logic;
+		clk,flush : in std_logic;
 		write : in std_logic;
 		writeok: out std_logic;
 		read : in std_logic;
@@ -26,7 +26,7 @@ entity reservationStationBru is
 		outs2: out std_logic_vector(31 downto 0);
 		
 		write1,write2,write3 : in std_logic;
-		dtag1,dtag2,dtag3, : in std_logic_vector(3 downto 0);
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
 		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
 end reservationStationBru;
@@ -113,74 +113,80 @@ begin
 	begin
 		if rst = '1' then
 		elsif rising_edge(clk) then
-			if go(0) = '1' then
-				readyop <= op(0)&s1_write(0)(31 downto 0)&s2_write(0)(31 downto 0);
-			elsif go(1) = '1' then
-				readyop <= op(1)&s1_write(1)(31 downto 0)&s2_write(1)(31 downto 0);
-			elsif go(2) = '1' then
-				readyop <= op(2)&s1_write(2)(31 downto 0)&s2_write(2)(31 downto 0);
-			elsif go(3) = '1' then
-				readyop <= op(3)&s1_write(3)(31 downto 0)&s2_write(3)(31 downto 0);
-			elsif read = '1' then
-				readyop(64 + op_valid) <= '0';
-			end if;
-		
-			if newline(0) = '1' then
-				s1(0) <= ins1;
-				s2(0) <= ins2;
-				op(0) <= inop&indtag&write;
-			elsif go(0) = '1' then
-				s1(0) <= s1_write(1);
-				s2(0) <= s2_write(1);
-				op(0) <= op(1);
+			if flush = '1' then
+				op(0)(op_valid) <= '0';
+				op(1)(op_valid) <= '0';
+				op(2)(op_valid) <= '0';
+				op(3)(op_valid) <= '0';
 			else
-				s1(0) <= s1_write(0);
-				s2(0) <= s2_write(0);
-				op(0) <= op(0);
-			end if;
-		
-			if newline(1) = '1' then
-				s1(1) <= ins1;
-				s2(1) <= ins2;
-				op(1) <= inop&indtag&write;
-			elsif (go(1) = '1') or (go(0) = '1') then
-				s1(1) <= s1_write(2);
-				s2(1) <= s2_write(2);
-				op(1) <= op(2);
-			else
-				s1(1) <= s1_write(1);
-				s2(1) <= s2_write(1);
-				op(1) <= op(1);
-			end if;
+				if go(0) = '1' then
+					readyop <= op(0)&s1_write(0)(31 downto 0)&s2_write(0)(31 downto 0);
+				elsif go(1) = '1' then
+					readyop <= op(1)&s1_write(1)(31 downto 0)&s2_write(1)(31 downto 0);
+				elsif go(2) = '1' then
+					readyop <= op(2)&s1_write(2)(31 downto 0)&s2_write(2)(31 downto 0);
+				elsif go(3) = '1' then
+					readyop <= op(3)&s1_write(3)(31 downto 0)&s2_write(3)(31 downto 0);
+				elsif read = '1' then
+					readyop(64 + op_valid) <= '0';
+				end if;
 			
-			if newline(2) = '1' then
-				s1(2) <= ins1;
-				s2(2) <= ins2;
-				op(2) <= inop&indtag&write;
-			elsif (go(2) = '1') or (go(1) = '1') or (go(0) = '1') then
-				s1(2) <= s1_write(3);
-				s2(2) <= s2_write(3);
-				op(2) <= op(3);
-			else
-				s1(2) <= s1_write(2);
-				s2(2) <= s2_write(2);
-				op(2) <= op(2);
-			end if;
+				if newline(0) = '1' then
+					s1(0) <= ins1;
+					s2(0) <= ins2;
+					op(0) <= inop&indtag&write;
+				elsif go(0) = '1' then
+					s1(0) <= s1_write(1);
+					s2(0) <= s2_write(1);
+					op(0) <= op(1);
+				else
+					s1(0) <= s1_write(0);
+					s2(0) <= s2_write(0);
+					op(0) <= op(0);
+				end if;
 			
-			if newline(3) = '1' then
-				s1(3) <= ins1;
-				s2(3) <= ins2;
-				op(3) <= inop&indtag&write;
-			elsif (go(3) = '1') or (go(2) = '1') or (go(1) = '1') or (go(0) = '1')  then
-				s1(3) <= (others => '0');
-				s2(3) <= (others => '0');
-				op(3) <= (others => '0');
-			else
-				s1(3) <= s1_write(3);
-				s2(3) <= s2_write(3);
-				op(3) <= op(3);
+				if newline(1) = '1' then
+					s1(1) <= ins1;
+					s2(1) <= ins2;
+					op(1) <= inop&indtag&write;
+				elsif (go(1) = '1') or (go(0) = '1') then
+					s1(1) <= s1_write(2);
+					s2(1) <= s2_write(2);
+					op(1) <= op(2);
+				else
+					s1(1) <= s1_write(1);
+					s2(1) <= s2_write(1);
+					op(1) <= op(1);
+				end if;
+				
+				if newline(2) = '1' then
+					s1(2) <= ins1;
+					s2(2) <= ins2;
+					op(2) <= inop&indtag&write;
+				elsif (go(2) = '1') or (go(1) = '1') or (go(0) = '1') then
+					s1(2) <= s1_write(3);
+					s2(2) <= s2_write(3);
+					op(2) <= op(3);
+				else
+					s1(2) <= s1_write(2);
+					s2(2) <= s2_write(2);
+					op(2) <= op(2);
+				end if;
+				
+				if newline(3) = '1' then
+					s1(3) <= ins1;
+					s2(3) <= ins2;
+					op(3) <= inop&indtag&write;
+				elsif (go(3) = '1') or (go(2) = '1') or (go(1) = '1') or (go(0) = '1')  then
+					s1(3) <= (others => '0');
+					s2(3) <= (others => '0');
+					op(3) <= (others => '0');
+				else
+					s1(3) <= s1_write(3);
+					s2(3) <= s2_write(3);
+					op(3) <= op(3);
+				end if;
 			end if;
-			
 		end if;
 	end process;
 	

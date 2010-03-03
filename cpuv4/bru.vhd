@@ -57,7 +57,7 @@ begin
 	with op_buf select
 	 jmp <= hist xor (not ((mask(2) and cg) or (mask(1) and ce) or (mask(0) and cl))) when "000",--cmpi,cmp
 	 hist xor (not ((mask(2) and cfg) or (mask(1) and cfe) or (mask(0) and cfl))) when "001",--cmpf
-	 '0' when others;--call
+	 '0' when others;--call ret
 
 
 end arch;

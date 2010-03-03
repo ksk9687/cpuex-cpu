@@ -35,6 +35,20 @@ component branchPredictor is
 end component;
 
 
+component bru is
+	port  (
+		clk : in std_logic;
+    	op   : in std_logic_vector(2 downto 0);-- call ret jmp(1:f,0:i)
+    	mask   : in std_logic_vector(2 downto 0);
+    	hist   : in std_logic;
+    	A, B : in  std_logic_vector(31 downto 0);
+    	pc : in  std_logic_vector(13 downto 0);
+        jmpflg : out std_logic;
+        newpc : out std_logic_vector(13 downto 0)
+	);
+end component;
+
+
 component full_cache is
 	port  (
 		clk,clkfast : in std_logic;
@@ -278,9 +292,9 @@ component reorderBuffer is
 		reg_data : out std_logic_vector(31 downto 0);
 		outop : out std_logic_vector(1 downto 0);
 		
-		dwrite1,dwrite2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(3 downto 0);
-		value1,value2 : in std_logic_vector(31 downto 0)
+		dwrite1,dwrite2,dwrite3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
+		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
 end component;
 
@@ -290,7 +304,7 @@ component reservationStation is
 		opbits : integer := 2
 	);
 	port  (
-		clk : in std_logic;
+		clk,flush : in std_logic;
 		write : in std_logic;
 		writeok: out std_logic;
 		read : in std_logic;
@@ -309,6 +323,34 @@ component reservationStation is
 		write1,write2 : in std_logic;
 		dtag1,dtag2 : in std_logic_vector(3 downto 0);
 		value1,value2 : in std_logic_vector(31 downto 0)
+	);
+end component;
+
+
+component reservationStationBru is
+	generic (
+		opbits : integer := 3 + 3 + 14 + 1
+	);
+	port  (
+		clk,flush : in std_logic;
+		write : in std_logic;
+		writeok: out std_logic;
+		read : in std_logic;
+		readok : out std_logic;
+			
+		inop: in std_logic_vector(opbits - 1 downto 0);
+		indtag: in std_logic_vector(3 downto 0);
+		ins1: in std_logic_vector(32 downto 0);
+		ins2: in std_logic_vector(32 downto 0);
+
+		outop: out std_logic_vector(opbits - 1 downto 0);
+		outdtag: out std_logic_vector(3 downto 0);
+		outs1: out std_logic_vector(31 downto 0);
+		outs2: out std_logic_vector(31 downto 0);
+		
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
+		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
 end component;
 

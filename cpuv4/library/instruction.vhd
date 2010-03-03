@@ -56,6 +56,11 @@ package instruction is
    
    
    constant nop_inst	:	std_logic_vector(35 downto 0) := x"BC0000000";
+   
+  
+   constant unit_alu	:	std_logic_vector(2 downto 0) := "000";
+   constant unit_bru	:	std_logic_vector(2 downto 0) := "110";
+   constant unit_nop	:	std_logic_vector(2 downto 0) := "101";
 end package instruction;  
  
 

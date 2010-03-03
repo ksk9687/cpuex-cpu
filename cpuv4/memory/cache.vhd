@@ -94,9 +94,20 @@ end irom;
 
 
 architecture arch of irom is
-    type rom_t is array (0 to 7) of std_logic_vector (35 downto 0); 
+    type rom_t is array (0 to 15) of std_logic_vector (35 downto 0); 
     
 	signal ROM : rom_t := (
+    	"00000000"&"000000"&"000000"&"000000"&"0000000001",
+    	"00000100"&"000000"&"000001"&"000000"&"0000000010",
+    	"00000100"&"000001"&"000010"&"000000"&"0000000011",
+    	"00000100"&"000000"&"000011"&"000000"&"0000000100",
+    	
+    	"00000100"&"000011"&"000100"&"000000"&"0000000101",
+    	"00000100"&"000100"&"000101"&"000000"&"0000000110",
+    	"00000100"&"000000"&"000110"&"000000"&"0000000111",
+    	"00000100"&"000110"&"000111"&"000000"&"0000001000",
+    	
+    	
     	"00000000"&"000000"&"000000"&"000000"&"0000000001",
     	"00000100"&"000000"&"000001"&"000000"&"0000000010",
     	"00000100"&"000001"&"000010"&"000000"&"0000000011",
@@ -111,8 +122,8 @@ architecture arch of irom is
     signal i1,i2 : std_logic_vector(35 downto 0) := nop_inst;
 begin
     
-	i1 <= ROM(conv_integer(address(1 downto 0)&'0'));
-	i2 <= ROM(conv_integer(address(1 downto 0)&'1'));
+	i1 <= ROM(conv_integer(address(2 downto 0)&'0'));
+	i2 <= ROM(conv_integer(address(2 downto 0)&'1'));
 	process(clk)
 	begin
 		if rising_edge(clk) then
