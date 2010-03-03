@@ -4,9 +4,9 @@ use ieee.std_logic_unsigned.all;
 
 library UNISIM;
 use UNISIM.VComponents.all;
-entity reservationStation is
+entity reservationStationBru is
 	generic (
-		opbits : integer := 2
+		opbits : integer := 3 + 3 + 14 + 1
 	);
 	port  (
 		clk : in std_logic;
@@ -25,13 +25,13 @@ entity reservationStation is
 		outs1: out std_logic_vector(31 downto 0);
 		outs2: out std_logic_vector(31 downto 0);
 		
-		write1,write2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(3 downto 0);
-		value1,value2 : in std_logic_vector(31 downto 0)
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3, : in std_logic_vector(3 downto 0);
+		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
-end reservationStation;
+end reservationStationBru;
 
-architecture arch of reservationStation is
+architecture arch of reservationStationBru is
 	signal rst :std_logic := '0';
 	
 	constant op_valid : integer := 0;
@@ -77,28 +77,36 @@ begin
 
 	s1_write(0) <= '1'&value1 when (s1(0)(32) = '0') and (write1 = '1') and (s1(0)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(0)(32) = '0') and (write2 = '1') and (s1(0)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(0)(32) = '0') and (write3 = '1') and (s1(0)(3 downto 0) = dtag3) else
 	s1(0);
 	s1_write(1) <= '1'&value1 when (s1(1)(32) = '0') and (write1 = '1') and (s1(1)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(1)(32) = '0') and (write2 = '1') and (s1(1)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(1)(32) = '0') and (write3 = '1') and (s1(1)(3 downto 0) = dtag3) else
 	s1(1);
 	s1_write(2) <= '1'&value1 when (s1(2)(32) = '0') and (write1 = '1') and (s1(2)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(2)(32) = '0') and (write2 = '1') and (s1(2)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(2)(32) = '0') and (write3 = '1') and (s1(2)(3 downto 0) = dtag3) else
 	s1(2);
 	s1_write(3) <= '1'&value1 when (s1(3)(32) = '0') and (write1 = '1') and (s1(3)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(3)(32) = '0') and (write2 = '1') and (s1(3)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(3)(32) = '0') and (write3 = '1') and (s1(3)(3 downto 0) = dtag3) else
 	s1(3);
 
 	s2_write(0) <= '1'&value1 when (s2(0)(32) = '0') and (write1 = '1') and (s2(0)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(0)(32) = '0') and (write2 = '1') and (s2(0)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(0)(32) = '0') and (write3 = '1') and (s2(0)(3 downto 0) = dtag3) else
 	s2(0);
 	s2_write(1) <= '1'&value1 when (s2(1)(32) = '0') and (write1 = '1') and (s2(1)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(1)(32) = '0') and (write2 = '1') and (s2(1)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(1)(32) = '0') and (write3 = '1') and (s2(1)(3 downto 0) = dtag3) else
 	s2(1);
 	s2_write(2) <= '1'&value1 when (s2(2)(32) = '0') and (write1 = '1') and (s2(2)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(2)(32) = '0') and (write2 = '1') and (s2(2)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(2)(32) = '0') and (write3 = '1') and (s2(2)(3 downto 0) = dtag3) else
 	s2(2);
 	s2_write(3) <= '1'&value1 when (s2(3)(32) = '0') and (write1 = '1') and (s2(3)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(3)(32) = '0') and (write2 = '1') and (s2(3)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(3)(32) = '0') and (write3 = '1') and (s2(3)(3 downto 0) = dtag3) else
 	s2(3);
 	
 	process(clk)

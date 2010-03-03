@@ -286,6 +286,9 @@ end component;
 
 
 component reservationStation is
+	generic (
+		opbits : integer := 2
+	);
 	port  (
 		clk : in std_logic;
 		write : in std_logic;
@@ -293,13 +296,13 @@ component reservationStation is
 		read : in std_logic;
 		readok : out std_logic;
 			
-		inop: in std_logic_vector(3 downto 0);
-		indtag: in std_logic_vector(4 downto 0);
+		inop: in std_logic_vector(opbits - 1 downto 0);
+		indtag: in std_logic_vector(3 downto 0);
 		ins1: in std_logic_vector(32 downto 0);
 		ins2: in std_logic_vector(32 downto 0);
-		
-		outop: out std_logic_vector(3 downto 0);
-		outdtag: out std_logic_vector(4 downto 0);
+
+		outop: out std_logic_vector(opbits - 1 downto 0);
+		outdtag: out std_logic_vector(3 downto 0);
 		outs1: out std_logic_vector(31 downto 0);
 		outs2: out std_logic_vector(31 downto 0);
 		

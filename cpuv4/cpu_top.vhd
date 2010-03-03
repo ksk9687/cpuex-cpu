@@ -55,8 +55,8 @@ entity cpu_top is
 end cpu_top;
 
 architecture arch of cpu_top is	
-   signal clk,clk66,clk180,rst: std_logic := '0';
-   signal stall_fetch,stall_front,stall,reg_stall,flush,sleep,stall_ex,flushed,bp_write: std_logic := '0';
+   signal clk,clk66,clk180,rst,rst0: std_logic := '0';
+   signal stall_id3,stall_id2,stall_fetch,stall_front,stall,reg_stall,flush,sleep,stall_ex,flushed,bp_write: std_logic := '0';
    signal write_inst_ok,read_inst_ok,inst_ok,lsu_ok,lsu_ok_t,rob_ok1,rob_ok2,bp_ok,ras_ok : std_logic := '0';
    signal im : std_logic_vector(13 downto 0);
    signal ext_im,data_s1,data_s2,data_s1_p,data_s2_p,data_im : std_logic_vector(31 downto 0);
@@ -64,8 +64,11 @@ architecture arch of cpu_top is
    signal pc,ret_pc,jmp_addr_next,jmp_addr_pc,next_pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1,ret_addr : std_logic_vector(13 downto 0) := "00"&x"000";
    signal inst1,inst2,inst1_buf,inst2_buf : std_logic_vector(35 downto 0) := nop_inst;
 
-   
-   signal inst1A,inst1B,inst0A,inst0B :std_logic_vector(31 downto 0) := (others=>'0');
+   --DECODE
+	signal inst1A,inst1B,inst0A,inst0B :std_logic_vector(31 downto 0) := (others=>'0');
+	signal i1_rob_ok,i2_rob_ok,i1_rs_ok,i2_rs_ok,i1_rs_ok_t,i2_rs_ok_t :std_logic := '0';
+
+	signal alu_inst,bru_inst :std_logic_vector(31 downto 0) := (others=>'0');
 	signal i1_rob_ok,i2_rob_ok,i1_rs_ok,i2_rs_ok,i1_rs_ok_t,i2_rs_ok_t :std_logic := '0';
 	
    --LS
@@ -84,11 +87,18 @@ architecture arch of cpu_top is
 	signal rob_op :std_logic_vector(1 downto 0) := (others=>'0');
 	--ALU
 	signal rsalu0_write,rsalu0_ok,alu0_ready,alu0_issue :std_logic := '0';
-	signal alu0_ready_tag,rsalu0dtag,alu0_in_tag :std_logic_vector(4 downto 0) := (others=>'0');
-	signal alu0_ready_op,rsalu0op,rsalu0_in_op :std_logic_vector(3 downto 0) := (others=>'0');
+	signal alu0_ready_tag,rsalu0dtag,alu0_in_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal alu0_ready_op,rsalu0op,rsalu0_in_op :std_logic_vector(1 downto 0) := (others=>'0');
 	signal rsalu0_inA,rsalu0_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal alu0A,alu0B,alu0O :std_logic_vector(31 downto 0) := (others=>'0');
-	
+	--BRANCH
+	signal jmpflg :std_logic := '0';
+	signal rsbru_write,rsbru_ok,bru_ready,bru_issue :std_logic := '0';
+	signal bru_ready_tag,rsbrudtag,bru_in_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal bru_ready_op,rsbruop,rsbru_in_op :std_logic_vector(1 downto 0) := (others=>'0');
+	signal rsbru_inA,rsbru_inB :std_logic_vector(32 downto 0) := (others=>'0');
+	signal bruA,bruB :std_logic_vector(31 downto 0) := (others=>'0');
+	signal newpc :std_logic_vector(13 downto 0) := (others=>'0');
 	
 	--IO
 	signal iou_out : std_logic_vector(31 downto 0) := (others=>'0');
@@ -107,10 +117,11 @@ architecture arch of cpu_top is
    signal leddata : std_logic_vector(31 downto 0);
    signal leddotdata : std_logic_vector(7 downto 0);
    
-   signal pi_valid,pl_valid,pl_valid_i,pf_valid : std_logic := '0';   
-   signal pi_dtag,pl_dtag,pf_dtag : std_logic_vector(3 downto 0) := (others=>'0');
-   signal pi_value,pl_value,pf_value : std_logic_vector(31 downto 0) := (others=>'0');
+   signal pi_valid,pl_valid,pl_valid_i,pl_valid_f,pf_valid,pb_valid : std_logic := '0';   
+   signal pi_dtag,pl_dtag,pf_dtag,pf_dtagi,pb_dtagf : std_logic_vector(3 downto 0) := (others=>'0');
+   signal pi_value,pl_value,pf_value,pb_value : std_logic_vector(31 downto 0) := (others=>'0');
    signal pi_0,pi_1,pi_0_write,pi_1_write :std_logic_vector(9 downto 0) := (others=>'0');
+   signal pb_0,pb_1,pb_0_write,pb_1_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal pl_0,pl_1,pl_0_write,pl_1_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal pf_0,pf_1,pf_2,pf_3,pf_4,pf_5,pf_0_write,pf_1_write,pf_2_write,pf_3_write,pf_4_write,pf_5_write :std_logic_vector(9 downto 0) := (others=>'0');
  
@@ -127,9 +138,10 @@ begin
 	clock66 => clk66,
 	clock => clk,
 	clock_180 => clk180,
-    reset => rst);
+    reset => rst0);
   
   
+  	ROC0 : ROC port map (O => rst);
   
   
   	----------------------------------
@@ -141,17 +153,20 @@ begin
    begin
 	   if (rst = '1')then
 	   		pc <= "00"&x"000";
-	   		pc_p1 <= "00"&x"002";
+	   		pc_p1 <= "00"&x"000";
 	   elsif rising_edge(clk) then
-			pc <= next_pc;
-			if next_pc(0) = '0' then
-				pc_p1 <= next_pc + "10";
+	   		if stall_fetch = '1' then
+				pc_p1 <= next_pc;
 			else
-				pc_p1 <= (next_pc(13 downto 1) + '1')&'0';
+				pc <= next_pc;
+				if next_pc(0) = '0' then
+					pc_p1 <= next_pc + "10";
+				else
+					pc_p1 <= (next_pc(13 downto 1) + '1')&'0';
+				end if;
 			end if;
 	   end if;
    end process PC0;
-   
 	
   	MEMORY0 : memory port map (
    	clk,clk,clk180,clk180,
@@ -167,12 +182,14 @@ begin
 --  	predict_taken,predict_taken_hist
 --  );
   
-
    flush <= '0';
+   next_pc <= pc_p1;
    
-   next_pc <= pc when stall_front = '1' else
-   pc_p1;
-   
+   	----------------------------------
+	-- 
+	-- ID1
+	-- 
+	----------------------------------
    DEC0 : decoder port map(
     inst1,r11p,r21p,d1p
     );
@@ -180,9 +197,18 @@ begin
     inst2,r12p,r22p,d2p
     );
 
-   	process(clk)
+   	process(clk,rst)
 	begin
-		if rising_edge(clk) then
+		if rst = '1' then
+			inst1_buf <= nop_inst;
+			inst2_buf <= nop_inst;
+			r11 <= (others => '0');
+			r21 <= (others => '0');
+			r12 <= (others => '0');
+			r22 <= (others => '0');
+			d1 <= (others => '0');
+			d2 <= (others => '0');
+		elsif rising_edge(clk) then
 			if flush = '1' then
 				inst1_buf <= nop_inst;
 				inst2_buf <= nop_inst;
@@ -231,12 +257,43 @@ begin
 			end if;
 		end if;
 	end process;
-
+	
+	
+   	----------------------------------
+	-- 
+	-- ID2
+	-- 
+	----------------------------------
+   	process(clk,rst)
+	begin
+		if rst = '1' then
+		elsif rising_edge(clk) then
+			if flush = '1' then
+				alu_inst <= nop_inst;
+				alur1 <= (others => '0');
+				alur2 <= (others => '0');
+				alud <= (others => '0');
+				bru_inst <= nop_inst;
+				brur1 <= (others => '0');
+				brur2 <= (others => '0');
+				brud <= (others => '0');
+				
+				firstunit <= (others => '0');
+				secondunit <= (others => '0');
+			elsif stall_id3 = '1' then
+			
+			else
+				bru_inst <= nop_inst;
+				brur1 <= (others => '0');
+				brur2 <= (others => '0');
+			end if;
+		end if;
+	end process;
    
    
    	----------------------------------
 	-- 
-	-- ID
+	-- ID3
 	-- 
 	----------------------------------
     
@@ -258,8 +315,8 @@ begin
     reg_alloc1 <= (d1(3) and d1(0)) and rob_alloc1;
     reg_alloc2 <= (d2(3) and d2(0)) and rob_alloc2;
     
-    rob_alloc1 <= (not stall_front);
-    rob_alloc2 <= (not stall_fetch);
+    rob_alloc1 <= (not stall_front) when (inst1_buf(35 downto 33) /= "101") else '0';
+    rob_alloc2 <= (not stall_fetch) when (inst2_buf(35 downto 33) /= "101") else '0';
     
     rsalu0_write <= rob_alloc1 when (inst1_buf(35 downto 34) = "00") else
     rob_alloc2 when (inst2_buf(35 downto 34) = "00") else
@@ -267,25 +324,25 @@ begin
     
     rsalu0_inA <= '1'&data_s1_reg_p when (r11(0) = '1') and (inst1_buf(35 downto 34) = "00") and (reg_s1_ok = '1') else
     '1'&data_s1_rob_p when (r11(0) = '1') and (inst1_buf(35 downto 34) = "00") and (rob_s1_ok = '1') else
-    '0'&x"0000000"&'0'&rob_tag1 when (r11(0) = '1') and (inst1_buf(35 downto 34) = "00") else
+    '0'&x"0000000"&'0'&s1tag when (r11(0) = '1') and (inst1_buf(35 downto 34) = "00") else
     '1'&x"0000"&"00"&inst1_buf(13 downto 0) when (inst1_buf(35 downto 34) = "00") else
     '1'&data_s12_reg_p when (r12(0) = '1') and (inst2_buf(35 downto 34) = "00") and (reg_s12_ok = '1') else
     '1'&data_s12_rob_p when (r12(0) = '1') and (inst2_buf(35 downto 34) = "00") and (rob_s12_ok = '1') else
-    '0'&x"0000000"&'0'&rob_tag2 when (r11(0) = '1') and (inst2_buf(35 downto 34) = "00") else
+    '0'&x"0000000"&'0'&s12tag when (r11(0) = '1') and (inst2_buf(35 downto 34) = "00") else
     '1'&x"0000"&"00"&inst2_buf(13 downto 0);
     
     rsalu0_inB <= '1'&data_s2_reg_p when (r21(0) = '1') and (inst1_buf(35 downto 34) = "00") and (reg_s2_ok = '1') else
     '1'&data_s2_rob_p when (r21(0) = '1') and (inst1_buf(35 downto 34) = "00") and (rob_s2_ok = '1') else
-    '0'&x"0000000"&'0'&rob_tag1 when (r21(0) = '1') and (inst1_buf(35 downto 34) = "00") else
+    '0'&x"0000000"&'0'&s2tag when (r21(0) = '1') and (inst1_buf(35 downto 34) = "00") else
     '1'&x"0000"&"00"&inst1_buf(13 downto 0) when (inst1_buf(35 downto 34) = "00") else
     '1'&data_s22_reg_p when (r22(0) = '1') and (inst2_buf(35 downto 34) = "00") and (reg_s22_ok = '1') else
     '1'&data_s22_rob_p when (r22(0) = '1') and (inst2_buf(35 downto 34) = "00") and (rob_s22_ok = '1') else
-    '0'&x"0000000"&'0'&rob_tag2 when (r21(0) = '1') and (inst2_buf(35 downto 34) = "00") else
+    '0'&x"0000000"&'0'&s22tag when (r21(0) = '1') and (inst2_buf(35 downto 34) = "00") else
     '1'&x"0000"&"00"&inst2_buf(13 downto 0);
     
-    rsalu0dtag <= "00"&rob_tag1 when (inst1_buf(35 downto 34) = "00") else "00"&rob_tag2;
-    rsalu0op <= inst1_buf(33 downto 30) when (inst1_buf(35 downto 34) = "00") else
-    inst2_buf(33 downto 30);
+    rsalu0dtag <= "0"&rob_tag1 when (inst1_buf(35 downto 34) = "00") else "0"&rob_tag2;
+    rsalu0op <= inst1_buf(31 downto 30) when (inst1_buf(35 downto 34) = "00") else
+    inst2_buf(31 downto 30);
     
 	IREG0 : reg port map (
 		clk,flush,reg_alloc1,reg_alloc2,
@@ -317,9 +374,9 @@ begin
 		write_reg_data,
 		rob_op,
 		
-		pi_valid,pl_valid_i,
-		pi_dtag,pl_dtag,
-		pi_value,pl_value
+		pi_valid,pl_valid_i,pb_valid
+		pi_dtag,pl_dtag,pb_dtagi
+		pi_value,pl_value,pb_value
 	);
 	write_reg <= rob_reg_ok when rob_op = "00" else '0';
 	rob_next <= '1' when rob_op /= "00" else rob_reg_ok;
@@ -330,9 +387,27 @@ begin
 		rsalu0op,rsalu0dtag,rsalu0_inA,rsalu0_inB,
 		alu0_ready_op,alu0_ready_tag,alu0A,alu0B,
 		
-		pi_valid,pl_valid_i,pi_dtag,pl_dtag,pi_value,pl_value
+		pi_valid,pl_valid_i,pb_valid_i,
+		pi_dtag,pl_dtag,pb_dtagi,
+		pi_value,pl_value,pb_value
 	);
 	alu0_issue <= alu0_ready;
+	
+	RSBRU0 : reservationStationBru
+	generic map (
+		opbits => 21
+	);
+	port map (
+		clk,rsbru_write,rsbru_ok,
+		bru_issue,bru_ready,
+		rsbru0op,rsbru0dtag,rsbru_inA,rsbru_inB,
+		bru_ready_op,bru_ready_tag,bruA,bruB,
+		
+		pi_valid,pl_valid,pf_valid,
+		pi_dtag,pl_dtag,pf_dtag,
+		pi_value,pl_value,pf_value
+	);
+	bru_issue <= bru_ready;
 	----------------------------------
 	-- 
 	-- EX
@@ -340,8 +415,16 @@ begin
 	----------------------------------
 	
 	ALU0 : ALU port map(
-	clk,alu0_ready_op(1 downto 0),alu0A, alu0B,alu0O
+	clk,alu0_ready_op,alu0A,alu0B,alu0O
 	);
+	
+	BRU0 :port map  (
+		clk,
+    	bru_ready_op(6 downto 4),bru_ready_op(3 downto 1),bru_ready_op(0),
+    	bruA, bruB,bru_ready_op(20 downto 7)
+       jmpflg,newpc
+	);
+
 		
 	----------------------------------
 	-- 
@@ -354,11 +437,16 @@ begin
 	
 	pi_value <= alu0O;
 	pi_dtag <= pi_0(3 downto 0);
-	pi_valid <= pi_0(5);
+	pi_valid <= pi_0(4);
+	
+	pb_value <= "0"&x"0000"&newpc&jmpflg;
+	pb_dtagi <= pb_0(3 downto 0);
+	pb_valid <= pb_0(4);
 	process(clk)
 	begin
 		if rising_edge(clk) then
-			pi_0 <= "0000"&alu0_ready&alu0_ready_tag;
+			pi_0 <= "00000"&alu0_ready&alu0_ready_tag;
+			pb_0 <= "00000"&bru_ready&bru_ready_tag;
 		end if;
 	end process;
 	
