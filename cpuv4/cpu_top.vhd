@@ -56,11 +56,12 @@ end cpu_top;
 
 architecture arch of cpu_top is	
    signal clk,clk66,clk180,rst,rst0: std_logic := '0';
-   signal stall_first,stall_second,stall_id3,stall_id2,stall_fetch,stall_front,flush: std_logic := '0';
+   signal stall_first,stall_second,stall_id3,stall_id2,stall_fetch,stall_front,flush,flush_jr: std_logic := '0';
 
    signal rob_ok1,rob_ok2 : std_logic := '0';
+   signal frob_ok1,frob_ok2 : std_logic := '0';
    --Inst
-   signal pc,ret_pc,jmp_addr_next,jmp_addr_pc,next_pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1,ret_addr : std_logic_vector(13 downto 0) := "00"&x"000";
+   signal pc,ret_pc,jmp_addr_next,jmp_addr_pc,next_pc,jmp_addr,jmp_addr_p,pc_p1,next_pc_p1,pc_b,pc_buf0,pc_buf1,ret_addr,jr_addr : std_logic_vector(13 downto 0) := "00"&x"000";
    signal inst1,inst2,inst1_buf,inst2_buf : std_logic_vector(35 downto 0) := nop_inst;
 
    --DECODE
@@ -70,6 +71,7 @@ architecture arch of cpu_top is
 
 	signal alu_inst,alu_inst_p,bru_inst,bru_inst_p :std_logic_vector(35 downto 0) := (others=>'0');
 	signal s1_unit_p,s2_unit_p,s3_unit_p,s4_unit_p,s1_unit,s2_unit,s3_unit,s4_unit :std_logic_vector(2 downto 0) := (others=>'0');
+	signal sf1_unit_p,sf2_unit_p,sf3_unit_p,sf4_unit_p,sf1_unit,sf2_unit,sf3_unit,sf4_unit :std_logic_vector(2 downto 0) := (others=>'0');
 	signal firstunit,secondunit :std_logic_vector(2 downto 0) := (others=>'0');
    signal firstreg,secondreg : std_logic_vector(4 downto 0) := (others=>'0');
 	signal canUseFirstUnit,canUseSecondUnit : std_logic := '0';
@@ -82,24 +84,27 @@ architecture arch of cpu_top is
    signal lsu_read,lsu_write,lsu_load_ok,lsu_full,lsu_may_full,lsu_ok : std_logic := '0';
   
    --register
-   signal write_regf,rob_reg_ok,write_reg,rob_next :std_logic := '0';
-   signal dflg,cr_flg,cr_flg_b,pcr_flg : std_logic_vector(1 downto 0) := (others=>'0');
+   signal write_regf,rob_reg_ok,frob_reg_ok,write_freg,write_reg,rob_next,frob_next :std_logic := '0';
    signal write_reg_data,data_s1_reg_p,data_s2_reg_p,data_s3_reg_p,data_s4_reg_p,data_s1_rob_p,data_s2_rob_p,data_s3_rob_p,data_s4_rob_p: std_logic_vector(31 downto 0) := (others=>'0');
+   signal write_freg_data,data_s1_freg_p,data_s2_freg_p,data_s3_freg_p,data_s4_freg_p,data_s1_frob_p,data_s2_frob_p,data_s3_frob_p,data_s4_frob_p: std_logic_vector(31 downto 0) := (others=>'0');
    signal rob_tag1,rob_tag2,s1tag,s2tag,s3tag,s4tag : std_logic_vector(2 downto 0) := (others=>'0');
-   signal rob_alloc1,rob_alloc2,reg_alloc1,reg_alloc2 :std_logic := '0';
-   signal write_reg_num : std_logic_vector(5 downto 0) := (others=>'0');
-	signal rob_op :std_logic_vector(1 downto 0) := (others=>'0');
+   signal frob_tag1,frob_tag2,sf1tag,sf2tag,sf3tag,sf4tag : std_logic_vector(2 downto 0) := (others=>'0');
+   signal rob_alloc1,rob_alloc2,reg_alloc1,reg_alloc2,frob_alloc1,frob_alloc2,freg_alloc1,freg_alloc2 :std_logic := '0';
+   signal write_reg_num,write_freg_num : std_logic_vector(5 downto 0) := (others=>'0');
+	signal rob_op,frob_op :std_logic_vector(1 downto 0) := (others=>'0');
+	signal frob_regmode1,frob_regmode2 :std_logic_vector(1 downto 0) := (others=>'0');
 	--ALU
 	signal rsalu0_write,rsalu0_ok,alu0_ready,alu0_issue :std_logic := '0';
 	signal alu0_ready_tag,rsalu0dtag,alu0_in_tag :std_logic_vector(3 downto 0) := (others=>'0');
 	signal alu0_ready_op,rsalu0op,rsalu0_in_op :std_logic_vector(1 downto 0) := (others=>'0');
 	signal rsalu0_inA,rsalu0_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal alu0A,alu0B,alu0O :std_logic_vector(31 downto 0) := (others=>'0');
+	signal rsalu0im,rsalu0im_p :std_logic_vector(13 downto 0) := (others=>'0');
 	--BRANCH
-	signal jmpflg :std_logic := '0';
+	signal jmp1,jmp2,jr1,jr2,jal1,jal2,jmpflg :std_logic := '0';
 	signal rsbru_write,rsbru_ok,bru_ready,bru_issue :std_logic := '0';
-	signal bru_ready_tag,rsbrudtag,bru_in_tag :std_logic_vector(3 downto 0) := (others=>'0');
-	signal bru_ready_op,rsbruop,rsbru_in_op :std_logic_vector(20 downto 0) := (others=>'0');
+	signal bru_ready_tag,rsbrudtag,rsbrudtagf,bru_in_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal bru_ready_op,rsbruop,rsbru_in_op :std_logic_vector(47 downto 0) := (others=>'0');
 	signal rsbru_inA,rsbru_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal bruA,bruB :std_logic_vector(31 downto 0) := (others=>'0');
 	signal newpc :std_logic_vector(13 downto 0) := (others=>'0');
@@ -123,7 +128,7 @@ architecture arch of cpu_top is
    
    signal pi_valid,pl_valid,pl_valid_i,pl_valid_f,pf_valid,pb_valid : std_logic := '0';   
    signal pi_dtag,pl_dtag,pf_dtag,pb_dtagi,pb_dtagf : std_logic_vector(3 downto 0) := (others=>'0');
-   signal pi_value,pl_value,pf_value,pb_value : std_logic_vector(31 downto 0) := (others=>'0');
+   signal pi_value,pl_value,pf_value,pb_value,pb_valuef : std_logic_vector(31 downto 0) := (others=>'0');
    signal pi_0,pi_1,pi_0_write,pi_1_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal pb_0,pb_1,pb_0_write,pb_1_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal pl_0,pl_1,pl_0_write,pl_1_write :std_logic_vector(9 downto 0) := (others=>'0');
@@ -132,6 +137,16 @@ architecture arch of cpu_top is
    signal reg_s1_ok,reg_s2_ok,reg_s3_ok,reg_s4_ok,rob_s1_ok,rob_s2_ok,rob_s3_ok,rob_s4_ok : std_logic := '0';
    signal reg_s1_b,reg_s2_b : std_logic := '0';
    
+   signal freg_s1_ok,freg_s2_ok,freg_s3_ok,freg_s4_ok,frob_s1_ok,frob_s2_ok,frob_s3_ok,frob_s4_ok : std_logic := '0';
+   signal freg_s1_b,freg_s2_b : std_logic := '0';
+   
+   --BRANCH
+   --pc + counter + hist
+	signal jmp_commit :std_logic:= '0';
+   signal jmp_info1,jmp_info2,jmp_info1_p,jmp_info2_p,jmp_info,jmp_info_p :std_logic_vector(14 + 2 + 8 - 1 downto 0) := (others=>'0');
+	signal bpc1,bpc2 ,jmp_commit_counter,newcounter :std_logic_vector(1 downto 0) := (others=>'0');
+	signal bph1,bph2 ,jmp_commit_hist,newhist :std_logic_vector(7 downto 0) := (others=>'0');
+	signal bpk1,bpk2 ,jmp_commit_key,newkey :std_logic_vector(12 downto 0) := (others=>'0');
 
 begin
   clockgenerator_inst : clockgenerator port map(
@@ -149,22 +164,35 @@ begin
    next_pc <= 
    jmp_addr when flush = '1' else
    pc when stall_fetch = '1' else
+   inst1(21 downto 18)&inst1(9 downto 0) when ((jmp1 = '1') and (bpc1(1) = '1')) else
+   inst1(13 downto 0) when (jal1 = '1') else
+   jr_addr when (jr1 = '1') else
+   inst2(21 downto 18)&inst2(9 downto 0) when ((jmp2 = '1') and (bpc2(1) = '1')) else
+   inst2(13 downto 0) when (jal2 = '1') else
+   jr_addr when (jr2 = '1') else
    pc_p1;
   	----------------------------------
 	-- 
 	-- IF
 	-- 
 	----------------------------------
+	
+	jmp1 <= inst1(35) and inst1(34) and (not inst1(33)) and (not pc(0));
+	jmp2 <= inst2(35) and inst2(34) and (not inst2(33));
+	jal1 <= (not inst1(35)) and (not inst1(34)) and inst1(31) and inst1(30) and (not pc(0));
+	jal2 <= (not inst2(35)) and (not inst2(34)) and inst2(31) and inst2(30);
+	jr1 <= inst1(35) and inst1(34) and inst1(32) and inst1(31) and (not pc(0));
+	jr2 <= inst2(35) and inst2(34) and inst2(32) and inst2(31);
+	
    PC0:process(clk,rst)
    begin
 	   if (rst = '1')then
 	   		pc <= "00"&x"000";
 	   elsif rising_edge(clk) then
+			pc <= next_pc;
 			if next_pc(0) = '0' then
-				pc <= next_pc;
 				pc_p1 <= next_pc + "10";
 			else
-				pc <= next_pc;
 				pc_p1 <= (next_pc(13 downto 1) + '1')&'0';
 			end if;
 	   end if;
@@ -177,13 +205,19 @@ begin
       XE1,E2A,XE3,ZZA,XGA,XZCKE,ADVA,XLBO,ZCLKMA,XFT,XWA,XZBE,ZA,ZDP,ZD
    );
 
---  BP0 : branchPredictor port map (
---  	clk,rst,flush,bp_ok,
---  	next_pc(13 downto 1),jmp_num,
---  	jmp,jmp_taken,jmp_not_taken,
---  	predict_taken,predict_taken_hist
---  );
-  
+  BP0 : branchPredictor port map (
+  	clk,flush,stall_fetch,next_pc(13 downto 0),
+  	jmp1,jmp2,
+  	jmp_commit,jmp_commit_counter,jmp_commit_key,jmp_commit_hist,
+  	bpc1,bpc2,
+  	bph1,bph2
+  );
+  	
+	RAS0 : returnAddressStack port map (
+  		clk,stall_fetch,flush_jr,jal1,jal2,jr1,jr2,pc,jr_addr
+  	);
+	
+	
    
    	----------------------------------
 	-- 
@@ -199,6 +233,9 @@ begin
 
    stall_fetch <= stall_first or stall_second or stall_id2;
    
+   jmp_info1_p <= pc&bph1&bpc1;
+   jmp_info2_p <= pc(13 downto 1)&'1'&bph2&bpc2;
+   
    	process(clk,rst)
 	begin
 		if rst = '1' then
@@ -210,6 +247,8 @@ begin
 			r22 <= (others => '0');
 			d1 <= (others => '0');
 			d2 <= (others => '0');
+			jmp_info1 <= (others => '0');
+			jmp_info2 <= (others => '0');
 		elsif rising_edge(clk) then
 			if flush = '1' then
 				inst1_buf <= nop_inst;
@@ -220,6 +259,8 @@ begin
 				r22 <= (others => '0');
 				d1 <= (others => '0');
 				d2 <= (others => '0');
+				jmp_info1 <= (others => '0');
+				jmp_info2 <= (others => '0');
 			elsif (stall_first = '1') or (stall_second = '1') then--1も２も発行できない
 				inst1_buf <= inst1_buf;
 				inst2_buf <= inst2_buf;
@@ -229,6 +270,8 @@ begin
 				r22 <= r22;
 				d1 <= d1;
 				d2 <= d2;
+				jmp_info1 <= jmp_info1;
+				jmp_info2 <= jmp_info2;
 			elsif stall_id2 = '1' then--１だけ発行できた
 				inst1_buf <= inst2_buf;
 				inst2_buf <= nop_inst;
@@ -238,7 +281,9 @@ begin
 				r22 <= (others => '0');
 				d1 <= d2;
 				d2 <= (others => '0');
-			elsif pc(0) = '1' then
+				jmp_info1 <= jmp_info2;
+				jmp_info2 <= (others => '0');
+			elsif pc(0) = '1' then--２のみデコード
 				inst1_buf <= inst2;
 				inst2_buf <= nop_inst;
 				r11 <= r12p;
@@ -247,6 +292,19 @@ begin
 				r22 <= (others => '0');
 				d1 <= d2p;
 				d2 <= (others => '0');
+				jmp_info1 <= jmp_info1_p;
+				jmp_info2 <= (others => '0');
+			elsif ((jmp1 = '1') and (bpc1(1) = '1') ) or (jal1 = '1') or (jr1 = '1') then--1のみデコード
+				inst1_buf <= inst1;
+				inst2_buf <= nop_inst;
+				r11 <= r11p;
+				r21 <= r21p;
+				r12 <= (others => '0');
+				r22 <= (others => '0');
+				d1 <= d1p;
+				d2 <= (others => '0');
+				jmp_info1 <= jmp_info1_p;
+				jmp_info2 <= (others => '0');
 			else
 				inst1_buf <= inst1;
 				inst2_buf <= inst2;
@@ -256,6 +314,8 @@ begin
 				r22 <= r22p;
 				d1 <= d1p;
 				d2 <= d2p;
+				jmp_info1 <= jmp_info1_p;
+				jmp_info2 <= jmp_info2_p;
 			end if;
 		end if;
 	end process;
@@ -279,10 +339,21 @@ begin
 	inst2_buf when (inst2_buf(35 downto 33) = unit_bru) and (stall_id2 = '0') else
 	nop_inst;
 	
+	rsalu0im_p <= (jmp_info1(23 downto 10) + '1') when (inst1_buf(35 downto 33) = unit_alu) and (inst1_buf(31 downto 30)= "11") else
+	(jmp_info2(23 downto 10)+ '1') when (inst2_buf(35 downto 33) = unit_alu) and (inst2_buf(31 downto 30)= "11") else
+	 alu_inst_p(13 downto 0);
+	 
+	jmp_info_p <= jmp_info1 when inst1_buf(35 downto 33) = unit_bru else jmp_info2;
+	
 	s1_unit_p <= inst1_buf(35 downto 33) when r11 = "01" else unit_nop;
 	s2_unit_p <= inst1_buf(35 downto 33) when r21 = "01" else unit_nop;
 	s3_unit_p <= inst2_buf(35 downto 33) when r12 = "01" else unit_nop;
 	s4_unit_p <= inst2_buf(35 downto 33) when r22 = "01" else unit_nop;
+	
+	sf1_unit_p <= inst1_buf(35 downto 33) when r11 = "10" else unit_nop;
+	sf2_unit_p <= inst1_buf(35 downto 33) when r21 = "10" else unit_nop;
+	sf3_unit_p <= inst2_buf(35 downto 33) when r12 = "10" else unit_nop;
+	sf4_unit_p <= inst2_buf(35 downto 33) when r22 = "10" else unit_nop;
 	
    	process(clk,rst)
 	begin
@@ -305,6 +376,13 @@ begin
 				s2_unit <= unit_nop;
 				s3_unit <= unit_nop;
 				s4_unit <= unit_nop;
+				
+				sf1_unit <= unit_nop;
+				sf2_unit <= unit_nop;
+				sf3_unit <= unit_nop;
+				sf4_unit <= unit_nop;
+				
+				jmp_info <= (others => '0');
 			elsif stall_first = '1' then
 				
 			elsif stall_second = '1' then
@@ -322,14 +400,22 @@ begin
 				s2 <= s4;
 				s3 <= s3;
 				s4 <= s4;
+				
 				s1_unit <= s3_unit;
 				s2_unit <= s4_unit;
 				s3_unit <= s3_unit;
 				s4_unit <= s4_unit;
+				
+				sf1_unit <= sf3_unit;
+				sf2_unit <= sf4_unit;
+				sf3_unit <= sf3_unit;
+				sf4_unit <= sf4_unit;
+				
 				dr1 <= dr2;
 				dr2 <= dr2;
 				secondunit <= unit_nop;
 				secondreg <= (others => '0');
+				jmp_info <= jmp_info;
 			else
 				alu_inst <= alu_inst_p;
 				bru_inst <= bru_inst_p;
@@ -341,18 +427,27 @@ begin
 				s4 <= inst2_buf(15 downto 10);
 				s1_unit <= s1_unit_p;
 				s2_unit <= s2_unit_p;
+				sf1_unit <= sf1_unit_p;
+				sf2_unit <= sf2_unit_p;
 				
 				dr1 <= inst1_buf(21 downto 16);
 				dr2 <= inst2_buf(21 downto 16);
+				
+				rsalu0im <= rsalu0im_p;
+				jmp_info <= jmp_info_p;
 				
 				if stall_id2 = '1' then
 					secondunit <= unit_nop;
 					secondreg <= (others => '0');
 					s3_unit <= unit_nop;
 					s4_unit <= unit_nop;
+					sf3_unit <= unit_nop;
+					sf4_unit <= unit_nop;
 				else
 					s3_unit <= s3_unit_p;
 					s4_unit <= s4_unit_p;
+					sf3_unit <= sf3_unit_p;
+					sf4_unit <= sf4_unit_p;
 					secondunit <= inst2_buf(35 downto 33);
 					secondreg <= d2;
 				end if;
@@ -368,8 +463,8 @@ begin
 	----------------------------------
     
     
-    stall_first <= (firstreg(3) and (not rob_ok1)) or (not canUseFirstUnit);
-    stall_second <= stall_first or (secondreg(3) and (not rob_ok2)) or (not canUseFirstUnit);
+    stall_first <= (firstreg(3) and (not rob_ok1)) or (firstreg(4) and (not frob_ok1)) or (not canUseFirstUnit);
+    stall_second <= stall_first or (secondreg(3) and (not rob_ok2)) or (secondreg(4) and (not frob_ok2)) or (not canUseFirstUnit);
     
     with firstunit select
      canUseFirstUnit <= rsalu0_ok when unit_alu,
@@ -383,16 +478,20 @@ begin
     
     rob_alloc1 <= (not stall_first) and firstreg(3);
     rob_alloc2 <= (not stall_second) and secondreg(3);
-    
+    frob_alloc1 <= (not stall_first) and firstreg(4);
+    frob_alloc2 <= (not stall_second) and secondreg(4);
+
     reg_alloc1 <= (firstreg(0)) and rob_alloc1;
     reg_alloc2 <= (secondreg(0)) and rob_alloc2;
+    freg_alloc1 <= (firstreg(0)) and frob_alloc1;
+    freg_alloc2 <= (secondreg(0)) and frob_alloc2;
     
     
-     rsalu0_write <= rob_alloc1 when firstunit = unit_alu else
-     rob_alloc2 when secondunit = unit_alu else
+     rsalu0_write <= rob_alloc1 and frob_alloc1 when firstunit = unit_alu else
+     rob_alloc2 and frob_alloc2 when secondunit = unit_alu else
      '0';
-     rsbru_write <= rob_alloc1 when firstunit = unit_bru else
-     rob_alloc2 when secondunit = unit_bru else
+     rsbru_write <= rob_alloc1 and frob_alloc1 when firstunit = unit_bru else
+     rob_alloc2 and frob_alloc2 when secondunit = unit_bru else
      '0';
      
     rsalu0_inA <= '1'&data_s1_reg_p when (s1_unit = unit_alu) and (reg_s1_ok = '1') else
@@ -401,7 +500,7 @@ begin
     '1'&data_s3_reg_p when (s3_unit = unit_alu) and (reg_s3_ok = '1') else
     '1'&data_s3_rob_p when  (s3_unit = unit_alu) and (rob_s3_ok = '1') else
     '0'&x"0000000"&'0'&s3tag when (s3_unit = unit_alu) else
-    '1'&x"0000"&"00"&alu_inst(13 downto 0);
+    '1'&x"0000"&"00"&rsalu0im;
 
     rsalu0_inB <= '1'&data_s2_reg_p when (s2_unit = unit_alu) and (reg_s2_ok = '1') else
     '1'&data_s2_rob_p when  (s2_unit = unit_alu) and (rob_s2_ok = '1') else
@@ -409,7 +508,7 @@ begin
     '1'&data_s4_reg_p when (s4_unit = unit_alu) and (reg_s4_ok = '1') else
     '1'&data_s4_rob_p when  (s4_unit = unit_alu) and (rob_s4_ok = '1') else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_alu) else
-    '1'&x"0000"&"00"&alu_inst(13 downto 0);
+    '1'&x"0000"&"00"&rsalu0im;
     
     rsalu0dtag <= "0"&rob_tag1 when (firstunit = unit_alu) else "0"&rob_tag2;
     rsalu0op <= alu_inst(31 downto 30);
@@ -417,22 +516,30 @@ begin
     
     rsbru_inA <= '1'&data_s1_reg_p when (s1_unit = unit_bru) and (reg_s1_ok = '1') else
     '1'&data_s1_rob_p when  (s1_unit = unit_bru) and (rob_s1_ok = '1') else
+    '1'&data_s1_freg_p when (sf1_unit = unit_bru) and (freg_s1_ok = '1') else
+    '1'&data_s1_frob_p when  (sf1_unit = unit_bru) and (frob_s1_ok = '1') else
     '0'&x"0000000"&'0'&s1tag when (s1_unit = unit_bru) else
-    '1'&data_s3_reg_p when (s3_unit = unit_bru) and (reg_s3_ok = '1') else
-    '1'&data_s3_rob_p when  (s3_unit = unit_bru) and (rob_s3_ok = '1') else
+    '1'&data_s3_freg_p when (sf3_unit = unit_bru) and (freg_s3_ok = '1') else
+    '1'&data_s3_frob_p when  (sf3_unit = unit_bru) and (frob_s3_ok = '1') else
     '0'&x"0000000"&'0'&s3tag;
 
     rsbru_inB <= '1'&data_s2_reg_p when ((s2_unit = unit_bru) and (reg_s2_ok = '1')) else
     '1'&data_s2_rob_p when  ((s2_unit = unit_bru) and (rob_s2_ok = '1')) else
+    '1'&data_s2_freg_p when ((sf2_unit = unit_bru) and (freg_s2_ok = '1')) else
+    '1'&data_s2_frob_p when  ((sf2_unit = unit_bru) and (frob_s2_ok = '1')) else
     '0'&x"0000000"&'0'&s2tag when (s2_unit = unit_bru) else
     '1'&data_s4_reg_p when ((s4_unit = unit_bru) and (reg_s4_ok = '1')) else
     '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) else
+    '1'&data_s4_freg_p when ((sf4_unit = unit_bru) and (freg_s4_ok = '1')) else
+    '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_bru) else
     '1'&sign_extention(ci);
     
     ci <= bru_inst(17 downto 10);
     rsbrudtag <= "0"&rob_tag1 when (firstunit = unit_bru) else "0"&rob_tag2;
-    rsbruop <= bru_inst(21 downto 18)&bru_inst(9 downto 0)&bru_inst(33 downto 28)&'0';
+    rsbrudtagf <= "0"&frob_tag1 when (firstunit = unit_bru) else "0"&frob_tag2;
+    rsbruop <= rsbrudtagf&jmp_info&bru_inst(21 downto 18)&bru_inst(9 downto 0)&bru_inst(33 downto 28);
+    --jmp先,mask
     
 	IREG0 : reg port map (
 		clk,flush,reg_alloc1,reg_alloc2,
@@ -467,11 +574,56 @@ begin
 		pi_value,pl_value,pb_value
 	);
 	write_reg <= rob_reg_ok when rob_op = "00" else '0';
-	flush <= rob_reg_ok when (write_reg_data(0) = '1') and (rob_op = "01") else '0';
+	flush <= rob_reg_ok and frob_reg_ok when (write_reg_data(0) = '1') and (rob_op = "01") and (write_freg_data(0) = '1') and (frob_op = "01") else '0';
+	flush_jr <= flush and write_reg_data(25);
+	jmp_commit <= ((not write_reg_data(0)) and (not write_reg_data(25)) and rob_reg_ok) or flush when (rob_op = "01") else
+	'0';
+
 	jmp_addr <= write_reg_data(14 downto 1);
-	rob_next <= rob_reg_ok when rob_op = "01" else--jmp
-	rob_reg_ok when rob_op /= "00" else
+	jmp_commit_counter <= write_reg_data(16 downto 15);
+	jmp_commit_hist <= write_reg_data(24 downto 17);
+	jmp_commit_key <= write_freg_data(13 downto 1);
+	rob_next <= rob_reg_ok and (frob_reg_ok or (not write_reg_data(0))) when rob_op = "01" else--jmp
+	rob_reg_ok when rob_op = "10" else--store
+	rob_reg_ok when rob_op = "11" else--io
 	rob_reg_ok;
+	frob_next <= frob_reg_ok and (rob_reg_ok or (not write_reg_data(0))) when frob_op = "01" else--jmp
+	frob_reg_ok when frob_op = "10" else--store
+	frob_reg_ok when frob_op = "11" else--io
+	frob_reg_ok;
+	
+	FREG0 : reg port map (
+		clk,flush,freg_alloc1,freg_alloc2,
+		dr1,dr2,
+		s1,s2,s3,s4,
+		write_freg,write_freg_num,write_freg_data,
+		data_s1_freg_p,data_s2_freg_p,data_s3_freg_p,data_s4_freg_p,
+		freg_s1_ok,freg_s2_ok,freg_s3_ok,freg_s4_ok
+	);
+	FROB0 : reorderBuffer port map (
+		clk,flush,
+		frob_alloc1,frob_alloc2,freg_alloc1,freg_alloc2,
+		frob_ok1,frob_ok2,
+		firstreg(2 downto 1),secondreg(2 downto 1),
+		dr1,dr2,
+		s1,s2,s3,s4,
+	
+		frob_s1_ok,frob_s2_ok,frob_s3_ok,frob_s4_ok,
+		
+		data_s1_frob_p,data_s2_frob_p,data_s3_frob_p,data_s4_frob_p,
+		sf1tag,sf2tag,sf3tag,sf4tag,
+		frob_tag1,frob_tag2,
+		
+		frob_next,
+		frob_reg_ok,
+		write_freg_num,
+		write_freg_data,
+		frob_op,
+		
+		pf_valid,pl_valid_i,pb_valid,
+		pf_dtag,pl_dtag,pb_dtagf,
+		pf_value,pl_value,pb_valuef
+	);
 	
 	
 	RSALU0 : reservationStation
@@ -489,7 +641,7 @@ begin
 	
 	RSBRU0 : reservationStationBru
 	generic map (
-		opbits => 21
+		opbits => 48
 	)
 	port map (
 		clk,flush,rsbru_write,rsbru_ok,
@@ -513,10 +665,10 @@ begin
 	);
 	
 	BRU0 : bru port map  (
-		clk,
-    	bru_ready_op(6 downto 4),bru_ready_op(3 downto 1),bru_ready_op(0),
-    	bruA, bruB,bru_ready_op(20 downto 7),
-       jmpflg,newpc
+		clk,bru_ready_op(5 downto 4),bru_ready_op(3 downto 1),bru_ready_op(21 downto 20),
+    	bru_ready_op(29 downto 22),
+    	bruA, bruB,bru_ready_op(19 downto 6),bru_ready_op(43 downto 30),
+       jmpflg,newpc,newcounter,newkey,newhist
 	);
 
 		
@@ -533,8 +685,10 @@ begin
 	pi_dtag <= pi_0(3 downto 0);
 	pi_valid <= pi_0(4);
 	
-	pb_value <= "0"&x"0000"&newpc&jmpflg;
+	pb_value <= "000000"&pb_0(9)&newhist&newcounter&newpc&jmpflg;
+	pb_valuef <=  "00"&x"0000"&newkey&jmpflg;
 	pb_dtagi <= pb_0(3 downto 0);
+	pb_dtagf <= pb_0(8 downto 5);
 	pb_valid <= pb_0(4);
 	process(clk)
 	begin
@@ -544,7 +698,7 @@ begin
 				pb_0 <= (others => '0');
 			else
 				pi_0 <= "00000"&alu0_ready&alu0_ready_tag;
-				pb_0 <= "00000"&bru_ready&bru_ready_tag;
+				pb_0 <= (bru_ready_op(5) and bru_ready_op(4))&bru_ready_op(47 downto 44)&bru_ready&bru_ready_tag;
 			end if;
 		end if;
 	end process;

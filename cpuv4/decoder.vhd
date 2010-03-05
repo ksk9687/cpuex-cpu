@@ -26,7 +26,7 @@ begin
 	
 	
 	with op select
-	 r1 <=  "00" when op_li|op_call|op_ret|op_nop|op_read|op_ledi,
+	 r1 <=  "00" when op_li|op_call|op_nop|op_read|op_ledi,
 	 "10" when op_cmpfjmp1|op_cmpfjmp2|op_fadd|op_fsub|op_fmul|op_finv|op_fsqrt|op_fmov|op_ftoi,
 	 "01" when others;
 	 
@@ -36,7 +36,7 @@ begin
 	 "01" when others;
 
 	with op select
-	 d <= "11010" when op_cmpijmp1|op_cmpijmp2|op_cmpjmp1|op_cmpjmp2|op_cmpfjmp1|op_cmpfjmp2,
+	 d <= "11010" when op_cmpijmp1|op_cmpijmp2|op_cmpjmp1|op_cmpjmp2|op_cmpfjmp1|op_cmpfjmp2|op_ret,
 	 "01100" when op_store|op_fstore,
 	 "01111" when op_read|op_write,
 	 "01110" when op_led|op_ledi,

@@ -8,16 +8,16 @@ library UNISIM;
 use UNISIM.VComponents.all;
 entity returnAddressStack is
 	port  (
-		clk : in std_logic;
-		jal,jr : in std_logic;
-		pc : in std_logic_vector(14 downto 0);
-		new_pc : out std_logic_vector(14 downto 0)
+		clk,stall : in std_logic;
+		jrmiss,jal1,jal2,jr1,jr2 : in std_logic;
+		pc : in std_logic_vector(13 downto 0);
+		new_pc : out std_logic_vector(13 downto 0)
 	);
 end returnAddressStack;
 
 architecture arch of returnAddressStack is
 
-	type ras_t is array (0 to 15) of std_logic_vector (14 downto 0);
+	type ras_t is array (0 to 15) of std_logic_vector (13 downto 0);
 	signal ras	:	ras_t := (others => (others => '0'));
 
 	signal p :std_logic := '0';
@@ -37,11 +37,21 @@ begin
 			read_pointer <= (others => '0');
 			read_pointer2 <= (others => '1');
 		elsif rising_edge(clk) then
-			if jr = '1' then 
+			if jrmiss = '1' then
+				read_pointer <= (others => '0');
+				read_pointer2 <= (others => '1');
+			elsif (stall = '1') and(jr1 = '1') then 
 				read_pointer <= read_pointer - '1';
 				read_pointer2 <= read_pointer2 - '1';
-			elsif jal = '1' then
+			elsif (stall = '1') and (jal1 = '1') then
 				ras(conv_integer(read_pointer)) <= pc;
+				read_pointer <= read_pointer + '1';
+				read_pointer2 <= read_pointer2 + '1';
+			elsif (stall = '1') and (jr2 = '1') then 
+				read_pointer <= read_pointer - '1';
+				read_pointer2 <= read_pointer2 - '1';
+			elsif (stall = '1') and (jal2 = '1') then
+				ras(conv_integer(read_pointer)) <= pc(13 downto 1)&'1';
 				read_pointer <= read_pointer + '1';
 				read_pointer2 <= read_pointer2 + '1';
 			end if;

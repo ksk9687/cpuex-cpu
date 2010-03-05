@@ -51,8 +51,8 @@ package instruction is
    constant op_cmpfjmp1	:	std_logic_vector(5 downto 0) := o"70";
    constant op_cmpfjmp2	:	std_logic_vector(5 downto 0) := o"71";
    
-   constant op_call	:	std_logic_vector(5 downto 0) := o"74";
-   constant op_ret	:	std_logic_vector(5 downto 0) := o"76"; 	
+   constant op_call	:	std_logic_vector(5 downto 0) := o"03";
+   constant op_ret	:	std_logic_vector(5 downto 0) := o"66"; 	
    
    
    constant nop_inst	:	std_logic_vector(35 downto 0) := x"BC0000000";

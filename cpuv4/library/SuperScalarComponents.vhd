@@ -24,13 +24,19 @@ end component;
 
 
 component branchPredictor is
+	generic (
+		ghistlength : integer := 8--　1-11
+	);
 	port  (
-		clk,rst,flush :in std_logic;
-		bp_ok :out std_logic;
+		clk,flush,stall :in std_logic;
 		pc : in std_logic_vector(13 downto 0);
-		jmp_num : out std_logic_vector(2 downto 0);
-		jmp,b_taken,b_not_taken : in std_logic;
-		taken,taken_hist : out std_logic
+		j1,j2 : in std_logic;
+		jmp_commit : in std_logic;
+		jmp_commit_counter : in std_logic_vector(1 downto 0);
+		jmp_commit_pc : in std_logic_vector(12 downto 0);
+		jmp_commit_hist : in std_logic_vector(ghistlength - 1 downto 0);
+		c1,c2 : out std_logic_vector(1 downto 0);
+		h1,h2 : out std_logic_vector(ghistlength - 1 downto 0)
 	);
 end component;
 
@@ -38,13 +44,19 @@ end component;
 component bru is
 	port  (
 		clk : in std_logic;
-    	op   : in std_logic_vector(2 downto 0);-- call ret jmp(1:f,0:i)
+    	op   : in std_logic_vector(1 downto 0);-- ret,jmp(1:f,0:i)
     	mask   : in std_logic_vector(2 downto 0);
-    	hist   : in std_logic;
+    	histcounter   : in std_logic_vector(1 downto 0);
+    	globalhist   : in std_logic_vector(7 downto 0);
     	A, B : in  std_logic_vector(31 downto 0);
-    	pc : in  std_logic_vector(13 downto 0);
-        jmpflg : out std_logic;
-        newpc : out std_logic_vector(13 downto 0)
+    	pc : in  std_logic_vector(13 downto 0);--jmp先
+    	instpc : in  std_logic_vector(13 downto 0);--分岐命令のアドレス
+    	
+     	jmpflg : out std_logic;--flushの必要があるか
+     	newpc : out std_logic_vector(13 downto 0);--新しいPC
+    	newcounter   : out std_logic_vector(1 downto 0);--新しいカウンタ
+    	key   : out std_logic_vector(12 downto 0);--新しいカウンタを入れる場所
+    	newhist   : out std_logic_vector(7 downto 0)
 	);
 end component;
 
@@ -357,10 +369,10 @@ end component;
 
 component returnAddressStack is
 	port  (
-		clk : in std_logic;
-		jal,jr : in std_logic;
-		pc : in std_logic_vector(14 downto 0);
-		new_pc : out std_logic_vector(14 downto 0)
+		clk,stall : in std_logic;
+		jrmiss,jal1,jal2,jr1,jr2 : in std_logic;
+		pc : in std_logic_vector(13 downto 0);
+		new_pc : out std_logic_vector(13 downto 0)
 	);
 end component;
 
