@@ -9,7 +9,7 @@ use UNISIM.VComponents.all;
 entity returnAddressStack is
 	port  (
 		clk,stall : in std_logic;
-		jrmiss,jal1,jal2,jr1,jr2 : in std_logic;
+		jrmiss,jmp1,jal1,jal2,jr1,jr2 : in std_logic;
 		pc : in std_logic_vector(13 downto 0);
 		new_pc : out std_logic_vector(13 downto 0)
 	);
@@ -40,18 +40,19 @@ begin
 			if jrmiss = '1' then
 				read_pointer <= (others => '0');
 				read_pointer2 <= (others => '1');
-			elsif (stall = '1') and(jr1 = '1') then 
+			elsif (stall = '0') and (jr1 = '1') then 
 				read_pointer <= read_pointer - '1';
 				read_pointer2 <= read_pointer2 - '1';
-			elsif (stall = '1') and (jal1 = '1') then
-				ras(conv_integer(read_pointer)) <= pc;
+			elsif (stall = '0') and (jal1 = '1') then
+				ras(conv_integer(read_pointer)) <= pc + '1';
 				read_pointer <= read_pointer + '1';
 				read_pointer2 <= read_pointer2 + '1';
-			elsif (stall = '1') and (jr2 = '1') then 
+			elsif jmp1 = '1' then
+			elsif (stall = '0') and (jr2 = '1') then 
 				read_pointer <= read_pointer - '1';
 				read_pointer2 <= read_pointer2 - '1';
-			elsif (stall = '1') and (jal2 = '1') then
-				ras(conv_integer(read_pointer)) <= pc(13 downto 1)&'1';
+			elsif (stall = '0') and (jal2 = '1') then
+				ras(conv_integer(read_pointer)) <= (pc(13 downto 1)+'1')&'0';
 				read_pointer <= read_pointer + '1';
 				read_pointer2 <= read_pointer2 + '1';
 			end if;

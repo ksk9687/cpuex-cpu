@@ -50,7 +50,7 @@ component bru is
     	globalhist   : in std_logic_vector(7 downto 0);
     	A, B : in  std_logic_vector(31 downto 0);
     	pc : in  std_logic_vector(13 downto 0);--jmp先
-    	instpc : in  std_logic_vector(13 downto 0);--分岐命令のアドレス
+    	instpc : in  std_logic_vector(13 downto 0);--分岐命令のアドレス,jrｂの飛び先
     	
      	jmpflg : out std_logic;--flushの必要があるか
      	newpc : out std_logic_vector(13 downto 0);--新しいPC
@@ -183,9 +183,8 @@ component IOU is
 	port  (
 --		clk66,
 		clk,enable : in std_logic;
-		iou_op : in std_logic_vector(2 downto 0);
+		iou_op : in std_logic_vector(1 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
-		no : in std_logic_vector(4 downto 0);
 		readdata : out std_logic_vector(31 downto 0)
 		
 		;RSRXD : in STD_LOGIC
@@ -214,20 +213,34 @@ end component;
 
 component lsu is
 	port  (
-		clk,write,load_ok : in std_logic;
-		op : in std_logic_vector(2 downto 0);
-    	lsu_ok,lsu_full : out std_logic;--
+		clk,flush,write : in std_logic;
+    	load_end,store_ok,io_ok,io_end,lsu_full : out std_logic;
+		storeexec,ioexec : in std_logic;
+		op : in std_logic_vector(5 downto 0);
+		im : in std_logic_vector(13 downto 0);
     	
-    	ls_addr_in : in std_logic_vector(19 downto 0);--
-    	ls_addr_out : out std_logic_vector(19 downto 0);--
+    	a,b : in std_logic_vector(31 downto 0);
+    	o,iou_out : out std_logic_vector(31 downto 0);
     	
-    	ls_flg : out std_logic_vector(2 downto 0);--
-    	reg_d : out std_logic_vector(5 downto 0);
+    	tagin : in std_logic_vector(3 downto 0);
+    	tagout : out std_logic_vector(3 downto 0);
     	
-    	lsu_in : in std_logic_vector(31 downto 0);--
-    	lsu_out : out std_logic_vector(31 downto 0);--
-    	load_data : in std_logic_vector(31 downto 0);--
-    	store_data : out std_logic_vector(31 downto 0)--
+    	ls_flg : out std_logic_vector(2 downto 0);
+		load_hit : in std_logic;
+    	load_data : in std_logic_vector(31 downto 0);
+    	ls_addr_out : out std_logic_vector(19 downto 0);
+    	store_data : out std_logic_vector(31 downto 0);
+    	
+    	RS_RX : in STD_LOGIC;
+	    RS_TX : out STD_LOGIC;
+	    outdata0 : out std_logic_vector(7 downto 0);
+	    outdata1 : out std_logic_vector(7 downto 0);
+	    outdata2 : out std_logic_vector(7 downto 0);
+	    outdata3 : out std_logic_vector(7 downto 0);
+	    outdata4 : out std_logic_vector(7 downto 0);
+	    outdata5 : out std_logic_vector(7 downto 0);
+	    outdata6 : out std_logic_vector(7 downto 0);
+	    outdata7 : out std_logic_vector(7 downto 0)
 	);
 end component;
 
@@ -290,6 +303,7 @@ component reorderBuffer is
 		write1,write2,regwrite1,regwrite2 : in std_logic;
 		write1ok,write2ok: out std_logic;
 		
+		tf1,tf2 : in std_logic;
 		op,op2 : in std_logic_vector(1 downto 0);
 		reg_d,reg_d2,reg_s1,reg_s2,reg_s12,reg_s22 : in std_logic_vector(5 downto 0);
 		
@@ -339,6 +353,34 @@ component reservationStation is
 end component;
 
 
+component reservationStationLsu is
+	generic (
+		opbits : integer := 3 + 3 + 14 + 1
+	);
+	port  (
+		clk,flush : in std_logic;
+		write : in std_logic;
+		writeok: out std_logic;
+		read : in std_logic;
+		readok : out std_logic;
+			
+		inop: in std_logic_vector(opbits - 1 downto 0);
+		indtag: in std_logic_vector(3 downto 0);
+		ins1: in std_logic_vector(32 downto 0);
+		ins2: in std_logic_vector(32 downto 0);
+
+		outop: out std_logic_vector(opbits - 1 downto 0);
+		outdtag: out std_logic_vector(3 downto 0);
+		outs1: out std_logic_vector(31 downto 0);
+		outs2: out std_logic_vector(31 downto 0);
+		
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
+		value1,value2,value3 : in std_logic_vector(31 downto 0)
+	);
+end component;
+
+
 component reservationStationBru is
 	generic (
 		opbits : integer := 3 + 3 + 14 + 1
@@ -370,7 +412,7 @@ end component;
 component returnAddressStack is
 	port  (
 		clk,stall : in std_logic;
-		jrmiss,jal1,jal2,jr1,jr2 : in std_logic;
+		jrmiss,jmp1,jal1,jal2,jr1,jr2 : in std_logic;
 		pc : in std_logic_vector(13 downto 0);
 		new_pc : out std_logic_vector(13 downto 0)
 	);

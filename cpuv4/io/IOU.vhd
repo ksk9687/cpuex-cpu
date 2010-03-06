@@ -12,9 +12,8 @@ entity IOU is
 	port  (
 --		clk66,
 		clk,enable : in std_logic;
-		iou_op : in std_logic_vector(2 downto 0);
+		iou_op : in std_logic_vector(1 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
-		no : in std_logic_vector(4 downto 0);
 		readdata : out std_logic_vector(31 downto 0)
 		
 		;RSRXD : in STD_LOGIC
@@ -29,6 +28,8 @@ architecture arch of IOU is
 	constant rs232c: std_logic_vector := "00010";
 	constant nop: std_logic_vector := "11111";
 	constant error: std_logic_vector := x"0FFFFFFF";
+	constant iou_op_read : std_logic_vector := "00";
+	constant iou_op_write : std_logic_vector := "01";
 
 	signal rs_read,rs_read_end,rs_write,rs_write_end,rs_read_p,rs_write_p :std_logic := '0';
 	signal rs_readdata_out,rs_writedata_buf: std_logic_vector(7 downto 0);

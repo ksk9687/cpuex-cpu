@@ -60,6 +60,9 @@ package instruction is
   
    constant unit_alu	:	std_logic_vector(2 downto 0) := "000";
    constant unit_bru	:	std_logic_vector(2 downto 0) := "110";
+   constant unit_lsu	:	std_logic_vector(2 downto 0) := "010";
+   constant unit_lsiou	:	std_logic_vector(1 downto 0) := "01";
+   constant unit_iou	:	std_logic_vector(2 downto 0) := "011";
    constant unit_nop	:	std_logic_vector(2 downto 0) := "101";
 end package instruction;  
  

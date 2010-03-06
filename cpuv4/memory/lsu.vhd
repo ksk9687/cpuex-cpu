@@ -4,109 +4,94 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_unsigned.all;
 
 library work;
+use work.util.all; 
 use work.instruction.all;
 use work.SuperScalarComponents.all; 
 
 entity lsu is
 	port  (
-		clk,write,load_ok : in std_logic;
-		op : in std_logic_vector(2 downto 0);
-    	lsu_ok,lsu_full : out std_logic;--
+		clk,flush,write : in std_logic;
+    	load_end,store_ok,io_ok,io_end,lsu_full : out std_logic;
+		storeexec,ioexec : in std_logic;
+		op : in std_logic_vector(5 downto 0);
+		im : in std_logic_vector(13 downto 0);
     	
-    	ls_addr_in : in std_logic_vector(19 downto 0);--
-    	ls_addr_out : out std_logic_vector(19 downto 0);--
+    	a,b : in std_logic_vector(31 downto 0);
+    	o,iou_out : out std_logic_vector(31 downto 0);
     	
-    	ls_flg : out std_logic_vector(2 downto 0);--
-    	reg_d : out std_logic_vector(5 downto 0);
+    	tagin : in std_logic_vector(3 downto 0);
+    	tagout : out std_logic_vector(3 downto 0);
     	
-    	lsu_in : in std_logic_vector(31 downto 0);--
-    	lsu_out : out std_logic_vector(31 downto 0);--
-    	load_data : in std_logic_vector(31 downto 0);--
-    	store_data : out std_logic_vector(31 downto 0)--
+    	ls_flg : out std_logic_vector(2 downto 0);
+		load_hit : in std_logic;
+    	load_data : in std_logic_vector(31 downto 0);
+    	ls_addr_out : out std_logic_vector(19 downto 0);
+    	store_data : out std_logic_vector(31 downto 0);
+    	
+    	RS_RX : in STD_LOGIC;
+	    RS_TX : out STD_LOGIC;
+	    outdata0 : out std_logic_vector(7 downto 0);
+	    outdata1 : out std_logic_vector(7 downto 0);
+	    outdata2 : out std_logic_vector(7 downto 0);
+	    outdata3 : out std_logic_vector(7 downto 0);
+	    outdata4 : out std_logic_vector(7 downto 0);
+	    outdata5 : out std_logic_vector(7 downto 0);
+	    outdata6 : out std_logic_vector(7 downto 0);
+	    outdata7 : out std_logic_vector(7 downto 0)
 	);
 end lsu;
 
 
 architecture arch of lsu is
-	type lsu_lstate_t is (
-		normal,revert,miss,buf0,buf1,buf2,buf3,buf4
-	);
-	signal lsu_state : lsu_lstate_t := normal;
+	--io
+   signal leddata : std_logic_vector(31 downto 0):= (others => '0');
+   signal leddotdata : std_logic_vector(7 downto 0):= (others => '0');
+	signal iou_enable :std_logic:='0';
+	signal io_read_buf_overrun :std_logic;
+	signal io : std_logic_vector(38 downto 0) := (others => '0');
 	
 	
-	 signal writeok_in,empty,readok_in,load_end,load_end_p,lsu_ok_in :std_logic := '0';
-	 signal writedata,readdata1,readdata2 : std_logic_vector(54 downto 0) := (others => '0');
-	 signal readdata1_buf,readdata2_buf : std_logic_vector(54 downto 0) := (others => '0');
-	signal load_wait,lsu_may_full,m :std_logic := '0';
 begin
-	lsu_full <= not lsu_ok_in when (lsu_state = normal) else '1';
-	lsu_ok <= readdata1(53) and load_ok when (lsu_state =  miss) else '0';
-	
-	lsu_ok_in <= (not readdata1(53)) or load_ok;
-	-- <= load_ok when readdata1(53) = "1" else '1';
-	
-	reg_d <= readdata1(25 downto 20);
-	lsu_out <= load_data;
-	
-	ls_flg(2) <= readdata2(54);
-	ls_flg(1) <= readdata2(53);
-	ls_flg(0) <= readdata2(52);
-	store_data <= readdata2(51 downto 20);
-	ls_addr_out <= readdata2(19 downto 0);
-	
-	writedata(19 downto 0) <= ls_addr_in;
-	writedata(51 downto 20) <= lsu_in;
-	writedata(54) <= write when op = op_store_inst(2 downto 0) else '0'; 
-	writedata(53) <= write when (op = op_load(2 downto 0)) or (op = op_loadr(2 downto 0)) else '0'; 
-	writedata(52) <= write when (op = op_store(2 downto 0)) or (op = op_store_inst(2 downto 0)) else '0'; 
-
-	process(clk)
+	lsu_full <= io(38);
+	io_ok <= not io(38);
+	tagout <= io(37 downto 34);
+  leddotdata <= "1111111" & (not io_read_buf_overrun);
+  led_inst : ledextd2 port map (
+      leddata,
+      leddotdata,
+      outdata0,
+      outdata1,
+      outdata2,
+      outdata3,
+      outdata4,
+      outdata5,
+      outdata6,
+      outdata7
+    );
+    IOU0 : IOU port map (
+		clk,iou_enable,
+		io(33 downto 32),io(31 downto 0),
+		iou_out,RS_RX,RS_TX,
+		io_read_buf_overrun
+	);
+	iou_enable <= (not io(33)) and ioexec and io(38);
+	IOPROS:process(clk)
 	begin
 		if rising_edge(clk) then
-			case lsu_state is
-				when normal =>
-					if lsu_ok_in = '0' then
-						readdata1_buf <= readdata2;
-						readdata2_buf <= writedata;
-						readdata1 <= readdata1;
-						readdata2 <= readdata1;
-						
-						lsu_state <= buf0;
-					else
-						readdata1 <= readdata2;
-						readdata2 <= writedata;
-					end if;
-				when buf0 => lsu_state <= buf1;
-				when buf1 => lsu_state <= buf2;
-				when buf2 => lsu_state <= buf4;
-				when buf3 => lsu_state <= buf4;
-				when buf4 => lsu_state <= miss;
-				when miss =>
-					if lsu_ok_in = '1' then --hit
-						if readdata1_buf(53 downto 52) /= "00" then
-							lsu_state <= buf4;
-							readdata1 <= readdata1_buf;
-							readdata2 <= readdata1_buf;
-							readdata1_buf <= readdata2_buf;
-						elsif readdata2_buf(53 downto 52) /= "00" then
-							lsu_state <= buf4;
-							readdata1 <= readdata2_buf;
-							readdata2 <= readdata2_buf;
-							readdata1_buf <= (others => '0');
-						else
-							lsu_state <= normal;
-							readdata1 <= (others => '0');
-							readdata2 <= (others => '0');
-							readdata1_buf <= (others => '0');
-						end if;
-							readdata2_buf <= (others => '0');
-					else
-						readdata1 <= readdata1;
-						readdata2 <= readdata1;
-					end if;
-				when others  => lsu_state <= normal;
-			end case;
+			io_end <= iou_enable;
+			if flush = '1' then
+				io(38) <= '0';
+			elsif (write = '1') and (op(5 downto 3) = "110") then--ledi
+				io <= '1'&tagin&op(4 downto 3)&x"000000"&im(7 downto 0);
+			elsif (write = '1') and (op(5 downto 3) = "111") then
+				io <= '1'&tagin&op(4 downto 3)&a;
+			elsif ioexec = '1' then
+				io(38) <= '0';
+  				leddata <= io(31 downto 0);
+			end if;
 		end if;
 	end process;
+		
+
 end arch;
 

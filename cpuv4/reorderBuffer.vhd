@@ -12,6 +12,7 @@ entity reorderBuffer is
 		write1,write2,regwrite1,regwrite2 : in std_logic;
 		write1ok,write2ok: out std_logic;
 		
+		tf1,tf2 : in std_logic;
 		op,op2 : in std_logic_vector(1 downto 0);
 		reg_d,reg_d2,reg_s1,reg_s2,reg_s12,reg_s22 : in std_logic_vector(5 downto 0);
 		
@@ -72,8 +73,8 @@ begin
 	
 	s1_tag <= bufmap(conv_integer(reg_s1));
 	s2_tag <= bufmap(conv_integer(reg_s2));
-	s12_tag <= bufmap(conv_integer(reg_s12));
-	s22_tag <= bufmap(conv_integer(reg_s22));
+	s12_tag <= write_pointer when tf1 = '1' else bufmap(conv_integer(reg_s12));
+	s22_tag <= write_pointer when tf2 = '1' else bufmap(conv_integer(reg_s22));
 	
 	reg_s1_ok <= '1' when dtag1 = s1_tag and dwrite1 = '1' else
 	'1' when dtag2 = s1_tag and dwrite2 = '1' else
@@ -81,6 +82,7 @@ begin
 	reg_s2_ok <= '1' when dtag1 = s2_tag and dwrite1 = '1' else
 	'1' when dtag2 = s2_tag and dwrite2 = '1' else
 	buf(conv_integer( s2_tag ))(38);
+	
 	reg_s12_ok <= '1' when dtag1 = s12_tag and dwrite1 = '1' else
 	'1' when dtag2 = s12_tag and dwrite2 = '1' else
 	buf(conv_integer( s12_tag ))(38);

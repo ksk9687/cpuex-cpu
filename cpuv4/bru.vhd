@@ -11,7 +11,7 @@ entity bru is
     	globalhist   : in std_logic_vector(7 downto 0);
     	A, B : in  std_logic_vector(31 downto 0);
     	pc : in  std_logic_vector(13 downto 0);--jmp先
-    	instpc : in  std_logic_vector(13 downto 0);--分岐命令のアドレス
+    	instpc : in  std_logic_vector(13 downto 0);--分岐命令のアドレス,jrｂの飛び先
     	
      	jmpflg : out std_logic;--flushの必要があるか
      	newpc : out std_logic_vector(13 downto 0);--新しいPC
@@ -36,7 +36,7 @@ begin
 	e <= '1' when ((not A(31))&A(30 downto 0)) = ((not B(31))&B(30 downto 0)) else '0';
 	l <= '1' when ((not A(31))&A(30 downto 0)) < ((not B(31))&B(30 downto 0)) else '0';
 	z <= '1' when (A(30 downto 23) = "00000000") and (B(30 downto 23) = "00000000") else '0';
-	r <= '1' when A(13 downto 0) /= pc else '0';--jr miss
+	r <= '1' when A(13 downto 0) /= instpc else '0';--jr miss
 	
 	with histcounter select
 	 cot <= "01" when "00",
@@ -67,7 +67,7 @@ begin
 				hist_buf <= histcounter(1);
 			end if;
 			
-			ghist_buf <= globalhist;
+			ghist_buf <= globalhist(6 downto 0) & (not histcounter(1));
 			mask_buf <= mask;
 			ret <= r;
 			

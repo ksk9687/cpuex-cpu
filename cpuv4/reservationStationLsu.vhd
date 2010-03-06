@@ -4,9 +4,9 @@ use ieee.std_logic_unsigned.all;
 
 library UNISIM;
 use UNISIM.VComponents.all;
-entity reservationStation is
+entity reservationStationBru is
 	generic (
-		opbits : integer := 2
+		opbits : integer := 3 + 3 + 14 + 1
 	);
 	port  (
 		clk,flush : in std_logic;
@@ -25,16 +25,18 @@ entity reservationStation is
 		outs1: out std_logic_vector(31 downto 0);
 		outs2: out std_logic_vector(31 downto 0);
 		
-		write1,write2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(3 downto 0);
-		value1,value2 : in std_logic_vector(31 downto 0)
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
+		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
-end reservationStation;
+end reservationStationBru;
 
-architecture arch of reservationStation is
+architecture arch of reservationStationBru is
 	signal rst :std_logic := '0';
 	
 	constant op_valid : integer := 0;
+
+	constant op_cant_bypass : integer := 5;
 
 	type s_t is array (0 to 3) of std_logic_vector (32 downto 0);
 	signal s1,s1_write : s_t := (others => (others => '0'));
@@ -67,9 +69,9 @@ begin
 	ready(3) <= '1' when (s1_write(3)(32) = '1') and (s2_write(3)(32) = '1') and (op(3)(op_valid) = '1') else '0';
 	--”­s€”õ‚É“ü‚é‚©
 	go(0) <= ready(0) and ((not readyop(64 + op_valid)) or read);
-	go(1) <= ready(1) and (not ready(0)) and ((not readyop(64 + op_valid)) or read);
-	go(2) <= ready(2) and (not ready(1)) and (not ready(0)) and ((not readyop(64 + op_valid)) or read);
-	go(3) <= ready(3) and (not ready(2)) and (not ready(1)) and (not ready(0)) and((not readyop(64 + op_valid)) or read);
+	go(1) <= ready(1) and (not ready(0)) and ((not readyop(64 + op_valid)) or read) and (not op(0)(op_cant_bypass));
+	go(2) <= ready(2) and (not ready(1)) and (not ready(0)) and ((not readyop(64 + op_valid)) or read) and (not op(0)(op_cant_bypass))and (not op(1)(op_cant_bypass));
+	go(3) <= ready(3) and (not ready(2)) and (not ready(1)) and (not ready(0)) and((not readyop(64 + op_valid)) or read)and (not op(0)(op_cant_bypass))and (not op(1)(op_cant_bypass)) and (not op(2)(op_cant_bypass));
 	--Å¬‚Ì–³Œø‚Èƒ‰ƒCƒ“
 	newline(0) <= '1' when (op(0)(op_valid) = '0') else '0';
 	newline(1) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '0') else '0';
@@ -83,28 +85,36 @@ begin
 
 	s1_write(0) <= '1'&value1 when (s1(0)(32) = '0') and (write1 = '1') and (s1(0)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(0)(32) = '0') and (write2 = '1') and (s1(0)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(0)(32) = '0') and (write3 = '1') and (s1(0)(3 downto 0) = dtag3) else
 	s1(0);
 	s1_write(1) <= '1'&value1 when (s1(1)(32) = '0') and (write1 = '1') and (s1(1)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(1)(32) = '0') and (write2 = '1') and (s1(1)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(1)(32) = '0') and (write3 = '1') and (s1(1)(3 downto 0) = dtag3) else
 	s1(1);
 	s1_write(2) <= '1'&value1 when (s1(2)(32) = '0') and (write1 = '1') and (s1(2)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(2)(32) = '0') and (write2 = '1') and (s1(2)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(2)(32) = '0') and (write3 = '1') and (s1(2)(3 downto 0) = dtag3) else
 	s1(2);
 	s1_write(3) <= '1'&value1 when (s1(3)(32) = '0') and (write1 = '1') and (s1(3)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(3)(32) = '0') and (write2 = '1') and (s1(3)(3 downto 0) = dtag2) else
+	'1'&value3 when (s1(3)(32) = '0') and (write3 = '1') and (s1(3)(3 downto 0) = dtag3) else
 	s1(3);
 
 	s2_write(0) <= '1'&value1 when (s2(0)(32) = '0') and (write1 = '1') and (s2(0)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(0)(32) = '0') and (write2 = '1') and (s2(0)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(0)(32) = '0') and (write3 = '1') and (s2(0)(3 downto 0) = dtag3) else
 	s2(0);
 	s2_write(1) <= '1'&value1 when (s2(1)(32) = '0') and (write1 = '1') and (s2(1)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(1)(32) = '0') and (write2 = '1') and (s2(1)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(1)(32) = '0') and (write3 = '1') and (s2(1)(3 downto 0) = dtag3) else
 	s2(1);
 	s2_write(2) <= '1'&value1 when (s2(2)(32) = '0') and (write1 = '1') and (s2(2)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(2)(32) = '0') and (write2 = '1') and (s2(2)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(2)(32) = '0') and (write3 = '1') and (s2(2)(3 downto 0) = dtag3) else
 	s2(2);
 	s2_write(3) <= '1'&value1 when (s2(3)(32) = '0') and (write1 = '1') and (s2(3)(3 downto 0) = dtag1) else
 	'1'&value2 when (s2(3)(32) = '0') and (write2 = '1') and (s2(3)(3 downto 0) = dtag2) else
+	'1'&value3 when (s2(3)(32) = '0') and (write3 = '1') and (s2(3)(3 downto 0) = dtag3) else
 	s2(3);
 	
 	process(clk)
@@ -186,7 +196,6 @@ begin
 					op(3) <= op(3);
 				end if;
 			end if;
-			
 		end if;
 	end process;
 	
