@@ -70,29 +70,19 @@ begin
  	 		end if;
  	 	end if;
  	 end process;
-	 	 
---   RS232C0 : rs232cio
---    generic map( -- 115200,66.66MHz
---    READBITLEN    => 590,    -- 1bitにかかるクロックより少し大きい値
---    READPADBITLEN => 50,     -- データの採取間隔
---    MERGINLEN     => 10,      -- データの読み込み開始の余白
---    STOPBACK      => 50,     -- STOPBITをどれぐらい待たないか
---    READBUFLENLOG => 8,      -- バッファの大きさ
---
---    WRITEBITLEN => 578,      -- 1bitにかかるクロックより少し小さい値
---    NULLAFTSTOP => 100,       -- STOPを送った後に念のために送る余白
---    WRITEBUFLENLOG => 10      -- バッファの大きさ
---    )
---   port map (
-----   	clk66,
---		clk,rst,
---   	rs_read,rs_readdata_out,rs_read_end,io_read_buf_overrun,
---   	rs_write,rs_writedata_buf,rs_write_end,
---   	
---	RSRXD,RSTXD
---   );
 
    RS232C0 : rs232cio
+    generic map( -- 115200,66.66MHz
+    READBITLEN    => 590,    -- 1bitにかかるクロックより少し大きい値
+    READPADBITLEN => 50,     -- データの採取間隔
+    MERGINLEN     => 10,      -- データの読み込み開始の余白
+    STOPBACK      => 50,     -- STOPBITをどれぐらい待たないか
+    READBUFLENLOG => 8,      -- バッファの大きさ
+
+    WRITEBITLEN => 578,      -- 1bitにかかるクロックより少し小さい値
+    NULLAFTSTOP => 100,       -- STOPを送った後に念のために送る余白
+    WRITEBUFLENLOG => 10      -- バッファの大きさ
+    )
 --    generic map( -- 115200,100MHz
 --    READBITLEN    => 880,    -- 1bitにかかるクロックより少し大きい値
 --    READPADBITLEN => 50,     -- データの採取間隔
@@ -126,17 +116,17 @@ begin
 --    NULLAFTSTOP => 100,       -- STOPを送った後に念のために送る余白
 --    WRITEBUFLENLOG => 10      -- バッファの大きさ
 --    )
-    generic map( -- 460800,150MHz
-    READBITLEN    => 330,    -- 1bitにかかるクロックより少し大きい値
-    READPADBITLEN => 50,     -- データの採取間隔
-    MERGINLEN     => 10,      -- データの読み込み開始の余白
-    STOPBACK      => 70,     -- STOPBITをどれぐらい待たないか
-    READBUFLENLOG => 8,      -- バッファの大きさ
-
-    WRITEBITLEN => 325,      -- 1bitにかかるクロックより少し小さい値
-    NULLAFTSTOP => 50,       -- STOPを送った後に念のために送る余白
-    WRITEBUFLENLOG => 10      -- バッファの大きさ
-    )
+--    generic map( -- 460800,150MHz
+--    READBITLEN    => 330,    -- 1bitにかかるクロックより少し大きい値
+--    READPADBITLEN => 50,     -- データの採取間隔
+--    MERGINLEN     => 10,      -- データの読み込み開始の余白
+--    STOPBACK      => 70,     -- STOPBITをどれぐらい待たないか
+--    READBUFLENLOG => 8,      -- バッファの大きさ
+--
+--    WRITEBITLEN => 325,      -- 1bitにかかるクロックより少し小さい値
+--    NULLAFTSTOP => 50,       -- STOPを送った後に念のために送る余白
+--    WRITEBUFLENLOG => 10      -- バッファの大きさ
+--    )
    port map (
 --   	clk66,
 		clk,rst,
