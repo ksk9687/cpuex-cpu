@@ -6,7 +6,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 entity reservationStationBru is
 	generic (
-		opbits : integer := 3 + 3 + 14 + 1
+		opbits : integer := 20
 	);
 	port  (
 		clk,flush : in std_logic;

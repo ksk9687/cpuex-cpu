@@ -98,7 +98,7 @@ architecture arch of irom is
     
 	signal ROM : rom_t := (
 "000000000000000000000000000000000000",
-"010011000000000000000000000000000000",
+"000000000000000000000000000000000000",
 "000000000000001111110010000000000000",
 "000101001111111111111111110000000000",
 
@@ -140,13 +140,18 @@ architecture arch of irom is
     );
 	
     signal i1,i2 : std_logic_vector(35 downto 0) := nop_inst;
+   signal rst: std_logic := '0';
 begin
     
+  	ROC0 : ROC port map (O => rst);
 	i1 <= ROM(conv_integer(address(3 downto 0)&'0'));
 	i2 <= ROM(conv_integer(address(3 downto 0)&'1'));
-	process(clk)
+	process(clk,rst)
 	begin
-		if rising_edge(clk) then
+		if rst = '1' then
+			read_data1 <= nop_inst;
+			read_data2 <= nop_inst;
+		elsif rising_edge(clk) then
 		 	read_data1 <= i1;
 		 	read_data2 <= i2;
 		end if;

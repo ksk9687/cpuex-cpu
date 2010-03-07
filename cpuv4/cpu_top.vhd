@@ -391,6 +391,25 @@ begin
    	process(clk,rst)
 	begin
 		if rst = '1' then
+				alu_inst <= nop_inst;
+				bru_inst <= nop_inst;
+				lsu_inst <= nop_inst;
+				
+				firstunit <= unit_nop;
+				secondunit <= unit_nop;
+				firstregmsk  <= (others => '0');
+				secondregmsk  <= (others => '0');
+				s1_unit <= unit_nop;
+				s2_unit <= unit_nop;
+				s3_unit <= unit_nop;
+				s4_unit <= unit_nop;
+				
+				sf1_unit <= unit_nop;
+				sf2_unit <= unit_nop;
+				sf3_unit <= unit_nop;
+				sf4_unit <= unit_nop;
+				jmp_info <= (others => '0');
+			
 		elsif rising_edge(clk) then
 			if flush = '1' then
 				alu_inst <= nop_inst;
@@ -645,7 +664,7 @@ begin
     '1'&x"00000000";
     
     rslsudtag <= "0"&rob_tag1 when (firstunit(2 downto 1) = unit_lsiou) or (secondregmsk(0) = '1') else "0"&rob_tag2;
-    rslsuop <= lsu_inst(21 downto 18)&lsu_inst(9 downto 0)&bru_inst(33 downto 28);
+    rslsuop <= lsu_inst(21 downto 18)&lsu_inst(9 downto 0)&lsu_inst(33 downto 28);
     
     
 	IREG0 : reg port map (

@@ -81,9 +81,9 @@ begin
 			io_end <= iou_enable;
 			if flush = '1' then
 				io(38) <= '0';
-			elsif (write = '1') and (op(5 downto 3) = "110") then--ledi
+			elsif (write = '1') and (op(5 downto 3) = "111") then--ledi
 				io <= '1'&tagin&op(4 downto 3)&x"000000"&im(7 downto 0);
-			elsif (write = '1') and (op(5 downto 3) = "111") then
+			elsif (write = '1') and (op(5 downto 3) = "110") then
 				io <= '1'&tagin&op(4 downto 3)&a;
 			elsif ioexec = '1' then
 				io(38) <= '0';
