@@ -75,7 +75,7 @@ begin
 		io_read_buf_overrun
 	);
 	iou_enable <= (not io(33)) and ioexec and io(38);
-	IOPROS:process(clk)
+	IOPROC:process(clk)
 	begin
 		if rising_edge(clk) then
 			io_end <= iou_enable;

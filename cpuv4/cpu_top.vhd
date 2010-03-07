@@ -55,7 +55,7 @@ entity cpu_top is
 end cpu_top;
 
 architecture arch of cpu_top is	
-   signal clk,clk66,clk180,rst,rst0: std_logic := '0';
+   signal clk,clk66,clk180,rst,rst0,locked0: std_logic := '0';
    signal stall_first,stall_second,stall_id3,stall_id2,stall_fetch,stall_front,flush,flush_jr: std_logic := '0';
 
    signal rob_ok1,rob_ok2 : std_logic := '0';
@@ -149,14 +149,19 @@ architecture arch of cpu_top is
 	signal bpk1,bpk2 ,jmp_commit_key,newkey :std_logic_vector(12 downto 0) := (others=>'0');
 
 begin
-  clockgenerator_inst : clockgenerator port map(
-    CLK_66M,
-    CLK_RST,
-	clock66 => clk66,
-	clock => clk,
-	clock_180 => clk180,
-    reset => rst0);
-  
+--  clockgenerator_inst : clockgenerator port map(
+--    CLK_66M,
+--    CLK_RST,
+--	clock66 => clk66,
+--	clock => clk,
+--	clock_180 => clk180,
+--    reset => rst0);
+ CLOCK0 : CLOCK port map (
+    clkin => CLK_66M,
+    clkout0 => clk,
+    clkout180 => clk180,
+    locked =>locked0);
+    
   
   	ROC0 : ROC port map (O => rst);
   

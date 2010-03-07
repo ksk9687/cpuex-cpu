@@ -130,6 +130,23 @@ component baka_dcache is
 end component;
 
 
+component CLOCK is
+  port (
+    clkin       : in  std_logic;
+    clkout0     : out std_logic;
+    clkout90    : out std_logic;
+    clkout180   : out std_logic;
+    clkout270   : out std_logic;
+    clkout2x    : out std_logic;
+    clkout2x90 	: out std_logic;
+    clkout2x180 : out std_logic;
+    clkout2x270 : out std_logic;
+    clkout4x	: out std_logic;
+    clkout1x	: out std_logic;
+    locked      : out std_logic);
+end component;
+
+
 component clockgenerator is
   Port ( globalclk : in  STD_LOGIC;
          globalrst : in  STD_LOGIC;

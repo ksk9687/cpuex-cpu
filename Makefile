@@ -8,7 +8,7 @@ all : cpuv4
 cpuv4 : tmp/4/alu.cmp tmp/4/sramc.cmp tmp/4/cache.cmp tmp/4/reservationStation.cmp tmp/4/reservationStationBru.cmp tmp/4/reservationStationLsu.cmp\
 	tmp/4/reg.cmp tmp/4/memory.cmp tmp/4/iou.cmp tmp/4/rs232c.cmp tmp/4/led.cmp tmp/4/bru.cmp\
 	tmp/4/branchPredictor.cmp tmp/4/lsu.cmp tmp/4/fpu.cmp tmp/4/reorderBuffer.cmp\
-	tmp/4/clock.cmp tmp/4/clock.cmp tmp/4/decoder.cmp tmp/4/dff.cmp tmp/4/returnAddressStack.cmp
+	tmp/4/clock.cmp tmp/4/clockgen.cmp tmp/4/decoder.cmp tmp/4/dff.cmp tmp/4/returnAddressStack.cmp
 	$(CMD) -l 4 cpuv4/library/SuperScalarComponents.vhd  
 	
 tmp/4/alu.cmp:cpuv4/alu/alu.vhd
@@ -26,8 +26,12 @@ tmp/4/cache.cmp:cpuv4/memory/cache.vhd
 tmp/4/branchPredictor.cmp:cpuv4/branchPredictor.vhd
 	$(CMD) 4 $< $@
 	
-tmp/4/clock.cmp:cpuv4/clock/clockgenerator.vhd
+tmp/4/clockgen.cmp:cpuv4/clock/clockgenerator.vhd
 	$(CMD) 4 $< $@
+	
+tmp/4/clock.cmp:cpuv4/clock/clk66/clock.vhd
+	$(CMD) 4 $< $@
+	
 	
 tmp/4/decoder.cmp:cpuv4/decoder.vhd
 	$(CMD) 4 $< $@
