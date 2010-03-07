@@ -470,7 +470,7 @@ begin
 			else
 				alu_inst <= alu_inst_p;
 				bru_inst <= bru_inst_p;
-				lsu_inst_p <= lsu_inst_p;
+				lsu_inst <= lsu_inst_p;
 				firstunit <= inst1_buf(35 downto 33);
 				s1 <= inst1_buf(27 downto 22);
 				s2 <= inst1_buf(15 downto 10);
@@ -561,8 +561,8 @@ begin
      rsbru_write <= not stall_first when firstunit = unit_bru else
      not stall_second when secondunit = unit_bru else
      '0';
-     rslsu_write <= not stall_first when firstunit = unit_lsu else
-     not stall_second when secondunit = unit_lsu else
+     rslsu_write <= not stall_first when firstunit(2 downto 1) = unit_lsiou else
+     not stall_second when secondunit(2 downto 1) = unit_lsiou else
      '0';
      
     rsalu0_inA <= '1'&data_s1_reg_p when (s1_unit = unit_alu) and (reg_s1_ok = '1') else
@@ -798,7 +798,7 @@ begin
 	);
 	
 	LSU0 : LSU port map (
-		clk,flush,lsu_write,
+		clk,flush,lsu_issue,
 		load_end,store_ok,io_ok,io_end,lsu_full,
 		storeexec,ioexec,
 		lsu_ready_op(5 downto 0),lsu_ready_op(19 downto 6),

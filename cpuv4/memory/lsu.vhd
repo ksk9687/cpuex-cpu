@@ -53,7 +53,7 @@ architecture arch of lsu is
 	
 begin
 	lsu_full <= io(38);
-	io_ok <= not io(38);
+	io_ok <= io(38);
 	tagout <= io(37 downto 34);
   leddotdata <= "1111111" & (not io_read_buf_overrun);
   led_inst : ledextd2 port map (

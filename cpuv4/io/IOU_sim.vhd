@@ -13,9 +13,8 @@ use UNISIM.VComponents.all;
 entity IOU is
 	port  (
 		clk,enable : in std_logic;
-		iou_op : in std_logic_vector(2 downto 0);
+		iou_op : in std_logic_vector(1 downto 0);
 		writedata : in std_logic_vector(31 downto 0);
-		no : in std_logic_vector(4 downto 0);
 		readdata : out std_logic_vector(31 downto 0)
 		
 		;RSRXD : in STD_LOGIC
@@ -26,6 +25,8 @@ entity IOU is
 end IOU;
 
 architecture arch of IOU is
+	constant iou_op_read : std_logic_vector := "00";
+	constant iou_op_write : std_logic_vector := "01";
 	
 	  type ram_type is array (0 to 127) of std_logic_vector (7 downto 0); 
     signal RAM : ram_type := 
