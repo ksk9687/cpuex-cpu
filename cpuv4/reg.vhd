@@ -42,13 +42,33 @@ architecture synth of reg is
 	signal using	:	using_table_t := (others => (others => '0'));
 	signal rst	:	std_logic := '0';
 	
+	component distreg is
+	port (
+	a: IN std_logic_VECTOR(5 downto 0);
+	d: IN std_logic_VECTOR(31 downto 0);
+	dpra: IN std_logic_VECTOR(5 downto 0);
+	clk: IN std_logic;
+	we: IN std_logic;
+	spo: OUT std_logic_VECTOR(31 downto 0);
+	dpo: OUT std_logic_VECTOR(31 downto 0));
+	END component;
+	
 begin
   	ROC0 : ROC port map (O => rst);
     --read
-    data_s1 <= registers(conv_integer(s1));
-    data_s2 <= registers(conv_integer(s2));
-    data_s12 <= registers(conv_integer(s12));
-    data_s22 <= registers(conv_integer(s22));
+    R0 : distreg port map(
+    	d,data_d,s1,clk,dflg,open,data_s1
+    );
+    R1 : distreg port map(
+    	d,data_d,s2,clk,dflg,open,data_s2
+    );
+    R2 : distreg port map(
+    	d,data_d,s12,clk,dflg,open,data_s12
+    );
+    R3 : distreg port map(
+    	d,data_d,s22,clk,dflg,open,data_s22
+    );
+    
     
     --どこから値を読めばよいか
     --0:リオーダバッファ 1:レジスタファイル
@@ -66,10 +86,6 @@ begin
 	    	if flush = '1' then
 	    		using <= (others => (others => '0'));
 	    	else
-		     	if dflg = '1' then
-		     		registers(conv_integer(d)) <= data_d;
-		     	end if;
-		     	
 		     	if (pd = pd2) and (rob_alloc1 = '1') and (rob_alloc2 = '1') then
 	     			if (pd = d) and (dflg = '1') then
 						using(conv_integer(pd)) <= using(conv_integer(pd)) + '1';

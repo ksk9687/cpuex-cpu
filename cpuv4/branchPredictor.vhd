@@ -48,7 +48,7 @@ begin
 	branch_hist_buf(ghistlength - 2 downto 0)&t1(1) when (j1 = '1') else
 	branch_hist_buf;
 	
-	process(clk)
+	process(clk,rst)
 	begin
 		if rst = '1' then
 			branch_hist_buf <= (others => '0');

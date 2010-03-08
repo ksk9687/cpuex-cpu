@@ -28,14 +28,14 @@ package instruction is
    constant op_fmov	:	std_logic_vector(5 downto 0) := o"15";
    
    
-   constant op_load :	std_logic_vector(5 downto 0) := o"40";
-   constant op_loadr :	std_logic_vector(5 downto 0) := o"41";
-   constant op_store:	std_logic_vector(5 downto 0) := o"42";
-   constant op_fload :	std_logic_vector(5 downto 0) := o"44";
-   constant op_floadr :	std_logic_vector(5 downto 0) := o"45";
-   constant op_fstore:	std_logic_vector(5 downto 0) := o"46";
-   constant op_itof :	std_logic_vector(5 downto 0) := o"43";
-   constant op_ftoi:	std_logic_vector(5 downto 0) := o"47";
+   constant op_load :	std_logic_vector(5 downto 0) := o"20";
+   constant op_loadr :	std_logic_vector(5 downto 0) := o"21";
+   constant op_store:	std_logic_vector(5 downto 0) := o"22";
+   constant op_fload :	std_logic_vector(5 downto 0) := o"24";
+   constant op_floadr :	std_logic_vector(5 downto 0) := o"25";
+   constant op_fstore:	std_logic_vector(5 downto 0) := o"26";
+   constant op_itof :	std_logic_vector(5 downto 0) := o"23";
+   constant op_ftoi:	std_logic_vector(5 downto 0) := o"27";
    
    constant op_read	:	std_logic_vector(5 downto 0) := o"30";
    constant op_write:	std_logic_vector(5 downto 0) := o"32";

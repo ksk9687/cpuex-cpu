@@ -233,11 +233,12 @@ component lsu is
 		clk,flush,write : in std_logic;
     	load_end,store_ok,io_ok,io_end,lsu_full : out std_logic;
 		storeexec,ioexec : in std_logic;
+		pc : in std_logic_vector(13 downto 0);
 		op : in std_logic_vector(5 downto 0);
 		im : in std_logic_vector(13 downto 0);
     	
     	a,b : in std_logic_vector(31 downto 0);
-    	o,iou_out : out std_logic_vector(31 downto 0);
+    	o : out std_logic_vector(31 downto 0);
     	
     	tagin : in std_logic_vector(3 downto 0);
     	tagout : out std_logic_vector(3 downto 0);
@@ -400,7 +401,7 @@ end component;
 
 component reservationStationBru is
 	generic (
-		opbits : integer := 3 + 3 + 14 + 1
+		opbits : integer := 20
 	);
 	port  (
 		clk,flush : in std_logic;

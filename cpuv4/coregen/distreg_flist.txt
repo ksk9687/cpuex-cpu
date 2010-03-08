@@ -1,0 +1,8 @@
+# Output products list for <distreg>
+distreg.ngc
+distreg.vhd
+distreg.vho
+distreg.xco
+distreg_dist_mem_gen_v3_4_xst_1.ngc_xst.xrpt
+distreg_flist.txt
+distreg_xmdf.tcl

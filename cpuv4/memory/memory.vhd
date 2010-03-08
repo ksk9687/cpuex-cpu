@@ -66,7 +66,7 @@ architecture synth of memory is
 	signal cache_set : std_logic := '0';
 
 	signal dcache_in,dcache_out,store_data_buf : std_logic_vector(31 downto 0) := (others => '0');
-	signal dcache_hit,cache_hit_tag,dcache_hit_buf,dcache_hit_tag : std_logic := '0';
+	signal dcache_hit,dhit_check,cache_hit_tag,dcache_hit_buf,dcache_hit_tag : std_logic := '0';
 	signal dcache_set,dcache_read : std_logic := '0';
 	signal dcache_addr,addr_out,d_set_addr,ADDR : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_addr_buf,ls_addr_buf_p1,ls_addr_buf_pref : std_logic_vector(19 downto 0) := (others => '0');
@@ -84,7 +84,7 @@ begin
 	inst2 <= cache_out2;
 	
 	ls_ok <= --'1' when ls_addr = addr_out else 
-	dcache_hit;
+	dcache_hit and dhit_check;
 	load_data <= --DATAOUT when ls_addr = addr_out else
 	dcache_out;
 	
@@ -123,6 +123,8 @@ begin
 			d_mem_state <= idle;
 			ls_buf0 <= "00";
 		elsif rising_edge(clk) then
+			dhit_check <= ls_flg(1);
+			
 			case d_mem_state is
 				when idle =>
 					if i_d_in(0) = '1' then--miss Load

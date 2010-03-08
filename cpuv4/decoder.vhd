@@ -39,7 +39,7 @@ begin
 	 d <= "11010" when op_cmpijmp1|op_cmpijmp2|op_cmpjmp1|op_cmpjmp2|op_cmpfjmp1|op_cmpfjmp2|op_ret,
 	 "01100" when op_store|op_fstore,
 	 "01111" when op_read|op_write|op_led|op_ledi,
-	 "10001" when op_fadd|op_fsub|op_fmul|op_finv|op_fsqrt|op_fmov|op_itof,
+	 "10001" when op_fadd|op_fsub|op_fmul|op_finv|op_fsqrt|op_fmov|op_itof|op_fload|op_floadr,
 	 "00000" when op_nop,
 	 "01001" when others;
 	 

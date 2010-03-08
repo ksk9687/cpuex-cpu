@@ -114,7 +114,7 @@ begin
 	'1'&value3 when (s2(3)(32) = '0') and (write3 = '1') and (s2(3)(3 downto 0) = dtag3) else
 	s2(3);
 	
-	process(clk)
+	process(clk,rst)
 	begin
 		if rst = '1' then
 		elsif rising_edge(clk) then
