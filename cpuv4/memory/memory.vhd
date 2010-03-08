@@ -125,30 +125,32 @@ begin
 		elsif rising_edge(clk) then
 			dhit_check <= ls_flg(1);
 			
-			case d_mem_state is
-				when idle =>
-					if i_d_in(0) = '1' then--miss Load
-						d_mem_state <= data_w1;
-						ls_buf0 <= "10";
-						ls_addr_buf <= ls_addr_buf_p1;
-					else
-						ls_addr_buf <= ls_addr;
-						ls_buf0 <= ls_flg(1 downto 0);
-					end if;
-				when data_w1 =>
-						d_mem_state <= data_w5;
-						ls_buf0 <= "10";
-						ls_addr_buf <= ls_addr_buf_p1;
-				when data_w5	=>
-					ls_buf0 <= "00";
-					if dcache_hit = '1' then
-						d_mem_state <= idle;
-					end if;
-				when others	=>
-					ls_buf0 <= ls_flg(1 downto 0);
-					d_mem_state <= idle;
-				end case;
+--			case d_mem_state is
+--				when idle =>
+--					if i_d_in(0) = '1' then--miss Load
+--						d_mem_state <= data_w1;
+--						ls_buf0 <= "10";
+--						ls_addr_buf <= ls_addr_buf_p1;
+--					else
+--						ls_addr_buf <= ls_addr;
+--						ls_buf0 <= ls_flg(1 downto 0);
+--					end if;
+--				when data_w1 =>
+--						d_mem_state <= data_w5;
+--						ls_buf0 <= "10";
+--						ls_addr_buf <= ls_addr_buf_p1;
+--				when data_w5	=>
+--					ls_buf0 <= "00";
+--					if dcache_hit = '1' then
+--						d_mem_state <= idle;
+--					end if;
+--				when others	=>
+--					ls_buf0 <= ls_flg(1 downto 0);
+--					d_mem_state <= idle;
+--				end case;
 			
+			ls_addr_buf <= ls_addr;
+			ls_buf0 <= ls_flg(1 downto 0);
 			store_data_buf <= store_data;
 		end if;
 	end process;	
@@ -192,7 +194,7 @@ begin
 	);
 	
 	
-	DCACHE0: block_s_dcache port map(
+	DCACHE0: baka_dcache port map(
 		clk,clkfast
 		,ls_addr
 		,d_set_addr

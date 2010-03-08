@@ -47,7 +47,7 @@ architecture arch of lsu is
 	--io
    signal leddata,leddata_buf,ld,iou_out : std_logic_vector(31 downto 0):= (others => '0');
    signal leddotdata : std_logic_vector(7 downto 0):= (others => '0');
-	signal iou_enable,io_do,ld_valid,load_read,load_full,load_empty,load_issue :std_logic:='0';
+	signal iou_enable,io_do,ld_valid,load_read,load_full,load_empty,load_issue,loadwait :std_logic:='0';
 	signal io_read_buf_overrun :std_logic;
 	signal io : std_logic_vector(38 downto 0) := (others => '0');
 	
@@ -59,7 +59,7 @@ architecture arch of lsu is
 
 	type s_t is array (0 to 3) of std_logic_vector (57 downto 0);
 	signal load_buf : s_t := (others => (others => '0'));
-	signal rp,wp : std_logic_vector(2 downto 0) := (others => '0');
+	signal rp,wp : std_logic_vector(1 downto 0) := (others => '0');
 begin
 	--メモリアクセスはポンコツな実装
 	-- store,io優先
@@ -85,7 +85,7 @@ begin
 	ls_flg(1) <= load_issue;
 	ls_flg(2) <= storeinst;
 	load_issue <= (not store) and (not storeinst) and (not load_empty);
-	load_read <= (load_hit or load_buf0(56)) and (not io_do) and (not load_empty);
+	load_read <= (load_hit or load_buf0(56)) and (not io_do) and (not load_empty) and (not loadwait);
 	load_end <= load_read;
 
 	--アドレス計算
@@ -106,9 +106,15 @@ begin
 	LOADPROC:process(clk)
 	begin
 		if rising_edge(clk) then
+			if load_read = '1' then
+				loadwait <= '1';
+			else
+				loadwait <= '0';
+			end if;
 			if flush = '1' then
 				rp <= (others => '0');
 				wp <= (others => '0');
+				loadwait <= '0';
 			else
 				if load_read = '1' then
 					rp <= rp + '1';

@@ -355,7 +355,7 @@ begin
 	 
 	jmp_info_p <= jmp_info1 when inst1_buf(35 downto 33) = unit_bru else jmp_info2;
 	
-	rslsuim_p <= lsu_inst_p(13 downto 0) when alu_inst_p(31 downto 28) = "0000" else
+	rslsuim_p <= lsu_inst_p(13 downto 0) when lsu_inst_p(31 downto 28) = "0000" else
 	lsu_inst_p(21 downto 18)&lsu_inst_p(9 downto 0);
 	
 	s1_unit_p <= inst1_buf(35 downto 33) when r11 = "01" else unit_nop;
