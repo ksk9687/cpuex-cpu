@@ -101,7 +101,6 @@ begin
 	store_buf0(31 downto 0) when (store_buf0(51 downto 32) = addr) and (store_buf0(53) = '1') else
 	store_buf1(31 downto 0) when (store_buf1(51 downto 32) = addr) and (store_buf1(53) = '1') else
 	b;
-		 
 
 	LOADPROC:process(clk)
 	begin
@@ -133,6 +132,8 @@ begin
 			if flush = '1' then
 				store_buf0(53) <= '0';
 				store_buf1(53) <= '0';
+				store <= '0';
+				storeinst <= '0';
 			else
 				if (storeexec = '1') and (store_buf0(53) = '1') then
 					store <= not store_buf0(52);

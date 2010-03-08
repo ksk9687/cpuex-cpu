@@ -194,7 +194,7 @@ begin
 	);
 	
 	
-	DCACHE0: baka_dcache port map(
+	DCACHE0: block_s_dcache_array port map(
 		clk,clkfast
 		,ls_addr
 		,d_set_addr

@@ -129,6 +129,18 @@ component baka_dcache is
 	);
 end component;
 
+component block_s_dcache_array is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit,hit_tag : out std_logic
+	);
+end component;
+
 
 component CLOCK is
   port (

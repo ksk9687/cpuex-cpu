@@ -115,20 +115,20 @@ architecture arch of irom is
 "110000000000000000000000000000001100",
 "110011000000010000000000010000011011",
 "000010001111101111100000000000000011",
-"010010011111100000001111000000000000",
+"010010011111100000001111000000000000",--store
 
-"010010011111100000000000010000000001",
+"010010011111100000000000010000000001",--store
 "000010000000010000010000000000000001",
 "000011000000001111000000000000001101",--jal
 "010010011111100000000000010000000010",--store
 
 "010000001111100000010000000000000001",--load
-"000010000000010000010000000000000010",
-"000011000000001111000000000000001101",
-"010000001111101111010000000000000010",
+"000010000000010000010000000000000010",--sub
+"000011000000001111000000000000001101",--jal
+"010000001111101111010000000000000010",--load
 
-"000101000000010000011111010000000000",
-"010000001111101111000000000000000000",
+"000101000000010000011111010000000000",--add
+"010000001111101111000000000000000000",--load
 "000001001111101111100000000000000011",
 "110110001111000000000000000000000000",
 
@@ -413,6 +413,80 @@ begin
 	    	if (set = '1') then
 	    		address_buf <= set_addr;
 	    		data_buf <= set_data;
+	    	end if;
+	    end if;
+	end process;
+end arch;
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity block_s_dcache_array is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit,hit_tag : out std_logic
+	);
+end block_s_dcache_array;
+
+architecture arch of block_s_dcache_array is
+    type cache_tag_type is array (0 to 2047) of std_logic_vector (9 downto 0);--9 + 1
+    type cache_data_type is array (0 to 2047) of std_logic_vector (31 downto 0); --32
+    
+  
+   signal tag,tag_p : std_logic_vector(9 downto 0) := '0'&"000000000";
+   signal cache : cache_tag_type := (others => '0'&"000000000");
+   signal cache_data : cache_data_type := (others => (others => '0'));
+   
+    signal data,data_p : std_logic_vector(31 downto 0) := (others => '0');
+    signal entry,entry_p,entry_buf : std_logic_vector(9 downto 0) := (others => '0');
+    signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
+    signal address_buf,address_buf_f,ac_addr,rd_addr,address_buf2 : std_logic_vector(19 downto 0) := (others => '0');
+    signal conflict,conflict1,conflict2,hit_p,hit1,hit2,hit3,hit_p1,hit_p2,hit_p3 : std_logic := '0';
+begin
+	read_data <= data;
+	data_p <= cache_data(conv_integer(address_buf_f(10 downto 0)));
+	hit <= (not conflict1) and hit1 and hit2 and hit3;
+	hit_tag <= hit1 and hit2 and hit3;
+	entry_p <= cache(conv_integer(address_buf_f(10 downto 0)));
+	
+	process(clkfast)
+	begin
+		if rising_edge(clkfast) then
+	    	if set = '1' then
+	    	   cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(19 downto 11);
+	    	   cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
+	    	end if;
+	        address_buf_f <= address;
+		end if;
+	end process;
+	
+	hit_p1 <= '1' when entry_p(4 downto 0) = address_buf_f(15 downto 11) else '0';
+	hit_p2 <= '1' when entry_p(8 downto 5) = address_buf_f(19 downto 16) else '0';
+	
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	    	hit1 <= hit_p1;
+	    	hit2 <= hit_p2;
+	    	hit3 <= entry_p(9);
+	    	data <= data_p;
+	    	
+	    	if set_addr(10 downto 0) = address(10 downto 0) then
+	    		conflict <= set;
+		    	conflict1 <= conflict or set;
+		    	conflict2 <= conflict or conflict1 or set;
+	    	else
+	    		conflict <= '0';
+		    	conflict1 <= conflict;
+		    	conflict2 <= conflict or conflict1;
 	    	end if;
 	    end if;
 	end process;
