@@ -15,8 +15,7 @@ entity FPU is
     clk  : in  std_logic;
     op   : in  std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
-    O    : out std_logic_vector(31 downto 0);
-    cmp  : out std_logic_vector(2 downto 0));
+    O1clk,O4clk    : out std_logic_vector(31 downto 0));
 
 end FPU;
 
@@ -59,15 +58,7 @@ architecture STRUCTURE of FPU is
       O : out std_logic_vector(31 downto 0));
   end component;
   
-  component FP_CMP
-    port (
-      clk  : in  std_logic;
-      A, B : in  std_logic_vector(31 downto 0);
-      O : out std_logic_vector(2 downto 0));
-  end component;
-  
   signal O_ADD, O_MUL, O_INV, O_SQRT : std_logic_vector(31 downto 0);
-  signal O_CMP : std_logic_vector(2 downto 0);
   signal B_ADD : std_logic_vector(31 downto 0);
 
   -- op ‚ð•Û‘¶
@@ -81,7 +72,6 @@ begin  -- STRUCTURE
   fp_mul_inst  : FP_MUL  port map (clk => clk, O => O_MUL, A => A, B => B);
   fp_inv_inst  : FP_INV  port map (clk => clk, O => O_INV, A => A);
   fp_sqrt_inst : FP_SQRT port map (clk => clk, O => O_SQRT, A => A);
-  fp_cmp_inst  : FP_CMP  port map (clk => clk, O => O_CMP, A => A, B => B);
 
   -- B ‚Ì•„†‚ð”½“]‚·‚éê‡‚ª‚ ‚é
   B_ADD <= B when op = fpu_op_fadd else       -- add

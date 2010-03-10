@@ -64,8 +64,8 @@ end component;
 component full_cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(12 downto 0);
-		set_addr: in std_logic_vector(12 downto 0);
+		address: in std_logic_vector(11 downto 0);
+		set_addr: in std_logic_vector(11 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data1 : out std_logic_vector(35 downto 0);
@@ -191,8 +191,7 @@ component FPU is
     clk  : in  std_logic;
     op   : in  std_logic_vector(2 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
-    O    : out std_logic_vector(31 downto 0);
-    cmp  : out std_logic_vector(2 downto 0));
+    O1clk,O4clk    : out std_logic_vector(31 downto 0));
 
 end component;
 
@@ -279,7 +278,7 @@ component memory is
     Port (
     clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
-    pc : in std_logic_vector(12 downto 0);
+    pc : in std_logic_vector(11 downto 0);
     inst1 : out std_logic_vector(35 downto 0);
     inst2 : out std_logic_vector(35 downto 0);
     

@@ -31,14 +31,17 @@ architecture arch of IOU is
 	  type ram_type is array (0 to 127) of std_logic_vector (7 downto 0); 
     signal RAM : ram_type := 
     (
-x"11", x"12", x"13", x"14", x"15", x"16", x"17", x"18", x"19", x"0F", x"50", x"00", x"0B", x"DF", x"40", x"04",
-x"0B", x"DF", x"80", x"03", x"E0", x"00", x"00", x"05", x"00", x"0F", x"81", x"00", x"00", x"00", x"40", x"01",
-x"60", x"00", x"80", x"1E", x"E4", x"00", x"00", x"0C", x"A8", x"20", x"00", x"00", x"A4", x"2F", x"00", x"01",
-x"E0", x"00", x"00", x"0B", x"28", x"20", x"40", x"00", x"E0", x"40", x"00", x"1B", x"07", x"EF", x"80", x"03",
-x"6B", x"E0", x"BF", x"FD", x"6B", x"EF", x"FF", x"FF", x"04", x"20", x"BF", x"FF", x"E4", x"00", x"00", x"0C",
-x"6B", x"E0", x"BF", x"FE", x"63", x"E0", x"BF", x"FD", x"04", x"20", x"BF", x"FE", x"E4", x"00", x"00", x"0C",
-x"63", x"E0", x"FF", x"FE", x"20", x"20", x"C2", x"00", x"63", x"EF", x"FF", x"FF", x"07", x"EF", x"BF", x"FD",
-x"A4", x"2F", x"00", x"01", x"EB", x"F0", x"00", x"00", x"00", x"00", x"10", x"00", x"00", x"00", x"00", x"0A"
+x"00", x"00", x"00", x"1E",
+ x"00", x"00", x"00", x"00",
+  x"00", x"00", x"00", x"04", x"C0", x"00", x"00", x"00",
+x"00", x"00", x"00", x"00", x"03", x"F2", x"00", x"01", x"4F", x"FF", x"FC", x"00", x"00", x"00", x"00", x"14",
+x"FF", x"EF", x"C0", x"01", x"4F", x"BE", x"F8", x"00", x"00", x"00", x"00", x"14", x"FB", x"EF", x"80", x"00",
+x"C0", x"3C", x"01", x"09", x"00", x"00", x"00", x"C8", x"00", x"00", x"10", x"80", x"00", x"01", x"00", x"00",
+
+x"00", x"00", x"00", x"00", x"00", x"20", x"00", x"00", x"00", x"03", x"00", x"01", x"00", x"00", x"00", x"C9",
+x"04", x"02", x"91", x"21", x"40", x"BD", x"0C", x"00", x"00", x"00", x"00", x"10", x"0C", x"20", x"00", x"01",
+x"0F", x"43", x"00", x"00", x"00", x"00", x"00", x"04", x"04", x"10", x"00", x"1C", x"80", x"00", x"01", x"0C",
+x"00", x"00", x"00", x"71", x"0B", x"D0", x"00", x"0C", x"80", x"00", x"01", x"13", x"00", x"00", x"00", x"00"
 );
     signal readdata_p : std_logic_vector(31 downto 0) := (others => '0');
     signal pointer : std_logic_vector(6 downto 0) := (others => '0');
@@ -47,7 +50,7 @@ begin
   	RSTXD <= '0';
   	io_read_buf_overrun <= '0';
   	
-	readdata_p <= x"00000"&"000"&counter(0)&RAM(conv_integer(pointer));
+	readdata_p <= x"00000"&"000"&'0'&RAM(conv_integer(pointer));
 
 	process(clk)
 	begin
@@ -57,7 +60,7 @@ begin
 				readdata <= readdata_p;
 			elsif (iou_op = iou_op_write) and (enable = '1') then
 				counter <= counter + '1';
-				readdata <= x"0000000"&"000"&counter(0);
+				readdata <= x"0000000"&"0000";
 			else
 				readdata <= readdata_p;
 			end if;

@@ -21,7 +21,7 @@ entity memory is
     Port (
     clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
-    pc : in std_logic_vector(12 downto 0);
+    pc : in std_logic_vector(11 downto 0);
     inst1 : out std_logic_vector(35 downto 0);
     inst2 : out std_logic_vector(35 downto 0);
     
@@ -183,10 +183,10 @@ begin
       ZD
 	);
 	
-	ICACHE: irom port map(
+	ICACHE: full_cache port map(
 		clk,clk
 		,pc
-		,set_addr(13 downto 1)
+		,set_addr(11 downto 0)
 		,store_data
 		,cache_set
 		,cache_out1

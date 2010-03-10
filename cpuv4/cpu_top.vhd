@@ -112,6 +112,12 @@ architecture arch of cpu_top is
 	signal rslsu_inA,rslsu_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal lsuA,lsuB,lsuO,ioO :std_logic_vector(31 downto 0) := (others=>'0');
 	signal rslsuim,rslsuim_p :std_logic_vector(13 downto 0) := (others=>'0');
+	--ALU
+	signal rsfpu_write,rsfpu_ok,fpu_ready,fpu_issue :std_logic := '0';
+	signal fpu_ready_tag,rsfpudtag,fpu_in_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal fpu_ready_op,rsfpuop,rsfpu_in_op :std_logic_vector(1 downto 0) := (others=>'0');
+	signal rsfpu_inA,rsfpu_inB :std_logic_vector(32 downto 0) := (others=>'0');
+	signal fpuA,fpuB,fpuO :std_logic_vector(31 downto 0) := (others=>'0');
    --LS
    signal ls_f : std_logic_vector(2 downto 0) := (others=>'0');
    signal lsu_out,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
@@ -206,7 +212,7 @@ begin
 	
   	MEMORY0 : memory port map (
    	clk,clk,clk180,clk180,
-   	next_pc(13 downto 1),inst1,inst2,
+   	next_pc(12 downto 1),inst1,inst2,
    	ls_f,ls_address,store_data,load_data,load_hit,
       XE1,E2A,XE3,ZZA,XGA,XZCKE,ADVA,XLBO,ZCLKMA,XFT,XWA,XZBE,ZA,ZDP,ZD
    );
@@ -349,9 +355,14 @@ begin
 	inst2_buf when (inst2_buf(35 downto 34) = unit_lsiou) and (stall_id2 = '0') else
 	nop_inst;
 	
+	fpu_inst_p <= inst1_buf when inst1_buf(35 downto 33) = unit_fpu else
+	inst2_buf when (inst2_buf(35 downto 34) = unit_fpu) and (stall_id2 = '0') else
+	nop_inst;
+	
 	rsalu0im_p <= (jmp_info1(23 downto 10) + '1') when (inst1_buf(35 downto 33) = unit_alu) and (inst1_buf(31 downto 30)= "11") else
+	inst1_buf(13 downto 0) when (inst1_buf(35 downto 33) = unit_alu) else
 	(jmp_info2(23 downto 10)+ '1') when (inst2_buf(35 downto 33) = unit_alu) and (inst2_buf(31 downto 30)= "11") else
-	 alu_inst_p(13 downto 0);
+	 inst2_buf(13 downto 0);
 	 
 	jmp_info_p <= jmp_info1 when inst1_buf(35 downto 33) = unit_bru else jmp_info2;
 	
@@ -398,6 +409,7 @@ begin
 				alu_inst <= nop_inst;
 				bru_inst <= nop_inst;
 				lsu_inst <= nop_inst;
+				fpu_inst <= nop_inst;
 				
 				firstunit <= unit_nop;
 				secondunit <= unit_nop;
@@ -419,6 +431,7 @@ begin
 				alu_inst <= nop_inst;
 				bru_inst <= nop_inst;
 				lsu_inst <= nop_inst;
+				fpu_inst <= nop_inst;
 				
 				firstunit <= unit_nop;
 				secondunit <= unit_nop;
@@ -446,10 +459,13 @@ begin
 					bru_inst <= nop_inst;
 				elsif firstunit(2 downto 1) = unit_lsiou then
 					lsu_inst <= nop_inst;
+				elsif firstunit = unit_fpu then
+					fpu_inst <= nop_inst;
 				else
 					bru_inst <= nop_inst;
 					alu_inst <= nop_inst;
 					lsu_inst <= nop_inst;
+					fpu_inst <= nop_inst;
 				end if;
 				firstunit <= secondunit;
 				s1 <= s3;
@@ -499,6 +515,8 @@ begin
 				alu_inst <= alu_inst_p;
 				bru_inst <= bru_inst_p;
 				lsu_inst <= lsu_inst_p;
+				fpu_inst <= fpu_inst_p;
+				
 				firstunit <= inst1_buf(35 downto 33);
 				s1 <= inst1_buf(27 downto 22);
 				s2 <= inst1_buf(15 downto 10);
@@ -566,6 +584,7 @@ begin
      rsbru_ok when unit_bru,
      rslsu_ok when unit_lsu,
      rslsu_ok when unit_iou,
+     rsfpu_ok when unit_fpu,
      '1' when others;
      
     with secondunit select
@@ -573,6 +592,7 @@ begin
      rsbru_ok when unit_bru,
      rslsu_ok when unit_lsu,
      rslsu_ok when unit_iou,
+     rsfpu_ok when unit_fpu,
      '1' when others;
     
     rob_alloc1 <= (not stall_first) and (firstregmsk(0) or ((not stall_second) and secondregmsk(0)));
@@ -594,6 +614,9 @@ begin
      '0';
      rslsu_write <= not stall_first when firstunit(2 downto 1) = unit_lsiou else
      not stall_second when secondunit(2 downto 1) = unit_lsiou else
+     '0';
+     rsfpu_write <= not stall_first when firstunit = unit_fpu else
+     not stall_second when secondunit = unit_fpu else
      '0';
      
     rsalu0_inA <= '1'&data_s1_reg_p when (s1_unit = unit_alu) and (reg_s1_ok = '1') else
@@ -675,6 +698,24 @@ begin
     "0"&rob_tag2 when ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(1) = '1')) else
     "1"&frob_tag2;
     rslsuop <= rslsuim&lsu_inst(33 downto 28);
+     
+    rsfpu_inA <= '1'&data_s1_freg_p when (sf1_unit = unit_fpu) and (freg_s1_ok = '1') else
+    '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
+    '0'&x"0000000"&'0'&sf1tag when (sf1_unit = unit_fpu) else
+    '1'&data_s1_freg_p when (sf1_unit = unit_fpu) and (freg_s1_ok = '1') else
+    '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
+    '0'&x"0000000"&'0'&sf3tag;
+
+    rsfpu_inB <= '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s2_ok = '1') else
+    '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s2_ok = '1') else
+    '0'&x"0000000"&'0'&sf2tag when (sf2_unit = unit_fpu) else
+    '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s4_ok = '1') else
+    '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s4_ok = '1') else
+    '0'&x"0000000"&'0'&sf4tag;
+   
+    
+    rsfpudtag <= "0"&frob_tag1 when (firstunit = unit_fpu) or (secondregmsk(2) = '1') else "0"&frob_tag2;
+    rsfpuop <= fpu_inst(31 downto 30);
     
     
 	IREG0 : reg port map (
@@ -785,6 +826,20 @@ begin
 	);
 	alu0_issue <= alu0_ready;
 	
+	RSFPU : reservationStation
+	port map (
+		clk,flush,rsfpu_write,rsfpu_ok,
+		fpu_issue,fpu_ready,
+		rsfpuop,rsfpudtag,rsfpu_inA,rsfpu_inB,
+		fpu_ready_op,fpu_ready_tag,fpuA,fpuB,
+		
+		pf_valid,pl_validf,
+		pf_dtag,pl_dtagf,
+		pf_value,pl_value
+	);
+	fpu_issue <= fpu_ready;
+	
+	
 	RSBRU0 : reservationStationBru
 	generic map (
 		opbits => 48
@@ -861,6 +916,10 @@ begin
 	pl_validf <= pl_valid and lsu_out_tag(3);
 	pl_validi <= pl_valid and (not lsu_out_tag(3));
 	
+	pf_value <= fpuO;
+	pf_dtag <= pf_0(3 downto 0);
+	pf_valid <= pf_0(4);
+	
 	pi_value <= alu0O;
 	pi_dtag <= pi_0(3 downto 0);
 	pi_valid <= pi_0(4);
@@ -875,8 +934,10 @@ begin
 		if rising_edge(clk) then
 			if flush = '1' then
 				pi_0 <= (others => '0');
+				pf_0 <= (others => '0');
 				pb_0 <= (others => '0');
 			else
+				pf_0 <= "00000"&fpu_ready&fpu_ready_tag;
 				pi_0 <= "00000"&alu0_ready&alu0_ready_tag;
 				pb_0 <= (bru_ready_op(4) and bru_ready_op(3))&bru_ready_op(47 downto 44)&bru_ready&bru_ready_tag;
 			end if;

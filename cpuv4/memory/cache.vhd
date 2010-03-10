@@ -8,8 +8,8 @@ use work.instruction.all;
 entity full_cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(12 downto 0);
-		set_addr: in std_logic_vector(12 downto 0);
+		address: in std_logic_vector(11 downto 0);
+		set_addr: in std_logic_vector(11 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data1 : out std_logic_vector(35 downto 0);
@@ -24,19 +24,19 @@ architecture arch of full_cache is
     signal set_d : std_logic_vector(0 downto 0) := (others => '0');
     signal count : std_logic_vector(1 downto 0) := (others => '0');
 
-	component cache_16384 IS
+	component cache_72x4096 IS
 		port (
-		clka: IN std_logic;
-		dina: IN std_logic_VECTOR(71 downto 0);
-		addra: IN std_logic_VECTOR(12 downto 0);
-		wea: IN std_logic_VECTOR(0 downto 0);
-		clkb: IN std_logic;
-		addrb: IN std_logic_VECTOR(12 downto 0);
-		doutb: OUT std_logic_VECTOR(71 downto 0));
+			clka: IN std_logic;
+			dina: IN std_logic_VECTOR(71 downto 0);
+			addra: IN std_logic_VECTOR(11 downto 0);
+			wea: IN std_logic_VECTOR(0 downto 0);
+			clkb: IN std_logic;
+			addrb: IN std_logic_VECTOR(11 downto 0);
+			doutb: OUT std_logic_VECTOR(71 downto 0));
 	END component;
 begin
 
-  CACHE0 : cache_16384 port map(
+  CACHE0 : cache_72x4096 port map(
   	clk,write_data,set_addr,set_d,
   	clk,address,out_data
   );
@@ -64,8 +64,6 @@ begin
 			end if;
 		end if;
 	end process;
-	
-
 end arch;
 
 

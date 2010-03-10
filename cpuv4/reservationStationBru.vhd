@@ -4,7 +4,7 @@ use ieee.std_logic_unsigned.all;
 
 library UNISIM;
 use UNISIM.VComponents.all;
-entity reservationStationLsu is
+entity reservationStationBru is
 	generic (
 		opbits : integer := 3 + 3 + 14 + 1
 	);
@@ -29,9 +29,9 @@ entity reservationStationLsu is
 		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
 		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
-end reservationStationLsu;
+end reservationStationBru;
 
-architecture arch of reservationStationLsu is
+architecture arch of reservationStationBru is
 	signal rst :std_logic := '0';
 	
 	constant op_valid : integer := 0;

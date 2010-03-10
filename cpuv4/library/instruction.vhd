@@ -64,6 +64,7 @@ package instruction is
    constant unit_lsiou	:	std_logic_vector(1 downto 0) := "01";
    constant unit_iou	:	std_logic_vector(2 downto 0) := "011";
    constant unit_nop	:	std_logic_vector(2 downto 0) := "101";
+   constant unit_fpu	:	std_logic_vector(2 downto 0) := "100";
 end package instruction;  
  
 

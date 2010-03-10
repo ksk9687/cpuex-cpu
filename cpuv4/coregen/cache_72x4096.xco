@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version K.39
-# Date: Tue Mar 09 06:22:10 2010
+# Date: Wed Mar 10 07:43:54 2010
 #
 ##############################################################
 #
@@ -40,7 +40,7 @@ CSET assume_synchronous_clk=false
 CSET byte_size=9
 CSET coe_file=C:/workspase/cpu/cpuv4/coregen/inst.coe
 CSET collision_warnings=ALL
-CSET component_name=cache_16384
+CSET component_name=cache_72x4096
 CSET disable_collision_warnings=false
 CSET disable_out_of_range_warnings=false
 CSET ecc=false
@@ -69,10 +69,10 @@ CSET use_regcea_pin=false
 CSET use_regceb_pin=false
 CSET use_ssra_pin=false
 CSET use_ssrb_pin=false
-CSET write_depth_a=8192
+CSET write_depth_a=4096
 CSET write_width_a=72
 CSET write_width_b=72
 # END Parameters
 GENERATE
-# CRC: b2f4b571
+# CRC: 7716ab88
 

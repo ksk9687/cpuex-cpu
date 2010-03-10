@@ -4,7 +4,7 @@ use ieee.std_logic_unsigned.all;
 
 library UNISIM;
 use UNISIM.VComponents.all;
-entity reservationStationBru is
+entity reservationStationLsu is
 	generic (
 		opbits : integer := 20
 	);
@@ -29,9 +29,9 @@ entity reservationStationBru is
 		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
 		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
-end reservationStationBru;
+end reservationStationLsu;
 
-architecture arch of reservationStationBru is
+architecture arch of reservationStationLsu is
 	signal rst :std_logic := '0';
 	
 	constant op_valid : integer := 0;
@@ -70,7 +70,7 @@ begin
 	--î≠çsèÄîıÇ…ì¸ÇÈÇ©
 	go(0) <= ready(0) and ((not readyop(64 + op_valid)) or read);
 	go(1) <= ready(1) and (not ready(0)) and ((not readyop(64 + op_valid)) or read) and (not op(0)(op_cant_bypass));
-	go(2) <= ready(2) and (not ready(1)) and (not ready(0)) and ((not readyop(64 + op_valid)) or read) and (not op(0)(op_cant_bypass))and (not op(1)(op_cant_bypass));
+	go(2) <= ready(2) and (not ready(1)) and (not ready(0)) and ((not readyop(64 + op_valid)) or read) and (not op(0)(op_cant_bypass)) and (not op(1)(op_cant_bypass));
 	go(3) <= ready(3) and (not ready(2)) and (not ready(1)) and (not ready(0)) and((not readyop(64 + op_valid)) or read)and (not op(0)(op_cant_bypass))and (not op(1)(op_cant_bypass)) and (not op(2)(op_cant_bypass));
 	--ç≈è¨ÇÃñ≥å¯Ç»ÉâÉCÉì
 	newline(0) <= '1' when (op(0)(op_valid) = '0') else '0';
