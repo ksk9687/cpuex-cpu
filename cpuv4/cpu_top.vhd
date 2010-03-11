@@ -114,8 +114,8 @@ architecture arch of cpu_top is
 	signal rslsuim,rslsuim_p :std_logic_vector(13 downto 0) := (others=>'0');
 	--FPU
 	signal rsfpu_write,rsfpu_ok,fpu_ready,fpu_issue :std_logic := '0';
-	signal fpu_ready_tag,rsfpudtag,fpu_in_tag,fpu_tag :std_logic_vector(3 downto 0) := (others=>'0');
-	signal fpu_ready_op,rsfpuop,rsfpu_in_op :std_logic_vector(5 downto 0) := (others=>'0');
+	signal fpu_ready_tag,rsfpudtag,fpu_in_tag,fpu_tag,fpu_out_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal fpu_ready_op,rsfpuop,rsfpu_in_op :std_logic_vector(4 downto 0) := (others=>'0');
 	signal rsfpu_inA,rsfpu_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal fpuA,fpuB,fpuO :std_logic_vector(31 downto 0) := (others=>'0');
    --LS
@@ -134,7 +134,7 @@ architecture arch of cpu_top is
 
    
    signal pi_valid,pl_valid,pl_validi,pl_validf,pf_valid,pb_valid : std_logic := '0';   
-   signal pi_dtag,pl_dtag,pl_dtagi,pl_dtagf,pf_dtag,pb_dtagi,pb_dtagf : std_logic_vector(3 downto 0) := (others=>'0');
+   signal pi_dtag,pl_dtag,pl_dtagi,pl_dtagf,pf_dtag,pf_dtagf,pb_dtagi,pb_dtagf : std_logic_vector(3 downto 0) := (others=>'0');
    signal pi_value,pl_value,pf_value,pb_value,pb_valuef : std_logic_vector(31 downto 0) := (others=>'0');
    signal pi_0,pi_1,pi_0_write,pi_1_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal pb_0,pb_1,pb_0_write,pb_1_write :std_logic_vector(9 downto 0) := (others=>'0');
@@ -162,14 +162,12 @@ begin
 --	clock66 => clk66,
 --	clock => clk,
 --	clock_180 => clk180,
---    reset => rst0);
+--    reset => rst);
  CLOCK0 : CLOCK port map (
     clkin => CLK_66M,
     clkout0 => clk,
     clkout180 => clk180,
-    locked =>locked0);
-    
-  
+    locked =>locked0); 
   	ROC0 : ROC port map (O => rst);
   
   
@@ -356,7 +354,7 @@ begin
 	nop_inst;
 	
 	fpu_inst_p <= inst1_buf when inst1_buf(35 downto 33) = unit_fpu else
-	inst2_buf when (inst2_buf(35 downto 34) = unit_fpu) and (stall_id2 = '0') else
+	inst2_buf when (inst2_buf(35 downto 33) = unit_fpu) and (stall_id2 = '0') else
 	nop_inst;
 	
 	rsalu0im_p <= (jmp_info1(23 downto 10) + '1') when (inst1_buf(35 downto 33) = unit_alu) and (inst1_buf(31 downto 30)= "11") else
@@ -661,7 +659,7 @@ begin
     '1'&data_s4_reg_p when ((s4_unit = unit_bru) and (reg_s4_ok = '1')) and (tf2 = '0') else
     '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_bru) else
-    '1'&data_s4_freg_p when ((sf4_unit = unit_bru) and (freg_s4_ok = '1')) and (ftf1 = '0') else
+    '1'&data_s4_freg_p when ((sf4_unit = unit_bru) and (freg_s4_ok = '1')) and (ftf2 = '0') else
     '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_bru) else
     '1'&sign_extention(ci);
@@ -702,14 +700,14 @@ begin
     rsfpu_inA <= '1'&data_s1_freg_p when (sf1_unit = unit_fpu) and (freg_s1_ok = '1') else
     '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
     '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_fpu) else
-    '1'&data_s3_freg_p when (sf3_unit = unit_fpu) and (freg_s3_ok = '1') else
+    '1'&data_s3_freg_p when (sf3_unit = unit_fpu) and (freg_s3_ok = '1') and (ftf1 = '0') else
     '1'&data_s3_frob_p when  (sf3_unit = unit_fpu) and (frob_s3_ok = '1') else
     '0'&x"0000000"&'1'&sf3tag;
 
     rsfpu_inB <= '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s2_ok = '1') else
     '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s2_ok = '1') else
     '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_fpu) else
-    '1'&data_s4_freg_p when (sf4_unit = unit_fpu) and (freg_s4_ok = '1') else
+    '1'&data_s4_freg_p when (sf4_unit = unit_fpu) and (freg_s4_ok = '1') and (ftf2 = '0') else
     '1'&data_s4_frob_p when (sf4_unit = unit_fpu) and (frob_s4_ok = '1') else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_fpu) else
     '1'&x"00000000";
@@ -780,7 +778,7 @@ begin
 	
 	FREG0 : reg port map (
 		clk,flush,freg_alloc1,freg_alloc2,
-		dr1,dr2,
+		df1,df2,
 		s1,s2,s3,s4,
 		write_freg,write_freg_num,write_freg_data,
 		data_s1_freg_p,data_s2_freg_p,data_s3_freg_p,data_s4_freg_p,
@@ -840,7 +838,6 @@ begin
 		pf_dtag,pl_dtag,
 		pf_value,pl_value
 	);
-	fpu_issue <= fpu_ready;
 	
 	
 	RSBRU0 : reservationStationBru
@@ -904,7 +901,12 @@ begin
     	RS_RX,RS_TX,
       	outdata0,outdata1,outdata2,outdata3,outdata4,outdata5,outdata6,outdata7
 	);
-	
+	FPU0 : fpu port map (
+    clk,flush,fpu_ready,
+    fpu_ready_op,fpu_ready_tag,
+    fpuA, fpuB, pf_value,fpu_out_tag,
+    pf_valid,fpu_issue
+    );
 		
 	----------------------------------
 	-- 
@@ -920,8 +922,8 @@ begin
 	pl_validi <= pl_valid and (not lsu_out_tag(3));
 	
 	--pf_value <= fpuO;
-	pf_dtag <= fpu_tag;
-	pf_dtagf <= '0'&fpu_tag(2 downto 0);
+	pf_dtag <= fpu_out_tag;
+	pf_dtagf <= '0'&fpu_out_tag(2 downto 0);
 	--pf_valid <= pf_0(4);
 	
 	pi_value <= alu0O;

@@ -64,9 +64,9 @@ begin
 	--メモリアクセスはポンコツな実装
 	-- store,io優先
 	-- storeとioは重ならない
-	lsu_full <= io(38)or storeexec or (store_buf0(53) and store_buf1(53)) or load_full;
+	lsu_full <= io(38) or storeexec or (store_buf0(53) and store_buf1(53)) or load_full;
 	
-	load_full <= '1' when rp = wp + '1' else '0';
+	load_full <= '1' when rp = (wp + '1') else '0';
 	load_empty <= '1' when rp = wp else '0';
 	
 	tagout <= io(37 downto 34) when io_do = '1' else load_buf0(55 downto 52);

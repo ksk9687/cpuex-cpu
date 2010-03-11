@@ -188,10 +188,15 @@ end component;
 component FPU is
 
   port (
-    clk  : in  std_logic;
-    op   : in  std_logic_vector(2 downto 0);
+    clk,flush,write  : in  std_logic;
+    op   : in  std_logic_vector(4 downto 0);
+    tag   : in  std_logic_vector(3 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
-    O1clk,O4clk    : out std_logic_vector(31 downto 0));
+    O    : out std_logic_vector(31 downto 0);
+    Otag    : out std_logic_vector(3 downto 0);
+    
+    go,writeok    : out std_logic
+    );
 
 end component;
 
@@ -382,7 +387,7 @@ component reservationStation is
 end component;
 
 
-component reservationStationLsu is
+component reservationStationBru is
 	generic (
 		opbits : integer := 3 + 3 + 14 + 1
 	);
@@ -410,7 +415,7 @@ component reservationStationLsu is
 end component;
 
 
-component reservationStationBru is
+component reservationStationLsu is
 	generic (
 		opbits : integer := 20
 	);

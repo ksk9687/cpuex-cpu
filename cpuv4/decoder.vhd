@@ -26,13 +26,13 @@ begin
 	
 	
 	with op select
-	 r1 <=  "00" when op_li|op_call|op_nop|op_read|op_ledi,
-	 "10" when op_cmpfjmp1|op_cmpfjmp2|op_fadd|op_fsub|op_fmul|op_finv|op_fsqrt|op_fmov|op_ftoi,
+	 r1 <=  "00" when op_li|op_call|op_nop|op_read|op_ledi|op_itof|op_ftoi,
+	 "10" when op_cmpfjmp1|op_cmpfjmp2|op_fadd|op_fsub|op_fmul|op_finv|op_fsqrt|op_fmov,
 	 "01" when others;
 	 
 	with op select
-	 r2 <=  "00" when op_li|op_addi|op_subi|op_mov|op_call|op_ret|op_nop|op_cmpijmp1|op_cmpijmp2|op_read|op_write|op_ledi|op_led|op_finv|op_fsqrt|op_fmov|op_itof|op_ftoi,
-	 "10" when op_cmpfjmp1|op_cmpfjmp2|op_fadd|op_fsub|op_fmul|op_fstore,
+	 r2 <=  "00" when op_li|op_addi|op_subi|op_mov|op_call|op_ret|op_nop|op_cmpijmp1|op_cmpijmp2|op_read|op_write|op_ledi|op_led|op_finv|op_fsqrt|op_fmov,
+	 "10" when op_cmpfjmp1|op_cmpfjmp2|op_fadd|op_fsub|op_fmul|op_fstore|op_ftoi,
 	 "01" when others;
 
 	with op select

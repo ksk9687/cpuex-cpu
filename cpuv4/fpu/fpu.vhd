@@ -21,7 +21,7 @@ entity FPU is
     tag   : in  std_logic_vector(3 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
-    Otag    : out std_logic_vector(4 downto 0);
+    Otag    : out std_logic_vector(3 downto 0);
     
     go,writeok    : out std_logic
     );
@@ -86,7 +86,7 @@ begin  -- STRUCTURE
 	
 	tag1 <= op_queue(0)(8 downto 5) when op_queue(0)(9) = '1' else tag;
 	
-	O1(30 downto 0) <= O_u when op_queue(0)(9) = '1' else A(30 downto 0);
+	O1(30 downto 0) <= O_u(30 downto 0) when op_queue(0)(9) = '1' else A(30 downto 0);
 	O1(31) <= (op_queue(0)(1) or O_u(31)) xor op_queue(0)(0) when op_queue(0)(9) = '1' else
 	(op(1) or  A(31)) xor op(0);
 	
@@ -109,7 +109,7 @@ begin  -- STRUCTURE
 	  with op(4 downto 2) select
 	  writeok <= (not op_queue(0)(9)) when "101",
 	  (not op_queue(2)(9)) when "000" | "001" | "010",
-	  '1' when "011","100",
+	  '1' when "011" | "100",
 	  '0' when others;
 	   
 	op_queue_write(0) <= op_queue(1);
@@ -120,13 +120,12 @@ begin  -- STRUCTURE
 	begin
 		if rising_edge(clk) then
 			O <= O1;
-			tag <= tag1;
+			Otag <= tag1;
 			if flush = '1' then
 				go <= '0';
 				op_queue(0)(9) <= '0';
 				op_queue(1)(9) <= '0';
 				op_queue(2)(9) <= '0';
-				op_queue(3)(9) <= '0';
 			else
 				go <= op_queue(0)(9) or write1;
 				op_queue(0) <= op_queue_write(0);
