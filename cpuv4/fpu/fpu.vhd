@@ -16,10 +16,15 @@ use IEEE.std_logic_unsigned.all;
 entity FPU is
 
   port (
-    clk  : in  std_logic;
-    op   : in  std_logic_vector(3 downto 0);
+    clk,flush,write  : in  std_logic;
+    op   : in  std_logic_vector(4 downto 0);
+    tag   : in  std_logic_vector(3 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
-    O1clk,O3clk,O4clk    : out std_logic_vector(31 downto 0));
+    O    : out std_logic_vector(31 downto 0);
+    Otag    : out std_logic_vector(4 downto 0);
+    
+    go,writeok    : out std_logic
+    );
 
 end FPU;
 
@@ -66,14 +71,71 @@ architecture STRUCTURE of FPU is
 
   
   signal O_ADD, O_MUL, O_INV, O_SQRT : std_logic_vector(31 downto 0);
-  signal B_ADD, O1 : std_logic_vector(31 downto 0);
+  signal B_ADD, O_u , O_i , O1 : std_logic_vector(31 downto 0);
+  
+  signal tag1 : std_logic_vector(3 downto 0);
 
   -- op を保存
-  subtype vec4 is std_logic_vector(3 downto 0);
+  subtype vec4 is std_logic_vector(9 downto 0);
   type queue_t is array (0 to 2) of vec4;
-  signal op_queue : queue_t;
+  signal op_queue : queue_t := (others => (others => '0'));
+  signal op_queue_write : queue_t := (others => (others => '0'));
 
+  signal write1,write3,write4 : std_logic := '0';
 begin  -- STRUCTURE
+	
+	tag1 <= op_queue(0)(8 downto 5) when op_queue(0)(9) = '1' else tag;
+	
+	O1(30 downto 0) <= O_u when op_queue(0)(9) = '1' else A(30 downto 0);
+	O1(31) <= (op_queue(0)(1) or O_u(31)) xor op_queue(0)(0) when op_queue(0)(9) = '1' else
+	(op(1) or  A(31)) xor op(0);
+	
+	with op_queue(0)(4 downto 2) select
+	 O_u <= O_ADD when "000"|"001",
+	 O_MUL when "010",
+	 O_INV when "011",
+	 O_SQRT when others;
+	 
+	 write1 <= write when op(4 downto 2) = "101" else '0';
+	 
+	 with op(4 downto 2) select
+	  write3 <= write when "000" | "001" | "010",
+	  '0' when others;
+	  
+	 with op(4 downto 2) select
+	  write4 <= write when "011" | "100",
+	  '0' when others;
+	  
+	  with op(4 downto 2) select
+	  writeok <= (not op_queue(0)(9)) when "101",
+	  (not op_queue(2)(9)) when "000" | "001" | "010",
+	  '1' when "011","100",
+	  '0' when others;
+	   
+	op_queue_write(0) <= op_queue(1);
+	op_queue_write(1) <= op_queue(2) when op_queue(2)(9) = '1' else write3&tag&op;
+	op_queue_write(2) <= write4&tag&op;
+
+	process(clk)
+	begin
+		if rising_edge(clk) then
+			O <= O1;
+			tag <= tag1;
+			if flush = '1' then
+				go <= '0';
+				op_queue(0)(9) <= '0';
+				op_queue(1)(9) <= '0';
+				op_queue(2)(9) <= '0';
+				op_queue(3)(9) <= '0';
+			else
+				go <= op_queue(0)(9) or write1;
+				op_queue(0) <= op_queue_write(0);
+				op_queue(1) <= op_queue_write(1);
+				op_queue(2) <= op_queue_write(2);
+			end if;
+		end if;
+	end process;
+	
 
   fp_add_inst  : FP_ADD  port map (clk => clk, O => O_ADD, A => A, B => B_ADD);
   fp_mul_inst  : FP_MUL  port map (clk => clk, O => O_MUL, A => A, B => B);
@@ -86,47 +148,7 @@ begin  -- STRUCTURE
            (not B(31));  -- sub -> negate
 
 
-
-  -- O に直結する必要があるものもある
-  with op select O <=
-    O_ABS when fpu_op_fabs,             -- 直結
-    O_NEG when fpu_op_fneg,             -- 直結
-    O1 when others;                     -- キューから出てくる
-
-  -- マルチサイクルのもの、何がでてくるかなー！？
-  with op_queue(0) select O1 <= 
-    O_ADD when fpu_op_fadd,
-    O_ADD when fpu_op_fsub,
-    O_MUL when fpu_op_fmul,
-    O_INV when fpu_op_finv,
-    O_SQRT when others;  -- BAD OP
   
 
-  -- op を覚えなきゃ
-  process (clk)
-  begin  -- process
-    if rising_edge(clk) then
-      if op = fpu_op_fcmp then
-        -- 2 clock (1 個ラッチがある）の演算
-        op_queue(0) <= op;
-        op_queue(1) <= op_queue(2);
-        -- op_queue(2) <= op_queue(3);
-      elsif op = fpu_op_fadd or op = fpu_op_fsub or op = fpu_op_fmul then
-        -- 3 clock (2 個ラッチがある) の演算
-        op_queue(0) <= op_queue(1);
-        op_queue(1) <= op;
-        -- op_queue(2) <= op_queue(3);
-      elsif op = fpu_op_finv or op = fpu_op_fsqrt then
-        -- 4 clock (3 個ラッチがある) の演算
-        op_queue(0) <= op_queue(1);
-        op_queue(1) <= op_queue(2);
-        op_queue(2) <= op;
-      else
-        -- 演算が入ってこなかった
-        op_queue(0) <= op_queue(1);
-        op_queue(1) <= op_queue(2);
-      end if;
-    end if;
-  end process;
   
 end STRUCTURE;

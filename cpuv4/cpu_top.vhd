@@ -112,10 +112,10 @@ architecture arch of cpu_top is
 	signal rslsu_inA,rslsu_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal lsuA,lsuB,lsuO,ioO :std_logic_vector(31 downto 0) := (others=>'0');
 	signal rslsuim,rslsuim_p :std_logic_vector(13 downto 0) := (others=>'0');
-	--ALU
+	--FPU
 	signal rsfpu_write,rsfpu_ok,fpu_ready,fpu_issue :std_logic := '0';
-	signal fpu_ready_tag,rsfpudtag,fpu_in_tag :std_logic_vector(3 downto 0) := (others=>'0');
-	signal fpu_ready_op,rsfpuop,rsfpu_in_op :std_logic_vector(1 downto 0) := (others=>'0');
+	signal fpu_ready_tag,rsfpudtag,fpu_in_tag,fpu_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal fpu_ready_op,rsfpuop,rsfpu_in_op :std_logic_vector(5 downto 0) := (others=>'0');
 	signal rsfpu_inA,rsfpu_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal fpuA,fpuB,fpuO :std_logic_vector(31 downto 0) := (others=>'0');
    --LS
@@ -701,21 +701,22 @@ begin
      
     rsfpu_inA <= '1'&data_s1_freg_p when (sf1_unit = unit_fpu) and (freg_s1_ok = '1') else
     '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
-    '0'&x"0000000"&'0'&sf1tag when (sf1_unit = unit_fpu) else
-    '1'&data_s1_freg_p when (sf1_unit = unit_fpu) and (freg_s1_ok = '1') else
-    '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
-    '0'&x"0000000"&'0'&sf3tag;
+    '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_fpu) else
+    '1'&data_s3_freg_p when (sf3_unit = unit_fpu) and (freg_s3_ok = '1') else
+    '1'&data_s3_frob_p when  (sf3_unit = unit_fpu) and (frob_s3_ok = '1') else
+    '0'&x"0000000"&'1'&sf3tag;
 
     rsfpu_inB <= '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s2_ok = '1') else
     '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s2_ok = '1') else
-    '0'&x"0000000"&'0'&sf2tag when (sf2_unit = unit_fpu) else
-    '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s4_ok = '1') else
-    '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s4_ok = '1') else
-    '0'&x"0000000"&'0'&sf4tag;
+    '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_fpu) else
+    '1'&data_s4_freg_p when (sf4_unit = unit_fpu) and (freg_s4_ok = '1') else
+    '1'&data_s4_frob_p when (sf4_unit = unit_fpu) and (frob_s4_ok = '1') else
+    '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_fpu) else
+    '1'&x"00000000";
    
     
-    rsfpudtag <= "0"&frob_tag1 when (firstunit = unit_fpu) or (secondregmsk(2) = '1') else "0"&frob_tag2;
-    rsfpuop <= fpu_inst(31 downto 30);
+    rsfpudtag <= "1"&frob_tag1 when (firstunit = unit_fpu) or (secondregmsk(2) = '1') else "1"&frob_tag2;
+    rsfpuop <= fpu_inst(32 downto 28);
     
     
 	IREG0 : reg port map (
@@ -773,9 +774,8 @@ begin
 	rob_reg_ok when rob_op = "11" else--io
 	rob_reg_ok;
 	frob_next <= 
-	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when rob_op = "01" and frob_op = "01" else--jmp
-	frob_reg_ok and (not write_freg_data(0)) when frob_op = "01" else--jmp
-	frob_reg_ok when frob_op = "11" else--io
+	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when rob_op = "01" and frob_op = "01" else--jmp miss
+	frob_reg_ok and (not write_freg_data(0)) when frob_op = "01" else--jmp hit
 	frob_reg_ok;
 	
 	FREG0 : reg port map (
@@ -808,7 +808,7 @@ begin
 		frob_op,
 		
 		pf_valid,pl_validf,pb_valid,
-		pf_dtag,pl_dtagf,pb_dtagf,
+		pf_dtagf,pl_dtagf,pb_dtagf,
 		pf_value,pl_value,pb_valuef
 	);
 	
@@ -827,6 +827,9 @@ begin
 	alu0_issue <= alu0_ready;
 	
 	RSFPU : reservationStation
+	generic map (
+		opbits => 5
+	)
 	port map (
 		clk,flush,rsfpu_write,rsfpu_ok,
 		fpu_issue,fpu_ready,
@@ -834,7 +837,7 @@ begin
 		fpu_ready_op,fpu_ready_tag,fpuA,fpuB,
 		
 		pf_valid,pl_validf,
-		pf_dtag,pl_dtagf,
+		pf_dtag,pl_dtag,
 		pf_value,pl_value
 	);
 	fpu_issue <= fpu_ready;
@@ -916,9 +919,10 @@ begin
 	pl_validf <= pl_valid and lsu_out_tag(3);
 	pl_validi <= pl_valid and (not lsu_out_tag(3));
 	
-	pf_value <= fpuO;
-	pf_dtag <= pf_0(3 downto 0);
-	pf_valid <= pf_0(4);
+	--pf_value <= fpuO;
+	pf_dtag <= fpu_tag;
+	pf_dtagf <= '0'&fpu_tag(2 downto 0);
+	--pf_valid <= pf_0(4);
 	
 	pi_value <= alu0O;
 	pi_dtag <= pi_0(3 downto 0);
@@ -934,10 +938,8 @@ begin
 		if rising_edge(clk) then
 			if flush = '1' then
 				pi_0 <= (others => '0');
-				pf_0 <= (others => '0');
 				pb_0 <= (others => '0');
 			else
-				pf_0 <= "00000"&fpu_ready&fpu_ready_tag;
 				pi_0 <= "00000"&alu0_ready&alu0_ready_tag;
 				pb_0 <= (bru_ready_op(4) and bru_ready_op(3))&bru_ready_op(47 downto 44)&bru_ready&bru_ready_tag;
 			end if;
