@@ -32,8 +32,9 @@ architecture arch of IOU is
     signal RAM : ram_type := 
     (
 x"00", x"00", x"00", x"1E",
- x"00", x"00", x"00", x"00",
-  x"00", x"00", x"00", x"04", x"C0", x"00", x"00", x"00",
+x"00", x"00", x"00", x"00",
+x"00", x"00", x"00", x"04",
+ x"C0", x"00", x"00", x"00",
 x"00", x"00", x"00", x"00", x"03", x"F2", x"00", x"01", x"4F", x"FF", x"FC", x"00", x"00", x"00", x"00", x"14",
 x"FF", x"EF", x"C0", x"01", x"4F", x"BE", x"F8", x"00", x"00", x"00", x"00", x"14", x"FB", x"EF", x"80", x"00",
 x"C0", x"3C", x"01", x"09", x"00", x"00", x"00", x"C8", x"00", x"00", x"10", x"80", x"00", x"01", x"00", x"00",
@@ -50,7 +51,7 @@ begin
   	RSTXD <= '0';
   	io_read_buf_overrun <= '0';
   	
-	readdata_p <= x"00000"&"000"&'0'&RAM(conv_integer(pointer));
+	readdata_p <= x"00000"&"000"&'1'&RAM(conv_integer(pointer));
 
 	process(clk)
 	begin
@@ -60,7 +61,7 @@ begin
 				readdata <= readdata_p;
 			elsif (iou_op = iou_op_write) and (enable = '1') then
 				counter <= counter + '1';
-				readdata <= x"0000000"&"0000";
+				readdata <= x"0000000"&"0001";
 			else
 				readdata <= readdata_p;
 			end if;
