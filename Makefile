@@ -64,7 +64,7 @@ tmp/4/rs232c.cmp:cpuv4/io/rs232c/rs232cio.vhd
 	$(CMD) 4 $< $@
 	
 	
-tmp/4/fpu.cmp:cpuv4/fpu_4clk/fpu.vhd
+tmp/4/fpu.cmp:cpuv4/fpu/fpu.vhd
 	$(CMD) 4 $< $@
 
 tmp/4/reorderBuffer.cmp:cpuv4/reorderBuffer.vhd

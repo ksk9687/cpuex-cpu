@@ -621,7 +621,7 @@ begin
     '1'&data_s1_rob_p when  (s1_unit = unit_alu) and (rob_s1_ok = '1') else
     '0'&x"0000000"&'0'&s1tag when (s1_unit = unit_alu) else
     '1'&data_s3_reg_p when (s3_unit = unit_alu) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit = unit_alu) and (rob_s3_ok = '1') else
+    '1'&data_s3_rob_p when  (s3_unit = unit_alu) and (rob_s3_ok = '1') and (tf1 = '0') else
     '0'&x"0000000"&'0'&s3tag when (s3_unit = unit_alu) else
     '1'&x"0000"&"00"&rsalu0im;
 
@@ -629,7 +629,7 @@ begin
     '1'&data_s2_rob_p when  (s2_unit = unit_alu) and (rob_s2_ok = '1') else
     '0'&x"0000000"&'0'&s2tag when (s2_unit = unit_alu) else
     '1'&data_s4_reg_p when (s4_unit = unit_alu) and (reg_s4_ok = '1') and (tf2 = '0')else
-    '1'&data_s4_rob_p when  (s4_unit = unit_alu) and (rob_s4_ok = '1') else
+    '1'&data_s4_rob_p when  (s4_unit = unit_alu) and (rob_s4_ok = '1') and (tf2 = '0') else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_alu) else
     '1'&x"0000"&"00"&rsalu0im;
     
@@ -644,10 +644,10 @@ begin
     '1'&data_s1_frob_p when  (sf1_unit = unit_bru) and (frob_s1_ok = '1') else
     '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_bru) else
     '1'&data_s3_reg_p when (s3_unit = unit_bru) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit = unit_bru) and (rob_s3_ok = '1') else
+    '1'&data_s3_rob_p when  (s3_unit = unit_bru) and (rob_s3_ok = '1') and (tf1 = '0') else
     '0'&x"0000000"&'0'&s3tag when (s3_unit = unit_bru) else
     '1'&data_s3_freg_p when (sf3_unit = unit_bru) and (freg_s3_ok = '1') and (ftf1 = '0') else
-    '1'&data_s3_frob_p when  (sf3_unit = unit_bru) and (frob_s3_ok = '1') else
+    '1'&data_s3_frob_p when  (sf3_unit = unit_bru) and (frob_s3_ok = '1') and (ftf1 = '0') else
     '0'&x"0000000"&'1'&sf3tag;
 
     rsbru_inB <= '1'&data_s2_reg_p when ((s2_unit = unit_bru) and (reg_s2_ok = '1')) else
@@ -657,10 +657,10 @@ begin
     '1'&data_s2_frob_p when  ((sf2_unit = unit_bru) and (frob_s2_ok = '1')) else
     '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_bru) else
     '1'&data_s4_reg_p when ((s4_unit = unit_bru) and (reg_s4_ok = '1')) and (tf2 = '0') else
-    '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) else
+    '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) and (tf2 = '0') else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_bru) else
     '1'&data_s4_freg_p when ((sf4_unit = unit_bru) and (freg_s4_ok = '1')) and (ftf2 = '0') else
-    '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) else
+    '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) and (ftf2 = '0') else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_bru) else
     '1'&sign_extention(ci);
     --jmpæ,mask
@@ -673,7 +673,7 @@ begin
     '1'&data_s1_rob_p when  (s1_unit(2 downto 1) = unit_lsiou) and (rob_s1_ok = '1') else
     '0'&x"0000000"&'0'&s1tag when (s1_unit(2 downto 1) = unit_lsiou) else
     '1'&data_s3_reg_p when (s3_unit(2 downto 1) = unit_lsiou) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit(2 downto 1) = unit_lsiou) and (rob_s3_ok = '1') else
+    '1'&data_s3_rob_p when  (s3_unit(2 downto 1) = unit_lsiou) and (rob_s3_ok = '1') and (tf1 = '0') else
     '0'&x"0000000"&'0'&s3tag when (s3_unit(2 downto 1) = unit_lsiou) else
     '1'&x"00000000";
 
@@ -684,10 +684,10 @@ begin
     '1'&data_s2_frob_p when  ((sf2_unit(2 downto 1) = unit_lsiou) and (frob_s2_ok = '1')) else
     '0'&x"0000000"&'1'&sf2tag when (sf2_unit(2 downto 1) = unit_lsiou) else
     '1'&data_s4_reg_p when ((s4_unit(2 downto 1) = unit_lsiou) and (reg_s4_ok = '1')) and (tf2 = '0') else
-    '1'&data_s4_rob_p when  ((s4_unit(2 downto 1) = unit_lsiou) and (rob_s4_ok = '1')) else
+    '1'&data_s4_rob_p when  ((s4_unit(2 downto 1) = unit_lsiou) and (rob_s4_ok = '1')) and (tf2 = '0') else
     '0'&x"0000000"&'0'&s4tag when (s4_unit(2 downto 1) = unit_lsiou) else
     '1'&data_s4_freg_p when ((sf4_unit(2 downto 1) = unit_lsiou) and (freg_s4_ok = '1')) and (ftf2 = '0') else
-    '1'&data_s4_frob_p when  ((sf4_unit(2 downto 1) = unit_lsiou) and (frob_s4_ok = '1')) else
+    '1'&data_s4_frob_p when  ((sf4_unit(2 downto 1) = unit_lsiou) and (frob_s4_ok = '1')) and (ftf2 = '0') else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit(2 downto 1) = unit_lsiou) else
     '1'&x"00000000";
     
@@ -701,14 +701,14 @@ begin
     '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
     '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_fpu) else
     '1'&data_s3_freg_p when (sf3_unit = unit_fpu) and (freg_s3_ok = '1') and (ftf1 = '0') else
-    '1'&data_s3_frob_p when  (sf3_unit = unit_fpu) and (frob_s3_ok = '1') else
+    '1'&data_s3_frob_p when  (sf3_unit = unit_fpu) and (frob_s3_ok = '1') and (ftf1 = '0') else
     '0'&x"0000000"&'1'&sf3tag;
 
     rsfpu_inB <= '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s2_ok = '1') else
     '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s2_ok = '1') else
     '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_fpu) else
     '1'&data_s4_freg_p when (sf4_unit = unit_fpu) and (freg_s4_ok = '1') and (ftf2 = '0') else
-    '1'&data_s4_frob_p when (sf4_unit = unit_fpu) and (frob_s4_ok = '1') else
+    '1'&data_s4_frob_p when (sf4_unit = unit_fpu) and (frob_s4_ok = '1') and (ftf2 = '0') else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_fpu) else
     '1'&x"00000000";
    
