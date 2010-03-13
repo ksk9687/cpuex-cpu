@@ -64,9 +64,9 @@ begin
 
 	--–½—ß‚Ì€”õ‚ªo—ˆ‚Ä‚¢‚é‚©
 	ready(0) <= '1' when (s1_write(0)(32) = '1') and (s2_write(0)(32) = '1') and (op(0)(op_valid) = '1') else '0';
-	ready(1) <= '1' when (s1_write(1)(32) = '1') and (s2_write(1)(32) = '1') and (op(1)(op_valid) = '1') else '0';
-	ready(2) <= '1' when (s1_write(2)(32) = '1') and (s2_write(2)(32) = '1') and (op(2)(op_valid) = '1') else '0';
-	ready(3) <= '1' when (s1_write(3)(32) = '1') and (s2_write(3)(32) = '1') and (op(3)(op_valid) = '1') else '0';
+	ready(1) <= (not op(1)(op_cant_bypass)) when (s1_write(1)(32) = '1') and (s2_write(1)(32) = '1') and (op(1)(op_valid) = '1') else '0';
+	ready(2) <= (not op(2)(op_cant_bypass)) when (s1_write(2)(32) = '1') and (s2_write(2)(32) = '1') and (op(2)(op_valid) = '1') else '0';
+	ready(3) <= (not op(3)(op_cant_bypass)) when (s1_write(3)(32) = '1') and (s2_write(3)(32) = '1') and (op(3)(op_valid) = '1') else '0';
 	--”­s€”õ‚É“ü‚é‚©
 	go(0) <= ready(0) and ((not readyop(64 + op_valid)) or read);
 	go(1) <= ready(1) and (not ready(0)) and ((not readyop(64 + op_valid)) or read) and (not op(0)(op_cant_bypass));

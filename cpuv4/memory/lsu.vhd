@@ -28,6 +28,8 @@ entity lsu is
     	load_data : in std_logic_vector(31 downto 0);
     	ls_addr_out : out std_logic_vector(19 downto 0);
     	store_data : out std_logic_vector(31 downto 0);
+    	led : in std_logic_vector(15 downto 0);
+    	ledd : in std_logic_vector(7 downto 0);
     	
     	RS_RX : in STD_LOGIC;
 	    RS_TX : out STD_LOGIC;
@@ -52,21 +54,34 @@ architecture arch of lsu is
 	signal io : std_logic_vector(38 downto 0) := (others => '0');
 	
 	
-	signal store,storeinst,load_write : std_logic := '0';
+	signal store,storeinst,load_write,io_write,store_write : std_logic := '0';
 	signal addr,saddr : std_logic_vector(19 downto 0) := (others => '0');
 	signal store_buf0,store_buf1 : std_logic_vector(53 downto 0) := (others => '0');
 	signal load_buf0 : std_logic_vector(57 downto 0) := (others => '0');
+	signal load_next : std_logic_vector(57 downto 0) := (others => '0');
 
-	type s_t is array (0 to 3) of std_logic_vector (57 downto 0);
+	type s_t is array (0 to 7) of std_logic_vector (57 downto 0);
 	signal load_buf : s_t := (others => (others => '0'));
-	signal rp,wp : std_logic_vector(1 downto 0) := (others => '0');
+	signal rp,wp : std_logic_vector(2 downto 0) := (others => '0');
 	signal rsrp,rswp : std_logic_vector(7 downto 0) := (others => '0');
 begin
 	--メモリアクセスはポンコツな実装
 	-- store,io優先
 	-- storeとioは重ならない
-	lsu_full <= io(38) or storeexec or (store_buf0(53) and store_buf1(53)) or load_full;
-	
+	lsu_full <= io(38) or
+	 (store_buf0(53) and store_buf1(53)) or
+	  storeexec or io_do or load_full;
+		--アドレス計算
+	addr <= a(19 downto 0) + b(19 downto 0) when op(2) = '1' else a(19 downto 0) + sign_extention19(im);
+	with op select
+	 load_write <= '1' when "000000"|"000100"|"010000"|"010100"|"001100"|"011100",
+	 '0' when others;
+	with op select
+	 io_write <= '1' when "100001"|"101001"|"110001"|"111001",
+	 '0' when others;
+	 store_write <= op(5);
+	 
+	 
 	load_full <= '1' when rp = (wp + '1') else '0';
 	load_empty <= '1' when rp = wp else '0';
 	
@@ -89,11 +104,9 @@ begin
 	load_read <= (load_hit or load_buf0(56)) and (not io_do) and (not load_empty) and (not loadwait);
 	load_end <= load_read;
 
-	--アドレス計算
-	addr <= a(19 downto 0) + b(19 downto 0) when op(2) = '1' else a(19 downto 0) + sign_extention19(im);
-	with op select
-	 load_write <= '1' when "000000"|"000100"|"010000"|"010100"|"001100"|"011100",
-	 '0' when others;
+
+	 
+	
 	ld_valid <= '1' when (store_buf0(51 downto 32) = addr)  and (store_buf0(53) = '1')else
 	'1' when (store_buf1(51 downto 32) = addr)  and (store_buf1(53) = '1') else
 	op(3) and op(2);
@@ -102,7 +115,7 @@ begin
 	store_buf0(31 downto 0) when (store_buf0(51 downto 32) = addr) and (store_buf0(53) = '1') else
 	store_buf1(31 downto 0) when (store_buf1(51 downto 32) = addr) and (store_buf1(53) = '1') else
 	b;
-
+	
 	LOADPROC:process(clk)
 	begin
 		if rising_edge(clk) then
@@ -159,10 +172,8 @@ begin
 	end process;
 	
 	
-	
-	
-  leddotdata <= "1111111" & (not io_read_buf_overrun);
- leddata <= rsrp&rswp&"00"&pc;
+	leddotdata <= ledd;
+ leddata <= led&"00"&pc;
  
   led_inst : ledextd2 port map (
       leddata,
@@ -189,17 +200,17 @@ begin
 			io_do <= iou_enable;
 			if flush = '1' then
 				io(38) <= '0';
+			elsif iou_enable = '1' then
+				io(38) <= '0';
+				if io(33) = '1' then--led
+  					leddata_buf <= io(31 downto 0);
+  				end if;
 			elsif (write = '1') and (op(5 downto 3) = "111") then--ledi
 				io <= '1'&tagin&op(4 downto 3)&x"000000"&im(7 downto 0);
 			elsif (write = '1') and (op(5 downto 3) = "110") then--led
 				io <= '1'&tagin&op(4 downto 3)&a;
 			elsif (write = '1') and (op(5) = '1') then--io
 				io <= '1'&tagin&op(4 downto 3)&a;
-			elsif iou_enable = '1' then
-				io(38) <= '0';
-				if io(33) = '1' then--led
-  					leddata_buf <= io(31 downto 0);
-  				end if;
 			end if;
 		end if;
 	end process;

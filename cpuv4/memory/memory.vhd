@@ -115,12 +115,10 @@ begin
 	---DmissLoad
 	i_d_in(0) <= ls_buf0(1) and (not dcache_hit_tag);
 	
-	ls_addr_buf_p1 <= ls_addr_buf + '1';
 	
 	DMEM : process(clk,rst)
 	begin
 		if rst = '1' then
-			d_mem_state <= idle;
 			ls_buf0 <= "00";
 			dhit_check <= '0';
 		elsif rising_edge(clk) then

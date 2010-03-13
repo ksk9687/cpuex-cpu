@@ -47,18 +47,12 @@ end sram_controller;
 -- pp mode
 
 architecture Behavioral of sram_controller is
-  signal oldRW : STD_LOGIC;
-  signal oldaddr : STD_LOGIC_VECTOR(19 downto 0);
-  signal oldwritedata : STD_LOGIC_VECTOR(31 downto 0);
-  signal oldi_d,old2i_d,old3i_d : STD_LOGIC_VECTOR(0 downto 0);
-
-  signal old2RW : STD_LOGIC;
-  signal old2addr : STD_LOGIC_VECTOR(19 downto 0);
-  signal old2writedata : STD_LOGIC_VECTOR(31 downto 0);
+  signal old0RW,old1RW,old2RW,old3RW : STD_LOGIC;
+  signal old0addr,old1addr,old2addr,old3addr : STD_LOGIC_VECTOR(19 downto 0);
+  signal old0writedata,old1writedata,old2writedata : STD_LOGIC_VECTOR(31 downto 0);
+  signal old0i_d,old1i_d,old2i_d,old3i_d : STD_LOGIC_VECTOR(0 downto 0);
+  signal state,clk1,clk2 :std_logic := '0';
   
-  signal old3RW : STD_LOGIC;
-  signal old3addr : STD_LOGIC_VECTOR(19 downto 0);
-
   signal busreaddata : STD_LOGIC_VECTOR(31 downto 0);
 begin
   XE1<='0';
@@ -72,43 +66,80 @@ begin
   ZCLKMA(1)<=clk_180;
   XFT<='1';
 
-  XWA <= RW;
+  XWA <= old0RW;
   XZBE <= (others => '0');              -- 書き込む領域を指定するならここを変更
   XGA<= '0';
-  ZA <= ADDR;
+  ZA <= old0addr;
+  
+  
+  
+  	ZD <= old2writedata when old2RW = '0' and clk1 /= clk2 else
+	(others => 'Z');
+	
+	ZDP <= "0000" when old2RW = '0' and clk1 /= clk2 else
+	(others => 'Z');
   
   --パリティは使わない
-  DATAOUT <= busreaddata;
-  ZD <= old2writedata when old2RW = '0' else (others => 'Z');
-  ZDP <= (others => 'Z');
+--  DATAOUT <= busreaddata;
+--  ZD <= old2writedata when old2RW = '0' else (others => 'Z');
+--  ZDP <= (others => 'Z');
   
   ADDRBUF <= old3addr;
   i_d_buf <= old3i_d;
+  
+    process (clk)
+  begin
+  if rising_edge(clk) then
+    	clk1 <= not clk2;
+  end if;
+  end process;
+  
+  process (clk_180)
+  begin
+  if rising_edge(clk_180) then
+    	clk2 <= clk1;
+  end if;
+  end process;
+  
+  
   
   process (clk)
   begin  -- process
     -- rst省略
     if clk'event and clk = '1' then  -- rising clock edge
-      oldRW <= RW;
-      oldaddr <= ADDR;
-      oldwritedata <= DATAIN;
-      oldi_d <= i_d;
+      old0RW <= RW;
+      old0addr <= ADDR;
+      old0writedata <= DATAIN;
+      old0i_d <= i_d;
       
-      old2RW <= oldRW;
-      old2addr <= oldaddr;
-      old2writedata <= oldwritedata;
-      old2i_d <= oldi_d;
+      old1RW <= old0RW;
+      old1addr <= old0addr;
+      old1writedata <= old0writedata;
+      old1i_d <= old0i_d;
+      
+      
+      old2RW <= old1RW;
+      old2addr <= old1addr;
+      old2writedata <= old1writedata;
+      old2i_d <= old1i_d;
 
       old3RW <= old2RW;
       old3addr <= old2addr;
       old3i_d <= old2i_d;
       
-      
-      if old2RW = '1' then
-        busreaddata <= ZD;
-      end if;
+      DATAOUT <= busreaddata;
     end if;
   end process;
+  
+  process (clk_180)
+  begin
+    if rising_edge(clk_180) then
+		busreaddata <= ZD;
+		--DATAOUT <= SRAMIOA;
+	end if;
+  end process;
+
+
 
 end Behavioral;
 

@@ -74,6 +74,8 @@ begin
 	newline(1) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '0') else '0';
 	newline(2) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '1') and (op(2)(op_valid) = '0') else '0';
 	newline(3) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '1') and (op(2)(op_valid) = '1')and (op(3)(op_valid) = '0') else '0';
+--	newline(4) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '1') and (op(2)(op_valid) = '1')and (op(3)(op_valid) = '1') else '0';
+
 	--V‚µ‚­“ü‚ê‚é‚È‚ç‚Ç‚±‚©
 	insert(0) <= newline(1) when (go(0) = '1') else newline(0);
 	insert(1) <= newline(2) when (go(0) = '1') or (go(1) = '1') else newline(1);

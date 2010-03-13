@@ -244,6 +244,8 @@ component lsu is
     	load_data : in std_logic_vector(31 downto 0);
     	ls_addr_out : out std_logic_vector(19 downto 0);
     	store_data : out std_logic_vector(31 downto 0);
+    	led : in std_logic_vector(15 downto 0);
+    	ledd : in std_logic_vector(7 downto 0);
     	
     	RS_RX : in STD_LOGIC;
 	    RS_TX : out STD_LOGIC;

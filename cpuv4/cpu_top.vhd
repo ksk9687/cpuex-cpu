@@ -122,6 +122,9 @@ architecture arch of cpu_top is
    signal ls_f : std_logic_vector(2 downto 0) := (others=>'0');
    signal lsu_out,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
    signal ls_address :std_logic_vector(19 downto 0) := (others=>'0');
+   signal leddata :std_logic_vector(15 downto 0) := (others=>'0');
+   signal ledddata :std_logic_vector(7 downto 0) := (others=>'0');
+   
    signal lsu_read,lsu_write,load_hit,lsu_full,lsu_ok,io_ok,store_ok,io_end,load_ok,ioexec,load_end,storeexec : std_logic := '0';
 	--FPU
 	signal fpu_out,fpu_out_buf1 : std_logic_vector(31 downto 0) := (others=>'0');
@@ -186,6 +189,8 @@ begin
 	-- IF
 	-- 
 	----------------------------------
+	
+	
 	
 	jmp1 <= inst1(35) and inst1(34) and (not inst1(33)) and (not (inst1(32) and inst1(31))) and (not pc(0));
 	jmp2 <= inst2(35) and inst2(34) and (not inst2(33)) and (not (inst2(32) and inst2(31)));
@@ -302,11 +307,7 @@ begin
 				r22 <= (others => '0');
 				d1 <= d2p;
 				d2 <= (others => '0');
-				if jr2 = '1' then
-					jmp_info1 <= jr_addr&x"00"&"00";
-				else
-					jmp_info1 <= pc&bph2&bpc2;
-				end if;
+				jmp_info1 <= jmp_info2_p;
 				jmp_info2 <= (others => '0');
 			elsif ((jmp1 = '1') and (bpc1(1) = '1')) or (jal1 = '1') or (jr1 = '1') then--1のみデコード
 				inst1_buf <= inst1;
@@ -342,7 +343,7 @@ begin
 	----------------------------------
 	
 	--実行ユニットが重なったらストール
-	stall_id2 <= '1' when (inst1_buf(35 downto 34) = inst2_buf(35 downto 34)) and ((inst1_buf(35 downto 33) /= "101") or (inst2_buf(35 downto 33) /= "101"))else
+	stall_id2 <= '1' when (inst1_buf(35 downto 34) = inst2_buf(35 downto 34)) and ((inst1_buf(35 downto 33) /= "101") and (inst2_buf(35 downto 33) /= "101"))else
 	'0';
 	
 	alu_inst_p <= inst1_buf when inst1_buf(35 downto 33) = unit_alu else
@@ -576,6 +577,7 @@ begin
 	-- 
 	----------------------------------
     
+
     
     stall_first <= (firstregmsk(0) and (not rob_ok1)) or (firstregmsk(2) and (not frob_ok1)) or (not canUseFirstUnit);
     stall_second <= stall_first or (secondregmsk(0) and (not rob_ok1)) or (secondregmsk(1) and (not rob_ok2)) or 
@@ -772,11 +774,12 @@ begin
 	jmp_commit_key <= write_freg_data(13 downto 1);
 	
 	rob_next <=
-	rob_reg_ok and ((not write_reg_data(0)) or write_freg_data(0)) when rob_op = "01"and frob_op = "01" else--jmp
+	rob_reg_ok and ((not write_reg_data(0)) or write_freg_data(0)) when (rob_op = "01") and (frob_op = "01") else--jmp
 	rob_reg_ok and (not write_reg_data(0)) when rob_op = "01" else--jmp
 	store_ok when rob_op = "10" else--store
 	rob_reg_ok when rob_op = "11" else--io
 	rob_reg_ok;
+	
 	
 	frob_next <= 
 	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when (rob_op = "01") and (frob_op = "01") else--jmp miss
@@ -884,6 +887,8 @@ begin
 	-- 
 	----------------------------------
 	
+
+	
 	ALU0 : ALU port map(
 	clk,alu0_ready_op,alu0A,alu0B,alu0O
 	);
@@ -904,7 +909,7 @@ begin
 		lsuA,lsuB,lsuO,
 		lsu_ready_tag,lsu_out_tag,
 		
-		ls_f,load_hit,load_data,ls_address,store_data,
+		ls_f,load_hit,load_data,ls_address,store_data,leddata,ledddata,
     	RS_RX,RS_TX,
       	outdata0,outdata1,outdata2,outdata3,outdata4,outdata5,outdata6,outdata7
 	);
@@ -914,7 +919,11 @@ begin
 	    fpuA, fpuB, pf_value,fpu_out_tag,
 	    pf_valid,fpu_issue
     );
-		
+    ledddata <= stall_first & stall_second & stall_id2 & rsbru_ok & rsalu0_ok & rsfpu_ok & rslsu_ok & lsu_full;
+	
+	leddata <= flush & stall_first & stall_second & stall_id2 & 
+   rob_ok1 & rob_ok2 & frob_ok1 & frob_ok2& 
+   "00"&rob_op & "00"&frob_op;
 	----------------------------------
 	-- 
 	-- WR

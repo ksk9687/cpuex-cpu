@@ -29,7 +29,7 @@ architecture arch of branchPredictor is
 	type counter_table_t is array (0 to 8191) of std_logic_vector (1 downto 0);
 	signal counter_table	:	counter_table_t := (others => "10");
 	
-	signal pc_buf1,pc_buf2 : std_logic_vector(12 downto 0) := (others => '0');
+	signal pc_buf1,pc_buf2,pc_buf12 : std_logic_vector(12 downto 0) := (others => '0');
 	signal branch_hist_buf,bht1,bht2 : std_logic_vector(ghistlength - 1 downto 0) := (others => '0');
 	signal t1,t2: std_logic_vector(1 downto 0) := (others => '0');
 begin
@@ -38,7 +38,7 @@ begin
 	c2 <= t2;
 
 	t1 <= counter_table(conv_integer(pc_buf1));
-	t2 <= counter_table(conv_integer(pc_buf2));--1‚ª•s¬—§‚Ìê‡‚Ì—\‘ª
+	t2 <= counter_table(conv_integer(pc_buf12));--1‚ª•s¬—§‚Ìê‡‚Ì—\‘ª
 	h1 <= branch_hist_buf;
 	h2 <= branch_hist_buf(ghistlength - 2 downto 0)&'0';
 	--h1 <= branch_hist_buf(ghistlength - 2 downto 0)&(not t1(1));
@@ -64,7 +64,8 @@ begin
 			end if;
 			
 			pc_buf1 <= (pc(12 downto 13 - ghistlength) xor bht1(ghistlength - 1 downto 0))& pc(12 - ghistlength downto 0);
-			pc_buf2 <= (pc(12 downto 13 - ghistlength) xor bht1(ghistlength - 2 downto 0)&'0')& pc(12 - ghistlength downto 1)&'1';
+			pc_buf2 <= (pc(12 downto 13 - ghistlength) xor bht1(ghistlength - 1 downto 0))& pc(12 - ghistlength downto 1)&'1';
+			pc_buf12 <= (pc(12 downto 13 - ghistlength) xor bht1(ghistlength - 2 downto 0)&'0')& pc(12 - ghistlength downto 1)&'1';
 		end if;
 	end process;
 

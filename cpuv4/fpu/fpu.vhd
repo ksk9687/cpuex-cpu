@@ -80,8 +80,8 @@ begin  -- STRUCTURE
 	tag1 <= op_queue(0)(8 downto 5) when op_queue(0)(9) = '1' else tag;
 	
 	O1(30 downto 0) <= O_u(30 downto 0) when op_queue(0)(9) = '1' else A(30 downto 0);
-	O1(31) <= (op_queue(0)(1) or O_u(31)) xor op_queue(0)(0) when op_queue(0)(9) = '1' else
-	(op(1) or  A(31)) xor op(0);
+	O1(31) <= ((not op_queue(0)(1)) and O_u(31)) xor op_queue(0)(0) when op_queue(0)(9) = '1' else
+	(A(31) and (not op(1))) xor op(0);
 	
 	with op_queue(0)(4 downto 2) select
 	 O_u <= O_ADD when "000"|"001",
@@ -92,21 +92,16 @@ begin  -- STRUCTURE
 	 write1 <= write when op(4 downto 2) = "101" else '0';
 	 
 	 with op(4 downto 2) select
-	  write3 <= write when "000" | "001" | "010",
-	  '0' when others;
-	  
-	 with op(4 downto 2) select
-	  write4 <= write when "011" | "100",
+	  write4 <= write when "000" | "001" | "010" | "011" | "100",
 	  '0' when others;
 	  
 	  with op(4 downto 2) select
 	  writeok <= (not op_queue(0)(9)) when "101",
-	  (not op_queue(2)(9)) when "000" | "001" | "010",
-	  '1' when "011" | "100",
+	  '1' when "000" | "001" | "010"|"011" | "100",
 	  '0' when others;
 	   
 	op_queue_write(0) <= op_queue(1);
-	op_queue_write(1) <= op_queue(2) when op_queue(2)(9) = '1' else write3&tag&op;
+	op_queue_write(1) <= op_queue(2);
 	op_queue_write(2) <= write4&tag&op;
 
 	process(clk)
