@@ -451,7 +451,7 @@ architecture arch of block_s_dcache_array is
 begin
 	read_data <= data;
 	data_p <= cache_data(conv_integer(address_buf_f(10 downto 0)));
-	hit <= (not conflict1) and hit1 and hit2 and hit3;
+	hit <= (not conflict2) and hit1 and hit2 and hit3;
 	hit_tag <= hit1 and hit2 and hit3;
 	entry_p <= cache(conv_integer(address_buf_f(10 downto 0)));
 	

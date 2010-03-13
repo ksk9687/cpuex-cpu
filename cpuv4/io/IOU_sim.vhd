@@ -21,6 +21,7 @@ entity IOU is
 		;RSTXD : out STD_LOGIC
 		
 		;io_read_buf_overrun : out STD_LOGIC
+		;rp,wp : out std_logic_vector(7 downto 0)
 	);
 end IOU;
 

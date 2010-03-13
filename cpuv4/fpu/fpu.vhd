@@ -31,13 +31,6 @@ end FPU;
 
 architecture STRUCTURE of FPU is
 
-  -- TODO ˜b‚µ‡‚Á‚ÄŒˆ’è
-  constant fpu_op_fadd :  std_logic_vector := "000";
-  constant fpu_op_fsub :  std_logic_vector := "001";
-  constant fpu_op_fmul :  std_logic_vector := "010";
-  constant fpu_op_finv :  std_logic_vector := "011";
-  constant fpu_op_fsqrt : std_logic_vector := "100";
-  constant fpu_op_fmov : std_logic_vector  := "101";
 
   
   component FP_ADD
@@ -143,7 +136,7 @@ begin  -- STRUCTURE
 
   -- B ‚Ì•„†‚ğ”½“]‚·‚éê‡‚ª‚ ‚é
   B_ADD(30 downto 0) <= B(30 downto 0);
-  B_ADD(31) <= B(31) when op = fpu_op_fadd else       -- add
+  B_ADD(31) <= B(31) when op(4 downto 2) = "000" else
            (not B(31));  -- sub -> negate
 
 

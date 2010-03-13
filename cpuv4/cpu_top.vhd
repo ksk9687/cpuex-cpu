@@ -302,7 +302,11 @@ begin
 				r22 <= (others => '0');
 				d1 <= d2p;
 				d2 <= (others => '0');
-				jmp_info1 <= jmp_info1_p;
+				if jr2 = '1' then
+					jmp_info1 <= jr_addr&x"00"&"00";
+				else
+					jmp_info1 <= pc&bph2&bpc2;
+				end if;
 				jmp_info2 <= (others => '0');
 			elsif ((jmp1 = '1') and (bpc1(1) = '1')) or (jal1 = '1') or (jr1 = '1') then--1のみデコード
 				inst1_buf <= inst1;
@@ -448,9 +452,9 @@ begin
 				sf4_unit <= unit_nop;
 				
 				jmp_info <= (others => '0');
-			elsif stall_first = '1' then
+			elsif stall_first = '1' then--完全ストール
 				
-			elsif stall_second = '1' then
+			elsif stall_second = '1' then--第二命令のみストール
 				if firstunit = unit_alu then
 					alu_inst <= nop_inst;
 				elsif firstunit = unit_bru then
@@ -663,10 +667,11 @@ begin
     '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) and (ftf2 = '0') else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_bru) else
     '1'&sign_extention(ci);
-    --jmp先,mask
     ci <= bru_inst(17 downto 10);
     rsbrudtag <= "0"&rob_tag1 when (firstunit = unit_bru) or (secondregmsk(0) = '1') else "0"&rob_tag2;
     rsbrudtagf <= "0"&frob_tag1 when (firstunit = unit_bru) or (secondregmsk(2) = '1') else "0"&frob_tag2;
+    
+    --jmp先,mask
     rsbruop <= rsbrudtagf&jmp_info&bru_inst(21 downto 18)&bru_inst(9 downto 0)&bru_inst(33 downto 28);
     
     rslsu_inA <= '1'&data_s1_reg_p when (s1_unit(2 downto 1) = unit_lsiou) and (reg_s1_ok = '1') else
@@ -765,14 +770,16 @@ begin
 	jmp_commit_counter <= write_reg_data(16 downto 15);
 	jmp_commit_hist <= write_reg_data(24 downto 17);
 	jmp_commit_key <= write_freg_data(13 downto 1);
+	
 	rob_next <=
 	rob_reg_ok and ((not write_reg_data(0)) or write_freg_data(0)) when rob_op = "01"and frob_op = "01" else--jmp
 	rob_reg_ok and (not write_reg_data(0)) when rob_op = "01" else--jmp
 	store_ok when rob_op = "10" else--store
 	rob_reg_ok when rob_op = "11" else--io
 	rob_reg_ok;
+	
 	frob_next <= 
-	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when rob_op = "01" and frob_op = "01" else--jmp miss
+	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when (rob_op = "01") and (frob_op = "01") else--jmp miss
 	frob_reg_ok and (not write_freg_data(0)) when frob_op = "01" else--jmp hit
 	frob_reg_ok;
 	
@@ -902,10 +909,10 @@ begin
       	outdata0,outdata1,outdata2,outdata3,outdata4,outdata5,outdata6,outdata7
 	);
 	FPU0 : fpu port map (
-    clk,flush,fpu_ready,
-    fpu_ready_op,fpu_ready_tag,
-    fpuA, fpuB, pf_value,fpu_out_tag,
-    pf_valid,fpu_issue
+	    clk,flush,fpu_ready,
+	    fpu_ready_op,fpu_ready_tag,
+	    fpuA, fpuB, pf_value,fpu_out_tag,
+	    pf_valid,fpu_issue
     );
 		
 	----------------------------------

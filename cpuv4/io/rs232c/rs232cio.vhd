@@ -34,6 +34,8 @@ entity rs232cio is
     -- RS232Cポート 側につなぐ
     RSRXD : in STD_LOGIC;
     RSTXD : out STD_LOGIC
+    
+    ;rp ,wp: out STD_LOGIC_VECTOR(READBUFLENLOG - 1 downto 0)
     );
 end rs232cio;
 
@@ -55,7 +57,9 @@ architecture Behavioral of rs232cio is
       RSIO_RC : out STD_LOGIC;    -- read 完了線
       RSIO_OVERRUN : out STD_LOGIC;    -- OVERRUN時1
       -- RS232Cポート 側につなぐ
-      RSRXD : in STD_LOGIC
+      RSRXD : in STD_LOGIC;
+	    rp: out STD_LOGIC_VECTOR(READBUFLENLOG - 1 downto 0);
+	    wp: out STD_LOGIC_VECTOR(READBUFLENLOG - 1 downto 0)
       );
   end component;
   component rs232cio_write
@@ -92,7 +96,7 @@ begin
       RSIO_RData,
       RSIO_RC,
       RSIO_OVERRUN,
-      RSRXD
+      RSRXD,rp,wp
       );
   RSWRITE: rs232cio_write
     generic map (

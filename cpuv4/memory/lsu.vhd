@@ -60,6 +60,7 @@ architecture arch of lsu is
 	type s_t is array (0 to 3) of std_logic_vector (57 downto 0);
 	signal load_buf : s_t := (others => (others => '0'));
 	signal rp,wp : std_logic_vector(1 downto 0) := (others => '0');
+	signal rsrp,rswp : std_logic_vector(7 downto 0) := (others => '0');
 begin
 	--メモリアクセスはポンコツな実装
 	-- store,io優先
@@ -84,7 +85,7 @@ begin
 	ls_flg(0) <= store;
 	ls_flg(1) <= load_issue;
 	ls_flg(2) <= storeinst;
-	load_issue <= (not store) and (not storeinst) and (not load_empty);
+	load_issue <= (not store) and (not storeinst) and (not load_empty) and (not load_buf0(56));
 	load_read <= (load_hit or load_buf0(56)) and (not io_do) and (not load_empty) and (not loadwait);
 	load_end <= load_read;
 
@@ -105,11 +106,6 @@ begin
 	LOADPROC:process(clk)
 	begin
 		if rising_edge(clk) then
-			if load_read = '1' then
-				loadwait <= '1';
-			else
-				loadwait <= '0';
-			end if;
 			if flush = '1' then
 				rp <= (others => '0');
 				wp <= (others => '0');
@@ -117,6 +113,9 @@ begin
 			else
 				if load_read = '1' then
 					rp <= rp + '1';
+					loadwait <= '1';
+				else
+					loadwait <= '0';
 				end if;
 				if (write = '1') and (load_write = '1') then
 					load_buf(conv_integer(wp)) <= '1'&ld_valid&tagin&addr&ld;
@@ -147,7 +146,8 @@ begin
 					saddr <= store_buf0(51 downto 32);
 					store_data <= store_buf0(31 downto 0);
 					store_buf0 <= store_buf1;
-				elsif (write = '1') and (op(3 downto 2) = "10") then 
+					store_buf1(53) <= '0';
+				elsif (write = '1') and ((op(5 downto 2) = "0010") or (op(5 downto 2) = "0110")) then 
 					if store_buf0(53) = '0' then
 						store_buf0 <= '1'&op(1)&addr&b;
 					else
@@ -161,13 +161,8 @@ begin
 	
 	
 	
-	
-	
-	
-	
-	
   leddotdata <= "1111111" & (not io_read_buf_overrun);
- leddata <= leddata_buf(15 downto 0)&"00"&pc;
+ leddata <= rsrp&rswp&"00"&pc;
  
   led_inst : ledextd2 port map (
       leddata,
@@ -185,7 +180,7 @@ begin
 		clk,iou_enable,
 		io(33 downto 32),io(31 downto 0),
 		iou_out,RS_RX,RS_TX,
-		io_read_buf_overrun
+		io_read_buf_overrun,rsrp,rswp
 	);
 	iou_enable <= ioexec and io(38) and (not flush);
 	IOPROC:process(clk)

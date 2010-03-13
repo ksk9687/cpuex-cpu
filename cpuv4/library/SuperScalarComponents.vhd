@@ -13,16 +13,6 @@ component ALU is
 end component;
 
 
-component ALU_IM is
-  port (
- 	clk : in std_logic;
-    op : in std_logic_vector(2 downto 0);
-    A, B : in  std_logic_vector(31 downto 0);
-    O    : out std_logic_vector(31 downto 0);
-    cmp  : out std_logic_vector(2 downto 0));
-end component;
-
-
 component branchPredictor is
 	generic (
 		ghistlength : integer := 8--　1-11
@@ -201,17 +191,6 @@ component FPU is
 end component;
 
 
-component instructionBuffer is
-	port  (
-		clk,flush : in std_logic;        -- input clock, xx MHz.
-		read ,write: in std_logic;
-		readok,writeok: out std_logic;
-		readdata : out std_logic_vector(62 downto 0);
-		writedata: in std_logic_vector(62 downto 0)
-	);
-end component;
-
-
 component IOU is
 	port  (
 --		clk66,
@@ -224,6 +203,7 @@ component IOU is
 		;RSTXD : out STD_LOGIC
 		
 		;io_read_buf_overrun : out STD_LOGIC
+		;rp,wp : out std_logic_vector(7 downto 0)
 	);
 end component;
 
@@ -481,6 +461,8 @@ component rs232cio is
     -- RS232Cポート 側につなぐ
     RSRXD : in STD_LOGIC;
     RSTXD : out STD_LOGIC
+    
+    ;rp ,wp: out STD_LOGIC_VECTOR(READBUFLENLOG - 1 downto 0)
     );
 end component;
 

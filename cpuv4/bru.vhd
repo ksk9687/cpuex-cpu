@@ -94,7 +94,7 @@ begin
 	end process;
 	
 	newhist <= ghist_buf;
-	newcounter <= cotb when jmpflg_in = '1' else cotb;
+	newcounter <= cotb when jmpflg_in = '1' else contb;
 	newpc <= pc_buf;
 	--•ªŠò‚µ‚È‚¨‚·•K—v‚ª‚ ‚é‚©
 	jmpflg <= hist_buf xor jmpflg_in;
