@@ -435,56 +435,52 @@ entity block_s_dcache_array is
 end block_s_dcache_array;
 
 architecture arch of block_s_dcache_array is
-    type cache_tag_type is array (0 to 2047) of std_logic_vector (9 downto 0);--9 + 1
-    type cache_data_type is array (0 to 2047) of std_logic_vector (31 downto 0); --32
+    type cache_tag_type is array (0 to 8191) of std_logic_vector (4 downto 0);--4 + 1
+    type cache_data_type is array (0 to 8191) of std_logic_vector (31 downto 0); --32
     
   
-   signal tag,tag_p : std_logic_vector(9 downto 0) := '0'&"000000000";
-   signal cache : cache_tag_type := (others => '0'&"000000000");
+   signal tag,tag_p : std_logic_vector(4 downto 0) := '0'&"0000";
+   signal cache : cache_tag_type := (others => '0'&"0000");
    signal cache_data : cache_data_type := (others => (others => '0'));
    
     signal data,data_p : std_logic_vector(31 downto 0) := (others => '0');
-    signal entry,entry_p,entry_buf : std_logic_vector(9 downto 0) := (others => '0');
+    signal entry,entry_p,entry_buf : std_logic_vector(4 downto 0) := (others => '0');
     signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
     signal address_buf,address_buf_f,ac_addr,rd_addr,address_buf2 : std_logic_vector(19 downto 0) := (others => '0');
     signal conflict,conflict1,conflict2,hit_p,hit1,hit2,hit3,hit_p1,hit_p2,hit_p3 : std_logic := '0';
 begin
 	read_data <= data;
-	data_p <= cache_data(conv_integer(address_buf_f(10 downto 0)));
-	hit <= (not conflict2) and hit1 and hit2 and hit3;
-	hit_tag <= hit1 and hit2 and hit3;
-	entry_p <= cache(conv_integer(address_buf_f(10 downto 0)));
+	data_p <= cache_data(conv_integer(address_buf_f(12 downto 0)));
+	hit <= (not conflict1) and hit1 and hit3;
+	hit_tag <= hit1 and hit3;
+	entry_p <= cache(conv_integer(address_buf_f(12 downto 0)));
 	
 	process(clkfast)
 	begin
 		if rising_edge(clkfast) then
 	    	if set = '1' then
-	    	   cache(conv_integer(set_addr(10 downto 0))) <= '1'&set_addr(19 downto 11);
-	    	   cache_data(conv_integer(set_addr(10 downto 0))) <= set_data;
+	    	   cache(conv_integer(set_addr(12 downto 0))) <= '1'&set_addr(16 downto 13);
+	    	   cache_data(conv_integer(set_addr(12 downto 0))) <= set_data;
 	    	end if;
 	        address_buf_f <= address;
 		end if;
 	end process;
 	
-	hit_p1 <= '1' when entry_p(4 downto 0) = address_buf_f(15 downto 11) else '0';
-	hit_p2 <= '1' when entry_p(8 downto 5) = address_buf_f(19 downto 16) else '0';
+	hit_p1 <= '1' when entry_p(3 downto 0) = address_buf_f(16 downto 13) else '0';
 	
 	process (clk)
 	begin
 	    if rising_edge(clk) then
 	    	hit1 <= hit_p1;
-	    	hit2 <= hit_p2;
-	    	hit3 <= entry_p(9);
+	    	hit3 <= entry_p(4);
 	    	data <= data_p;
 	    	
-	    	if set_addr(10 downto 0) = address(10 downto 0) then
+	    	if set_addr(12 downto 0) = address(12 downto 0) then
 	    		conflict <= set;
 		    	conflict1 <= conflict or set;
-		    	conflict2 <= conflict or conflict1 or set;
 	    	else
 	    		conflict <= '0';
 		    	conflict1 <= conflict;
-		    	conflict2 <= conflict or conflict1;
 	    	end if;
 	    end if;
 	end process;
