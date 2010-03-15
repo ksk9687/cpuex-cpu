@@ -11,7 +11,7 @@ use IEEE.STD_LOGIC_ARITH.ALL;
 
 package util is
    function sign_extention (a:std_logic_vector) return std_logic_vector;
-   function sign_extention19 (a:std_logic_vector) return std_logic_vector;
+   function sign_extention17 (a:std_logic_vector) return std_logic_vector;
 end package util;  
  
  
@@ -28,17 +28,17 @@ package body util is
   	return r;
   end sign_extention;
   
-  function sign_extention19 (a:std_logic_vector) return std_logic_vector is
-	variable r : std_logic_vector(19 downto 0);
+  function sign_extention17 (a:std_logic_vector) return std_logic_vector is
+	variable r : std_logic_vector(16 downto 0);
   begin
     for i in a'RANGE loop
      r(i) := a(i);
     end loop;
-    for i in a'HIGH+1 to 19 loop
+    for i in a'HIGH+1 to 16 loop
      r(i) := a(a'HIGH);
     end loop;
   	return r;
-  end sign_extention19;
+  end sign_extention17;
 end util;
 	
 

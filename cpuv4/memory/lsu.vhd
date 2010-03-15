@@ -10,7 +10,7 @@ use work.SuperScalarComponents.all;
 
 entity lsu is
 	port  (
-		clk,flush,write : in std_logic;
+		clk,flush,jmp_commit,write : in std_logic;
     	load_end,store_ok,io_ok,io_end,lsu_full : out std_logic;
 		storeexec,ioexec : in std_logic;
 		pc : in std_logic_vector(13 downto 0);
@@ -54,8 +54,8 @@ architecture arch of lsu is
 	signal io : std_logic_vector(38 downto 0) := (others => '0');
 	
 	
-	signal store,storeinst,load_write,io_write,store_write : std_logic := '0';
-	signal addr,saddr : std_logic_vector(19 downto 0) := (others => '0');
+	signal store,storeinst,load_write,io_write,store_write,load_retry : std_logic := '0';
+	signal addr,saddr : std_logic_vector(16 downto 0) := (others => '0');
 	signal store_buf0,store_buf1 : std_logic_vector(53 downto 0) := (others => '0');
 	signal load_buf0 : std_logic_vector(57 downto 0) := (others => '0');
 	signal load_next : std_logic_vector(57 downto 0) := (others => '0');
@@ -64,15 +64,15 @@ architecture arch of lsu is
 	signal load_buf : s_t := (others => (others => '0'));
 	signal rp,wp : std_logic_vector(2 downto 0) := (others => '0');
 	signal rsrp,rswp : std_logic_vector(7 downto 0) := (others => '0');
+	signal jmp_miss_counter : std_logic_vector(31 downto 0) := (others=>'0');
+	signal jmp_counter : std_logic_vector(31 downto 0) := (others=>'0');
 begin
-	--メモリアクセスはポンコツな実装
 	-- store,io優先
 	-- storeとioは重ならない
-	lsu_full <= io(38) or
-	 (store_buf0(53) and store_buf1(53)) or
-	  storeexec or io_do or load_full;
-		--アドレス計算
-	addr <= a(19 downto 0) + b(19 downto 0) when op(2) = '1' else a(19 downto 0) + sign_extention19(im);
+	lsu_full <= io(38) or io_do or
+	 (store_buf0(53) and store_buf1(53)) or storeexec or
+	  load_full;
+
 	with op select
 	 load_write <= '1' when "000000"|"000100"|"010000"|"010100"|"001100"|"011100",
 	 '0' when others;
@@ -82,38 +82,43 @@ begin
 	 store_write <= op(5);
 	 
 	 
-	load_full <= '1' when rp = (wp + '1') else '0';
+	load_full <= '1' when (rp = (wp + '1')) or (rp = (wp + "10")) else '0';
 	load_empty <= '1' when rp = wp else '0';
 	
-	tagout <= io(37 downto 34) when io_do = '1' else load_buf0(55 downto 52);
+	tagout <= io(37 downto 34) when io_do = '1' else load_next(55 downto 52);
 	io_ok <= io(38);
 	io_end <= io_do;
 	
 	o <= iou_out when io_do = '1' else 
-	load_buf0(31 downto 0) when load_buf0(56) = '1' else
+	load_next(31 downto 0) when load_next(56) = '1' else
 	load_data;
 	
 	store_ok <= store_buf0(53);
 	load_buf0 <= load_buf(conv_integer(rp));
-	ls_addr_out <= saddr when (store = '1') or (storeinst = '1') else load_buf0(51 downto 32);
+	ls_addr_out <= "000"&saddr when (store = '1') or (storeinst = '1') else "000"&load_buf0(48 downto 32);
+	
 	
 	ls_flg(0) <= store;
 	ls_flg(1) <= load_issue;
 	ls_flg(2) <= storeinst;
+	load_retry <= (((not load_hit) and (not load_next(56))) or io_do) and (loadwait);
+
 	load_issue <= (not store) and (not storeinst) and (not load_empty) and (not load_buf0(56));
-	load_read <= (load_hit or load_buf0(56)) and (not io_do) and (not load_empty) and (not loadwait);
-	load_end <= load_read;
-
-
-	 
+	load_read <= (not store) and (not storeinst) and (not load_empty);
 	
-	ld_valid <= '1' when (store_buf0(51 downto 32) = addr)  and (store_buf0(53) = '1')else
-	'1' when (store_buf1(51 downto 32) = addr)  and (store_buf1(53) = '1') else
+	load_end <= (load_hit or load_next(56)) and (not io_do) and (loadwait);
+
+	--アドレス計算
+	addr <= a(16 downto 0) + b(16 downto 0) when op(2) = '1' else a(16 downto 0) + sign_extention17(im);
+
+
+	ld_valid <= '1' when (store_buf0(48 downto 32) = addr)  and (store_buf0(53) = '1')else
+	'1' when (store_buf1(48 downto 32) = addr)  and (store_buf1(53) = '1') else
 	op(3) and op(2);
 	
 	ld <= b when op(3 downto 2) = "11" else
-	store_buf0(31 downto 0) when (store_buf0(51 downto 32) = addr) and (store_buf0(53) = '1') else
-	store_buf1(31 downto 0) when (store_buf1(51 downto 32) = addr) and (store_buf1(53) = '1') else
+	store_buf0(31 downto 0) when (store_buf0(48 downto 32) = addr) and (store_buf0(53) = '1') else
+	store_buf1(31 downto 0) when (store_buf1(48 downto 32) = addr) and (store_buf1(53) = '1') else
 	b;
 	
 	LOADPROC:process(clk)
@@ -123,16 +128,30 @@ begin
 				rp <= (others => '0');
 				wp <= (others => '0');
 				loadwait <= '0';
+				load_next<= (others => '0');
 			else
 				if load_read = '1' then
 					rp <= rp + '1';
 					loadwait <= '1';
+					load_next <= load_buf0;
 				else
+					load_next<= (others => '0');
 					loadwait <= '0';
 				end if;
-				if (write = '1') and (load_write = '1') then
-					load_buf(conv_integer(wp)) <= '1'&ld_valid&tagin&addr&ld;
-					wp <= wp + '1';
+				if load_retry = '1' then
+					if (write = '1') and (load_write = '1') then
+						load_buf(conv_integer(wp)) <= '1'&ld_valid&tagin&"000"&addr&ld;
+						load_buf(conv_integer(wp + '1')) <= load_next;
+						wp <= wp + "10";
+					else
+						load_buf(conv_integer(wp)) <= load_next;
+						wp <= wp + '1';
+					end if;
+				else
+					if (write = '1') and (load_write = '1') then
+						load_buf(conv_integer(wp)) <= '1'&ld_valid&tagin&"000"&addr&ld;
+						wp <= wp + '1';
+					end if;
 				end if;
 			end if;
 		end if;
@@ -156,24 +175,41 @@ begin
 				end if;
 			
 				if (storeexec = '1') and (store_buf0(53) = '1') then
-					saddr <= store_buf0(51 downto 32);
+					saddr <= store_buf0(48 downto 32);
 					store_data <= store_buf0(31 downto 0);
 					store_buf0 <= store_buf1;
 					store_buf1(53) <= '0';
 				elsif (write = '1') and ((op(5 downto 2) = "0010") or (op(5 downto 2) = "0110")) then 
 					if store_buf0(53) = '0' then
-						store_buf0 <= '1'&op(1)&addr&b;
+						store_buf0 <= '1'&op(1)&"000"&addr&b;
 					else
-						store_buf1 <= '1'&op(1)&addr&b;
+						store_buf1 <= '1'&op(1)&"000"&addr&b;
 					end if;
 				end if;
 			end if;
 		end if;
 	end process;
 	
+process(clk)
+  begin
+	if rising_edge(clk) then
+		if (pc(12 downto 8) /= "00000") and (flush = '1') then
+			jmp_miss_counter <= jmp_miss_counter + '1';
+		end if;
+		if (pc(12 downto 8) /= "00000") and (jmp_commit = '1') then
+			jmp_counter <= jmp_counter + '1';
+		end if;
+		
+		
+	end if;
+  end process;
+	
 	
 	leddotdata <= ledd;
- leddata <= led&"00"&pc;
+	leddata <= jmp_miss_counter(31 downto 16)&jmp_counter(31 downto 16);
+	
+--	leddotdata <= ledd;
+--	leddata <= led&io_read_buf_overrun&'0'&pc;
  
   led_inst : ledextd2 port map (
       leddata,

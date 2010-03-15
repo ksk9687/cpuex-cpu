@@ -136,8 +136,8 @@ architecture arch of cpu_top is
 	signal pc_next,jmp_stop,jmp,predict_taken_hist,predict_taken,bp_miss : std_logic :='0';
 
    
-   signal pi_valid,pl_valid,pl_validi,pl_validf,pf_valid,pb_valid : std_logic := '0';   
-   signal pi_dtag,pl_dtag,pl_dtagi,pl_dtagf,pf_dtag,pf_dtagf,pb_dtagi,pb_dtagf : std_logic_vector(3 downto 0) := (others=>'0');
+   signal pi_valid,pl_valid,pl_validi,pl_validf,pf_valid,pb_valid,fpu_next_valid : std_logic := '0';   
+   signal pi_dtag,pl_dtag,pl_dtagi,pl_dtagf,pf_dtag,pf_dtagf,pb_dtagi,pb_dtagf,fpu_next_out_tag : std_logic_vector(3 downto 0) := (others=>'0');
    signal pi_value,pl_value,pf_value,pb_value,pb_valuef : std_logic_vector(31 downto 0) := (others=>'0');
    signal pi_0,pi_1,pi_0_write,pi_1_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal pb_0,pb_1,pb_0_write,pb_1_write :std_logic_vector(9 downto 0) := (others=>'0');
@@ -154,8 +154,8 @@ architecture arch of cpu_top is
    --pc + counter + hist
 	signal jmp_commit :std_logic:= '0';
    signal jmp_info1,jmp_info2,jmp_info1_p,jmp_info2_p,jmp_info,jmp_info_p :std_logic_vector(14 + 2 + 8 - 1 downto 0) := (others=>'0');
-	signal bpc1,bpc2 ,jmp_commit_counter,newcounter :std_logic_vector(1 downto 0) := (others=>'0');
-	signal bph1,bph2 ,jmp_commit_hist,newhist :std_logic_vector(7 downto 0) := (others=>'0');
+	signal bpc1,bpc2, bpc12,jmp_commit_counter,newcounter :std_logic_vector(1 downto 0) := (others=>'0');
+	signal bph1,bph2,bph12 ,jmp_commit_hist,newhist :std_logic_vector(7 downto 0) := (others=>'0');
 	signal bpk1,bpk2 ,jmp_commit_key,newkey :std_logic_vector(12 downto 0) := (others=>'0');
 
 begin
@@ -180,7 +180,8 @@ begin
    inst1(21 downto 18)&inst1(9 downto 0) when ((jmp1 = '1') and (bpc1(1) = '1')) else
    inst1(13 downto 0) when (jal1 = '1') else
    jr_addr when (jr1 = '1') else
-   inst2(21 downto 18)&inst2(9 downto 0) when ((jmp2 = '1') and (bpc2(1) = '1')) else
+   inst2(21 downto 18)&inst2(9 downto 0) when ((jmp1 = '1') and (jmp2 = '1') and (bpc12(1) = '1')) else
+   inst2(21 downto 18)&inst2(9 downto 0) when ((jmp1 = '0') and (jmp2 = '1') and (bpc2(1) = '1')) else
    inst2(13 downto 0) when (jal2 = '1') else
    jr_addr when (jr2 = '1') else
    pc_p1;
@@ -224,8 +225,8 @@ begin
   	clk,flush,stall_fetch,next_pc(13 downto 0),
   	jmp1,jmp2,
   	jmp_commit,jmp_commit_counter,jmp_commit_key,jmp_commit_hist,
-  	bpc1,bpc2,
-  	bph1,bph2
+  	bpc1,bpc2,bpc12,
+  	bph1,bph2,bph12
   );
   	
 	RAS0 : returnAddressStack port map (
@@ -249,7 +250,9 @@ begin
    stall_fetch <= stall_first or stall_second or stall_id2;
    
    jmp_info1_p <= jr_addr&x"00"&"00" when jr1 = '1' else pc&bph1&bpc1;
-   jmp_info2_p <= jr_addr&x"00"&"00" when jr2 = '1' else pc(13 downto 1)&'1'&bph2&bpc2;
+   jmp_info2_p <= jr_addr&x"00"&"00" when jr2 = '1' else 
+   pc(13 downto 1)&'1'&bph2&bpc2 when jmp1 = '0' else 
+   pc(13 downto 1)&'1'&bph12&bpc12;
    
    	process(clk,rst)
 	begin
@@ -763,7 +766,9 @@ begin
 	
 	flush <= rob_reg_ok and frob_reg_ok when (write_reg_data(0) = '1') and (rob_op = "01") and (write_freg_data(0) = '1') and (frob_op = "01") else '0';
 	flush_jr <= flush and write_reg_data(25);
-	jmp_commit <= ((not write_reg_data(0)) and (not write_reg_data(25)) and rob_reg_ok) or flush when (rob_op = "01") else
+	
+	jmp_commit <= ((not write_reg_data(0)) and (not write_reg_data(25)) and rob_reg_ok) or
+	 (flush and (not write_reg_data(25))) when (rob_op = "01") else
 	'0';
 	ioexec <= io_ok and (not rob_reg_ok) when rob_op = "11" else '0';
 	storeexec <= store_ok when rob_op = "10" else '0';
@@ -828,8 +833,8 @@ begin
 		rsalu0op,rsalu0dtag,rsalu0_inA,rsalu0_inB,
 		alu0_ready_op,alu0_ready_tag,alu0A,alu0B,
 		
-		pi_valid,pl_validi,
-		pi_dtag,pl_dtagi,
+		pi_valid,pl_validi,alu0_issue,
+		pi_dtag,pl_dtagi,alu0_ready_tag,
 		pi_value,pl_value
 	);
 	alu0_issue <= alu0_ready;
@@ -844,8 +849,8 @@ begin
 		rsfpuop,rsfpudtag,rsfpu_inA,rsfpu_inB,
 		fpu_ready_op,fpu_ready_tag,fpuA,fpuB,
 		
-		pf_valid,pl_validf,
-		pf_dtag,pl_dtag,
+		pf_valid,pl_validf,fpu_next_valid,
+		pf_dtag,pl_dtag,fpu_next_out_tag,
 		pf_value,pl_value
 	);
 	
@@ -901,7 +906,7 @@ begin
 	);
 	
 	LSU0 : LSU port map (
-		clk,flush,lsu_issue,
+		clk,flush,jmp_commit,lsu_issue,
 		load_end,store_ok,io_ok,io_end,lsu_full,
 		storeexec,ioexec,
 		pc,
@@ -916,8 +921,8 @@ begin
 	FPU0 : fpu port map (
 	    clk,flush,fpu_ready,
 	    fpu_ready_op,fpu_ready_tag,
-	    fpuA, fpuB, pf_value,fpu_out_tag,
-	    pf_valid,fpu_issue
+	    fpuA, fpuB, pf_value,fpu_out_tag,fpu_next_out_tag,
+	    pf_valid,fpu_next_valid,fpu_issue
     );
     ledddata <= stall_first & stall_second & stall_id2 & rsbru_ok & rsalu0_ok & rsfpu_ok & rslsu_ok & lsu_full;
 	

@@ -73,12 +73,7 @@ begin
   
   
   
-  	ZD <= old2writedata when old2RW = '0' and clk1 /= clk2 else
-	(others => 'Z');
-	
-	ZDP <= "0000" when old2RW = '0' and clk1 /= clk2 else
-	(others => 'Z');
-  
+ 
   --パリティは使わない
 --  DATAOUT <= busreaddata;
 --  ZD <= old2writedata when old2RW = '0' else (others => 'Z');
@@ -86,6 +81,14 @@ begin
   
   ADDRBUF <= old3addr;
   i_d_buf <= old3i_d;
+  
+  
+  
+   	ZD <= old2writedata when old2RW = '0' and clk1 /= clk2 else
+	(others => 'Z');
+	
+	ZDP <= "0000" when old2RW = '0' and clk1 /= clk2 else
+	(others => 'Z');
   
     process (clk)
   begin
@@ -110,12 +113,12 @@ begin
       old0RW <= RW;
       old0addr <= ADDR;
       old0writedata <= DATAIN;
-      old0i_d <= i_d;
+      --old0i_d <= i_d;
       
       old1RW <= old0RW;
       old1addr <= old0addr;
       old1writedata <= old0writedata;
-      old1i_d <= old0i_d;
+      old1i_d <= i_d;
       
       
       old2RW <= old1RW;

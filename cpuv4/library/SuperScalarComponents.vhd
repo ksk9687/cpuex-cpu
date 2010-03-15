@@ -25,8 +25,8 @@ component branchPredictor is
 		jmp_commit_counter : in std_logic_vector(1 downto 0);
 		jmp_commit_pc : in std_logic_vector(12 downto 0);
 		jmp_commit_hist : in std_logic_vector(ghistlength - 1 downto 0);
-		c1,c2 : out std_logic_vector(1 downto 0);
-		h1,h2 : out std_logic_vector(ghistlength - 1 downto 0)
+		c1,c2,c12 : out std_logic_vector(1 downto 0);
+		h1,h2,h12 : out std_logic_vector(ghistlength - 1 downto 0)
 	);
 end component;
 
@@ -131,6 +131,18 @@ component block_s_dcache_array is
 	);
 end component;
 
+component block_2way is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit,hit_tag : out std_logic
+	);
+end component;
+
 
 component CLOCK is
   port (
@@ -184,8 +196,9 @@ component FPU is
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
     Otag    : out std_logic_vector(3 downto 0);
+    nexttag    : out std_logic_vector(3 downto 0);
     
-    go,writeok    : out std_logic
+    go,nextvalid,writeok    : out std_logic
     );
 
 end component;
@@ -226,7 +239,7 @@ end component;
 
 component lsu is
 	port  (
-		clk,flush,write : in std_logic;
+		clk,flush,jmp_commit,write : in std_logic;
     	load_end,store_ok,io_ok,io_end,lsu_full : out std_logic;
 		storeexec,ioexec : in std_logic;
 		pc : in std_logic_vector(13 downto 0);
@@ -362,8 +375,8 @@ component reservationStation is
 		outs1: out std_logic_vector(31 downto 0);
 		outs2: out std_logic_vector(31 downto 0);
 		
-		write1,write2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(3 downto 0);
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
 		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end component;

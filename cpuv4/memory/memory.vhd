@@ -68,12 +68,13 @@ architecture synth of memory is
 	signal dcache_in,dcache_out,store_data_buf : std_logic_vector(31 downto 0) := (others => '0');
 	signal dcache_hit,dhit_check,cache_hit_tag,dcache_hit_buf,dcache_hit_tag : std_logic := '0';
 	signal dcache_set,dcache_read : std_logic := '0';
-	signal dcache_addr,addr_out,d_set_addr,ADDR : std_logic_vector(19 downto 0) := (others => '0');
+	signal dcache_addr,addr_out,d_set_addr,ADDR,fill_addr : std_logic_vector(19 downto 0) := (others => '0');
 	signal ls_addr_buf,ls_addr_buf_p1,ls_addr_buf_pref : std_logic_vector(19 downto 0) := (others => '0');
 	signal dac,ls_ok_p : std_logic := '1';
 	
 	signal ls_buf0 : std_logic_vector(1 downto 0) := "00";
 	signal i_mem_req,i_halt : std_logic := '0';
+	signal fillstage : std_logic_vector(2 downto 0) := "000";
 	
 	signal i_d_out,i_d_in : std_logic_vector(0 downto 0) := "0";
 begin
@@ -103,17 +104,19 @@ begin
 	dcache_set <= i_d_out(0) or (ls_flg(0));
 	
 	--SRAMアドレス
-	ADDR <= ls_addr_buf;
+	ADDR <= --fill_addr when (ls_flg(1 downto 0) = "00") else
+	ls_addr;
 	
 	--SRAM書き込みデータ
-	DATAIN <= store_data_buf;
+	DATAIN <= store_data;
 	
 	--SRAM読み書き　1:Read 0:Write
-	RW <= not ls_buf0(0);
+	RW <= not ls_flg(0);
 	
 	--DCACHE FILL
 	---DmissLoad
-	i_d_in(0) <= ls_buf0(1) and (not dcache_hit_tag);
+	i_d_in(0) <= (ls_buf0(1) and (not dcache_hit_tag)) ;
+	--or dac;
 	
 	
 	DMEM : process(clk,rst)
@@ -123,9 +126,21 @@ begin
 			dhit_check <= '0';
 		elsif rising_edge(clk) then
 			dhit_check <= ls_flg(1);
-			ls_addr_buf <= ls_addr;
 			ls_buf0 <= ls_flg(1 downto 0);
-			store_data_buf <= store_data;
+			
+			ls_addr_buf <= ls_addr;
+			
+			if (ls_buf0(1) = '1') and (dcache_hit_tag = '0') then
+				fill_addr <= ls_addr_buf(19 downto 2)&(ls_addr_buf(1 downto 0) + '1');
+				fillstage <= "001";
+				dac <= '0';
+			elsif (ls_flg(1 downto 0) = "00") and (fillstage(2) = '0') then
+				fill_addr <= fill_addr(19 downto 2)&(fill_addr(1 downto 0) + '1');
+				fillstage <= fillstage + '1';
+				dac <= '1';
+			else
+				dac <= '0';
+			end if;
 		end if;
 	end process;	
 

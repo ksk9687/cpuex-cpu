@@ -22,8 +22,9 @@ entity FPU is
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
     Otag    : out std_logic_vector(3 downto 0);
+    nexttag    : out std_logic_vector(3 downto 0);
     
-    go,writeok    : out std_logic
+    go,nextvalid,writeok    : out std_logic
     );
 
 end FPU;
@@ -76,6 +77,9 @@ architecture STRUCTURE of FPU is
 
   signal write1,write3,write4 : std_logic := '0';
 begin  -- STRUCTURE
+	nexttag <= tag1;
+	nextvalid <= op_queue(0)(9) or write1;
+	
 	
 	tag1 <= op_queue(0)(8 downto 5) when op_queue(0)(9) = '1' else tag;
 	
@@ -109,6 +113,8 @@ begin  -- STRUCTURE
 	op_queue_write(1) <= op_queue(2) when op_queue(2)(9) = '1' else write3&tag&op;
 	op_queue_write(2) <= write4&tag&op;
 
+
+	
 	process(clk)
 	begin
 		if rising_edge(clk) then

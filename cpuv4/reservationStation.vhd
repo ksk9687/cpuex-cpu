@@ -25,8 +25,8 @@ entity reservationStation is
 		outs1: out std_logic_vector(31 downto 0);
 		outs2: out std_logic_vector(31 downto 0);
 		
-		write1,write2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(3 downto 0);
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
 		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end reservationStation;
@@ -44,6 +44,10 @@ architecture arch of reservationStation is
 	signal op,op_write : op_t := (others => (others => '0'));
 	
 	signal ready : std_logic_vector(3 downto 0) := (others => '0');
+	signal bypassa : std_logic_vector(3 downto 0) := (others => '0');
+	signal bypassb : std_logic_vector(3 downto 0) := (others => '0');
+	
+	signal rbypass : std_logic_vector(1 downto 0) := (others => '0');
 	
 	signal readyop : std_logic_vector((63 + 1 + 4 + opbits) downto 0) := (others => '0');
 	signal go : std_logic_vector(3 downto 0) := (others => '0');
@@ -56,15 +60,16 @@ begin
 	outop <= readyop(68 + opbits downto 69 + op_valid);
 	outdtag <= readyop(68 + op_valid downto 65 + op_valid);
 	readok <= readyop(64 + op_valid);
-	outs1 <= readyop(63 downto 32);
-	outs2 <= readyop(31 downto 0);
+	
+	outs1 <= value1 when rbypass(1) = '1' else readyop(63 downto 32);
+	outs2 <= value1 when rbypass(0) = '1' else readyop(31 downto 0);
 
 
 	--–½—ß‚Ì€”õ‚ªo—ˆ‚Ä‚¢‚é‚©
-	ready(0) <= '1' when (s1_write(0)(32) = '1') and (s2_write(0)(32) = '1') and (op(0)(op_valid) = '1') else '0';
-	ready(1) <= '1' when (s1_write(1)(32) = '1') and (s2_write(1)(32) = '1') and (op(1)(op_valid) = '1') else '0';
-	ready(2) <= '1' when (s1_write(2)(32) = '1') and (s2_write(2)(32) = '1') and (op(2)(op_valid) = '1') else '0';
-	ready(3) <= '1' when (s1_write(3)(32) = '1') and (s2_write(3)(32) = '1') and (op(3)(op_valid) = '1') else '0';
+	ready(0) <= '1' when ((s1_write(0)(32) = '1') or (bypassa(0) = '1')) and ((s2_write(0)(32) = '1') or (bypassb(0) = '1')) and (op(0)(op_valid) = '1') else '0';
+	ready(1) <= '1' when ((s1_write(1)(32) = '1') or (bypassa(1) = '1')) and ((s2_write(1)(32) = '1') or (bypassb(1) = '1')) and (op(1)(op_valid) = '1') else '0';
+	ready(2) <= '1' when ((s1_write(2)(32) = '1') or (bypassa(2) = '1')) and ((s2_write(2)(32) = '1') or (bypassb(2) = '1')) and (op(2)(op_valid) = '1') else '0';
+	ready(3) <= '1' when ((s1_write(3)(32) = '1') or (bypassa(3) = '1')) and ((s2_write(3)(32) = '1') or (bypassb(3) = '1')) and (op(3)(op_valid) = '1') else '0';
 	--”­s€”õ‚É“ü‚é‚©
 	go(0) <= ready(0) and ((not readyop(64 + op_valid)) or read);
 	go(1) <= ready(1) and (not ready(0)) and ((not readyop(64 + op_valid)) or read);
@@ -80,7 +85,18 @@ begin
 	insert(1) <= newline(2) when (go(0) = '1') or (go(1) = '1') else newline(1);
 	insert(2) <= newline(3) when (go(0) = '1') or (go(1) = '1') or (go(2) = '1') else newline(2);
 	insert(3) <= '0' when (go(0) = '1') or (go(1) = '1') or (go(2) = '1') or (go(3) = '1') else newline(3);
+	
+	bypassa(0) <= '1' when (s1(0)(32) = '0') and (write3 = '1') and (s1(0)(3 downto 0) = dtag3) else '0';
+	bypassa(1) <= '1' when (s1(1)(32) = '0') and (write3 = '1') and (s1(1)(3 downto 0) = dtag3) else '0';
+	bypassa(2) <= '1' when (s1(2)(32) = '0') and (write3 = '1') and (s1(2)(3 downto 0) = dtag3) else '0';
+	bypassa(3) <= '1' when (s1(3)(32) = '0') and (write3 = '1') and (s1(3)(3 downto 0) = dtag3) else '0';
 
+	bypassb(0) <= '1' when (s2(0)(32) = '0') and (write3 = '1') and (s2(0)(3 downto 0) = dtag3) else '0';
+	bypassb(1) <= '1' when (s2(1)(32) = '0') and (write3 = '1') and (s2(1)(3 downto 0) = dtag3) else '0';
+	bypassb(2) <= '1' when (s2(2)(32) = '0') and (write3 = '1') and (s2(2)(3 downto 0) = dtag3) else '0';
+	bypassb(3) <= '1' when (s2(3)(32) = '0') and (write3 = '1') and (s2(3)(3 downto 0) = dtag3) else '0';
+
+	
 	s1_write(0) <= '1'&value1 when (s1(0)(32) = '0') and (write1 = '1') and (s1(0)(3 downto 0) = dtag1) else
 	'1'&value2 when (s1(0)(32) = '0') and (write2 = '1') and (s1(0)(3 downto 0) = dtag2) else
 	s1(0);
@@ -117,17 +133,31 @@ begin
 				op(2)(op_valid) <= '0';
 				op(3)(op_valid) <= '0';
 				readyop <= (others => '0');
+				rbypass <= (others => '0');
 			else
 				if go(0) = '1' then
+					rbypass <= bypassa(0)&bypassb(0);
 					readyop <= op(0)&s1_write(0)(31 downto 0)&s2_write(0)(31 downto 0);
 				elsif go(1) = '1' then
+					rbypass <= bypassa(1)&bypassb(1);
 					readyop <= op(1)&s1_write(1)(31 downto 0)&s2_write(1)(31 downto 0);
 				elsif go(2) = '1' then
+					rbypass <= bypassa(2)&bypassb(2);
 					readyop <= op(2)&s1_write(2)(31 downto 0)&s2_write(2)(31 downto 0);
 				elsif go(3) = '1' then
+					rbypass <= bypassa(3)&bypassb(3);
 					readyop <= op(3)&s1_write(3)(31 downto 0)&s2_write(3)(31 downto 0);
 				elsif read = '1' then
+					rbypass <= "00";
 					readyop(64 + op_valid) <= '0';
+				else
+					if rbypass(1) = '1' then--a
+						readyop(63 downto 32) <= value1;
+					end if;
+					if rbypass(0) = '1' then--b
+						readyop(31 downto 0) <= value1;
+					end if;
+					rbypass <= "00";
 				end if;
 			
 				if insert(0) = '1' then

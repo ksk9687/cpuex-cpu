@@ -18,8 +18,8 @@ entity branchPredictor is
 		jmp_commit_counter : in std_logic_vector(1 downto 0);
 		jmp_commit_pc : in std_logic_vector(12 downto 0);
 		jmp_commit_hist : in std_logic_vector(ghistlength - 1 downto 0);
-		c1,c2 : out std_logic_vector(1 downto 0);
-		h1,h2 : out std_logic_vector(ghistlength - 1 downto 0)
+		c1,c2,c12 : out std_logic_vector(1 downto 0);
+		h1,h2,h12 : out std_logic_vector(ghistlength - 1 downto 0)
 	);
 end branchPredictor;
 
@@ -31,20 +31,24 @@ architecture arch of branchPredictor is
 	
 	signal pc_buf1,pc_buf2,pc_buf12 : std_logic_vector(12 downto 0) := (others => '0');
 	signal branch_hist_buf,bht1,bht2 : std_logic_vector(ghistlength - 1 downto 0) := (others => '0');
-	signal t1,t2: std_logic_vector(1 downto 0) := (others => '0');
+	signal t1,t2,t12: std_logic_vector(1 downto 0) := (others => '0');
 begin
   	ROC0 : ROC port map (O => rst);
 	c1 <= t1;
 	c2 <= t2;
+	c12 <= t12;
 
 	t1 <= counter_table(conv_integer(pc_buf1));
-	t2 <= counter_table(conv_integer(pc_buf12));--1‚ª•s¬—§‚Ìê‡‚Ì—\‘ª
+	t2 <= counter_table(conv_integer(pc_buf2));--1‚ª•ªŠò–½—ß‚Å‚È‚¢ê‡‚Ì—\‘ª
+	t12 <= counter_table(conv_integer(pc_buf12));--1‚ª•s¬—§‚Ìê‡‚Ì—\‘ª
 	h1 <= branch_hist_buf;
-	h2 <= branch_hist_buf(ghistlength - 2 downto 0)&'0';
+	h2 <= branch_hist_buf;
+	h12 <= branch_hist_buf(ghistlength - 2 downto 0)&'0';
 	--h1 <= branch_hist_buf(ghistlength - 2 downto 0)&(not t1(1));
 	--h2 <= branch_hist_buf(ghistlength - 3 downto 0)&'0'&(not t2(1));
+	-- 
 	bht1 <= branch_hist_buf(ghistlength - 2 downto 0)&t2(1)when (j2 = '1') and (j1 = '0') else
-	branch_hist_buf(ghistlength - 3 downto 0)&'0'&t2(1) when (j2 = '1') and (j1 = '1') and (t1(1) = '0') else
+	branch_hist_buf(ghistlength - 3 downto 0)&'0'&t12(1) when (j2 = '1') and (j1 = '1') and (t1(1) = '0') else
 	branch_hist_buf(ghistlength - 2 downto 0)&t1(1) when (j1 = '1') else
 	branch_hist_buf;
 	
@@ -62,10 +66,9 @@ begin
 			elsif (flush ='0') and (stall = '0') then
 				branch_hist_buf <= bht1;
 			end if;
-			
 			pc_buf1 <= (pc(12 downto 13 - ghistlength) xor bht1(ghistlength - 1 downto 0))& pc(12 - ghistlength downto 0);
 			pc_buf2 <= (pc(12 downto 13 - ghistlength) xor bht1(ghistlength - 1 downto 0))& pc(12 - ghistlength downto 1)&'1';
-			pc_buf12 <= (pc(12 downto 13 - ghistlength) xor bht1(ghistlength - 2 downto 0)&'0')& pc(12 - ghistlength downto 1)&'1';
+			pc_buf12 <= (pc(12 downto 13 - ghistlength) xor (bht1(ghistlength - 2 downto 0)&'0'))& pc(12 - ghistlength downto 1)&'1';
 		end if;
 	end process;
 
