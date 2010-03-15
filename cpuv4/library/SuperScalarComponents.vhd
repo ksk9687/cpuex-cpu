@@ -13,16 +13,6 @@ component ALU is
 end component;
 
 
-component ALU_IM is
-  port (
- 	clk : in std_logic;
-    op : in std_logic_vector(2 downto 0);
-    A, B : in  std_logic_vector(31 downto 0);
-    O    : out std_logic_vector(31 downto 0);
-    cmp  : out std_logic_vector(2 downto 0));
-end component;
-
-
 component branchPredictor is
 	generic (
 		ghistlength : integer := 8--　1-11
@@ -35,8 +25,8 @@ component branchPredictor is
 		jmp_commit_counter : in std_logic_vector(1 downto 0);
 		jmp_commit_pc : in std_logic_vector(12 downto 0);
 		jmp_commit_hist : in std_logic_vector(ghistlength - 1 downto 0);
-		c1,c2 : out std_logic_vector(1 downto 0);
-		h1,h2 : out std_logic_vector(ghistlength - 1 downto 0)
+		c1,c2,c12 : out std_logic_vector(1 downto 0);
+		h1,h2,h12 : out std_logic_vector(ghistlength - 1 downto 0)
 	);
 end component;
 
@@ -64,8 +54,8 @@ end component;
 component full_cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(12 downto 0);
-		set_addr: in std_logic_vector(12 downto 0);
+		address: in std_logic_vector(11 downto 0);
+		set_addr: in std_logic_vector(11 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data1 : out std_logic_vector(35 downto 0);
@@ -129,6 +119,30 @@ component baka_dcache is
 	);
 end component;
 
+component block_s_dcache_array is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit,hit_tag : out std_logic
+	);
+end component;
+
+component block_2way is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit,hit_tag : out std_logic
+	);
+end component;
+
 
 component CLOCK is
   port (
@@ -176,23 +190,17 @@ end component;
 component FPU is
 
   port (
-    clk  : in  std_logic;
-    op   : in  std_logic_vector(2 downto 0);
+    clk,flush,write  : in  std_logic;
+    op   : in  std_logic_vector(4 downto 0);
+    tag   : in  std_logic_vector(3 downto 0);
     A, B : in  std_logic_vector(31 downto 0);
     O    : out std_logic_vector(31 downto 0);
-    cmp  : out std_logic_vector(2 downto 0));
+    Otag    : out std_logic_vector(3 downto 0);
+    nexttag    : out std_logic_vector(3 downto 0);
+    
+    go,nextvalid,writeok    : out std_logic
+    );
 
-end component;
-
-
-component instructionBuffer is
-	port  (
-		clk,flush : in std_logic;        -- input clock, xx MHz.
-		read ,write: in std_logic;
-		readok,writeok: out std_logic;
-		readdata : out std_logic_vector(62 downto 0);
-		writedata: in std_logic_vector(62 downto 0)
-	);
 end component;
 
 
@@ -208,6 +216,7 @@ component IOU is
 		;RSTXD : out STD_LOGIC
 		
 		;io_read_buf_overrun : out STD_LOGIC
+		;rp,wp : out std_logic_vector(7 downto 0)
 	);
 end component;
 
@@ -230,7 +239,7 @@ end component;
 
 component lsu is
 	port  (
-		clk,flush,write : in std_logic;
+		clk,flush,jmp_commit,write : in std_logic;
     	load_end,store_ok,io_ok,io_end,lsu_full : out std_logic;
 		storeexec,ioexec : in std_logic;
 		pc : in std_logic_vector(13 downto 0);
@@ -248,6 +257,8 @@ component lsu is
     	load_data : in std_logic_vector(31 downto 0);
     	ls_addr_out : out std_logic_vector(19 downto 0);
     	store_data : out std_logic_vector(31 downto 0);
+    	led : in std_logic_vector(15 downto 0);
+    	ledd : in std_logic_vector(7 downto 0);
     	
     	RS_RX : in STD_LOGIC;
 	    RS_TX : out STD_LOGIC;
@@ -267,7 +278,7 @@ component memory is
     Port (
     clk,sramcclk,sramclk,clkfast	: in	  std_logic;
     
-    pc : in std_logic_vector(12 downto 0);
+    pc : in std_logic_vector(11 downto 0);
     inst1 : out std_logic_vector(35 downto 0);
     inst2 : out std_logic_vector(35 downto 0);
     
@@ -364,14 +375,14 @@ component reservationStation is
 		outs1: out std_logic_vector(31 downto 0);
 		outs2: out std_logic_vector(31 downto 0);
 		
-		write1,write2 : in std_logic;
-		dtag1,dtag2 : in std_logic_vector(3 downto 0);
+		write1,write2,write3 : in std_logic;
+		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
 		value1,value2 : in std_logic_vector(31 downto 0)
 	);
 end component;
 
 
-component reservationStationLsu is
+component reservationStationBru is
 	generic (
 		opbits : integer := 3 + 3 + 14 + 1
 	);
@@ -399,7 +410,7 @@ component reservationStationLsu is
 end component;
 
 
-component reservationStationBru is
+component reservationStationLsu is
 	generic (
 		opbits : integer := 20
 	);
@@ -465,6 +476,8 @@ component rs232cio is
     -- RS232Cポート 側につなぐ
     RSRXD : in STD_LOGIC;
     RSTXD : out STD_LOGIC
+    
+    ;rp ,wp: out STD_LOGIC_VECTOR(READBUFLENLOG - 1 downto 0)
     );
 end component;
 

@@ -8,8 +8,8 @@ use work.instruction.all;
 entity full_cache is
 	port  (
 		clk,clkfast : in std_logic;
-		address: in std_logic_vector(12 downto 0);
-		set_addr: in std_logic_vector(12 downto 0);
+		address: in std_logic_vector(11 downto 0);
+		set_addr: in std_logic_vector(11 downto 0);
 		set_data : in std_logic_vector(31 downto 0);
 		set : in std_logic;
 		read_data1 : out std_logic_vector(35 downto 0);
@@ -24,19 +24,19 @@ architecture arch of full_cache is
     signal set_d : std_logic_vector(0 downto 0) := (others => '0');
     signal count : std_logic_vector(1 downto 0) := (others => '0');
 
-	component cache_16384 IS
+	component cache_72x4096 IS
 		port (
-		clka: IN std_logic;
-		dina: IN std_logic_VECTOR(71 downto 0);
-		addra: IN std_logic_VECTOR(12 downto 0);
-		wea: IN std_logic_VECTOR(0 downto 0);
-		clkb: IN std_logic;
-		addrb: IN std_logic_VECTOR(12 downto 0);
-		doutb: OUT std_logic_VECTOR(71 downto 0));
+			clka: IN std_logic;
+			dina: IN std_logic_VECTOR(71 downto 0);
+			addra: IN std_logic_VECTOR(11 downto 0);
+			wea: IN std_logic_VECTOR(0 downto 0);
+			clkb: IN std_logic;
+			addrb: IN std_logic_VECTOR(11 downto 0);
+			doutb: OUT std_logic_VECTOR(71 downto 0));
 	END component;
 begin
 
-  CACHE0 : cache_16384 port map(
+  CACHE0 : cache_72x4096 port map(
   	clk,write_data,set_addr,set_d,
   	clk,address,out_data
   );
@@ -64,8 +64,6 @@ begin
 			end if;
 		end if;
 	end process;
-	
-
 end arch;
 
 
@@ -115,20 +113,20 @@ architecture arch of irom is
 "110000000000000000000000000000001100",
 "110011000000010000000000010000011011",
 "000010001111101111100000000000000011",
-"010010011111100000001111000000000000",
+"010010011111100000001111000000000000",--store
 
-"010010011111100000000000010000000001",
+"010010011111100000000000010000000001",--store
 "000010000000010000010000000000000001",
 "000011000000001111000000000000001101",--jal
 "010010011111100000000000010000000010",--store
 
 "010000001111100000010000000000000001",--load
-"000010000000010000010000000000000010",
-"000011000000001111000000000000001101",
-"010000001111101111010000000000000010",
+"000010000000010000010000000000000010",--sub
+"000011000000001111000000000000001101",--jal
+"010000001111101111010000000000000010",--load
 
-"000101000000010000011111010000000000",
-"010000001111101111000000000000000000",
+"000101000000010000011111010000000000",--add
+"010000001111101111000000000000000000",--load
 "000001001111101111100000000000000011",
 "110110001111000000000000000000000000",
 
@@ -419,3 +417,199 @@ begin
 end arch;
 
 
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity block_s_dcache_array is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit,hit_tag : out std_logic
+	);
+end block_s_dcache_array;
+
+architecture arch of block_s_dcache_array is
+    type cache_tag_type is array (0 to 8191) of std_logic_vector (4 downto 0);--4 + 1
+    type cache_data_type is array (0 to 8191) of std_logic_vector (31 downto 0); --32
+    type early_hit_cache_type is array (0 to 3) of std_logic_vector (17 + 32  downto 0);
+    
+   signal  early_hit_cache :early_hit_cache_type := (others => (others => '0'));
+   signal tag,tag_p,entry,entry_p,entry_buf : std_logic_vector(4 downto 0) := (others => '0');
+   signal cache : cache_tag_type := (others => (others => '0'));
+   signal cache_data : cache_data_type := (others => (others => '0'));
+   signal hit_e:std_logic_vector(3 downto 0) := (others => '0');
+    signal data,data_p,data_ec_p : std_logic_vector(31 downto 0) := (others => '0');
+    signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
+    signal address_buf,address_buf_f,ac_addr,rd_addr,address_buf2 : std_logic_vector(19 downto 0) := (others => '0');
+    signal conflict,conflict1,conflict2,hit_p,hit1,hit2,hit3,hit_p1,hit_p2,hit_p3 : std_logic := '0';
+begin
+	read_data <= data;
+	hit <= ((not conflict1) and hit1 and hit3) or hit2;
+	hit_tag <= (hit1 and hit3) or hit2;
+	data_p <= cache_data(conv_integer(address_buf_f(12 downto 0)));
+	entry_p <= cache(conv_integer(address_buf_f(12 downto 0)));
+	
+	process(clkfast)
+	begin
+		if rising_edge(clkfast) then
+	    	if set = '1' then
+	    	   cache(conv_integer(set_addr(12 downto 0))) <= '1'&set_addr(16 downto 13);
+	    	   cache_data(conv_integer(set_addr(12 downto 0))) <= set_data;
+	    	end if;
+	        address_buf_f <= address;
+		end if;
+	end process;
+	
+	process(clk)
+	begin
+		if rising_edge(clk) then
+	    	if set = '1' then
+	    	   early_hit_cache(0) <= early_hit_cache(1);
+	    	   early_hit_cache(1) <= early_hit_cache(2);
+	    	   early_hit_cache(2) <= early_hit_cache(3); 
+	    	   early_hit_cache(3) <= '1'&set_addr(16 downto 0)&set_data;
+	    	end if;
+		end if;
+	end process;
+	
+	hit_e(0) <= early_hit_cache(0)(49) when early_hit_cache(0)(48 downto 32) = address(16 downto 0) else '0';
+	hit_e(1) <= early_hit_cache(0)(49) when early_hit_cache(1)(48 downto 32) = address(16 downto 0) else '0';
+	hit_e(2) <= early_hit_cache(0)(49) when early_hit_cache(2)(48 downto 32) = address(16 downto 0) else '0';
+	hit_e(3) <= early_hit_cache(0)(49) when early_hit_cache(3)(48 downto 32) = address(16 downto 0) else '0';
+	
+	
+	 data_ec_p <= early_hit_cache(3)(31 downto 0) when hit_e(3) = '1' else
+	 early_hit_cache(2)(31 downto 0) when hit_e(2) = '1' else
+	 early_hit_cache(1)(31 downto 0) when hit_e(1) = '1' else
+	 early_hit_cache(0)(31 downto 0);
+	
+	hit_p1 <= '1' when entry_p(3 downto 0) = address_buf_f(16 downto 13) else '0';
+	
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	    	hit1 <= hit_p1;
+	    	hit2 <= hit_e(0) or hit_e(1) or hit_e(2) or hit_e(3);
+	    	hit3 <= entry_p(4);
+	    	if hit_e = "0000" then
+	    		data <= data_p;
+	    	else
+	    		data <= data_ec_p;
+	    	end if;
+	    	
+	    	
+	    	if set_addr(12 downto 0) = address(12 downto 0) then
+	    		conflict <= set;
+		    	conflict1 <= conflict or set;
+	    	else
+	    		conflict <= '0';
+		    	conflict1 <= conflict;
+	    	end if;
+	    end if;
+	end process;
+end arch;
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity block_2way is
+	port  (
+		clk,clkfast : in std_logic;
+		address: in std_logic_vector(19 downto 0);
+		set_addr: in std_logic_vector(19 downto 0);
+		set_data : in std_logic_vector(31 downto 0);
+		set : in std_logic;
+		read_data : out std_logic_vector(31 downto 0);
+		hit,hit_tag : out std_logic
+	);
+end block_2way;
+
+architecture arch of block_2way is
+    type cache_tag_type is array (0 to 8191) of std_logic_vector (4 downto 0);--4 + 1
+    type cache_data_type is array (0 to 8191) of std_logic_vector (31 downto 0); --32
+    type early_hit_cache_type is array (0 to 3) of std_logic_vector (17 + 32 downto 0);
+    
+   signal  early_hit_cache :early_hit_cache_type := (others => (others => '0'));
+   signal tag,tag_p,entry,entry_p,entry_buf : std_logic_vector(4 downto 0) := (others => '0');
+   signal cache : cache_tag_type := (others => (others => '0'));
+   signal cache_data : cache_data_type := (others => (others => '0'));
+   signal hit_e:std_logic_vector(3 downto 0) := (others => '0');
+    signal data,data_p,data_ec_p : std_logic_vector(31 downto 0) := (others => '0');
+    signal cmp,cmp_buf :std_logic_vector(4 downto 0) := "00000";
+    signal address_buf,address_buf_f,ac_addr,rd_addr,address_buf2 : std_logic_vector(19 downto 0) := (others => '0');
+    signal conflict,conflict1,conflict2,hit_p,hit1,hit2,hit3,hit_p1,hit_p2,hit_p3 : std_logic := '0';
+begin
+	read_data <= data;
+	hit <= ((not conflict1) and hit1 and hit3) or hit2;
+	hit_tag <= (hit1 and hit3) or hit2;
+	data_p <= cache_data(conv_integer(address_buf_f(12 downto 0)));
+	entry_p <= cache(conv_integer(address_buf_f(12 downto 0)));
+	
+	process(clkfast)
+	begin
+		if rising_edge(clkfast) then
+	    	if set = '1' then
+	    	   cache(conv_integer(set_addr(12 downto 0))) <= '1'&set_addr(16 downto 13);
+	    	   cache_data(conv_integer(set_addr(12 downto 0))) <= set_data;
+	    	end if;
+	        address_buf_f <= address;
+		end if;
+	end process;
+	
+	process(clk)
+	begin
+		if rising_edge(clk) then
+	    	if set = '1' then
+	    	   early_hit_cache(0) <= early_hit_cache(1);
+	    	   early_hit_cache(1) <= early_hit_cache(2);
+	    	   early_hit_cache(2) <= early_hit_cache(3); 
+	    	   early_hit_cache(3) <= '1'&set_addr(16 downto 0)&set_data;
+	    	end if;
+		end if;
+	end process;
+	
+	hit_e(0) <= early_hit_cache(0)(49) when early_hit_cache(0)(48 downto 32) = address(16 downto 0) else '0';
+	hit_e(1) <= early_hit_cache(0)(49) when early_hit_cache(1)(48 downto 32) = address(16 downto 0) else '0';
+	hit_e(2) <= early_hit_cache(0)(49) when early_hit_cache(2)(48 downto 32) = address(16 downto 0) else '0';
+	hit_e(3) <= early_hit_cache(0)(49) when early_hit_cache(3)(48 downto 32) = address(16 downto 0) else '0';
+	
+	
+	 data_ec_p <= early_hit_cache(3)(31 downto 0) when hit_e(3) = '1' else
+	 early_hit_cache(2)(31 downto 0) when hit_e(2) = '1' else
+	 early_hit_cache(1)(31 downto 0) when hit_e(1) = '1' else
+	 early_hit_cache(0)(31 downto 0);
+	
+	hit_p1 <= '1' when entry_p(3 downto 0) = address_buf_f(16 downto 13) else '0';
+	
+	process (clk)
+	begin
+	    if rising_edge(clk) then
+	    	hit1 <= hit_p1;
+	    	hit2 <= hit_e(0) or hit_e(1) or hit_e(2) or hit_e(3);
+	    	hit3 <= entry_p(4);
+	    	if hit_e = "0000" then
+	    		data <= data_p;
+	    	else
+	    		data <= data_ec_p;
+	    	end if;
+	    	
+	    	
+	    	if set_addr(12 downto 0) = address(12 downto 0) then
+	    		conflict <= set;
+		    	conflict1 <= conflict or set;
+	    	else
+	    		conflict <= '0';
+		    	conflict1 <= conflict;
+	    	end if;
+	    end if;
+	end process;
+end arch;

@@ -24,14 +24,16 @@ architecture Behavioral of clockgenerator is
 		RST_IN : IN std_logic;          
 		CLKIN_IBUFG_OUT : OUT std_logic;
 		CLK0_OUT : OUT std_logic;
-		CLKFX_OUT : OUT std_logic;
-		CLKFX180_OUT : OUT std_logic;
+		CLK180_OUT : OUT std_logic;
+		--CLKFX_OUT : OUT std_logic;
+		--CLKFX180_OUT : OUT std_logic;
 		LOCKED_OUT : OUT std_logic
 		);
 	END COMPONENT;
   signal rst : std_logic;
   signal rocrst : std_logic;
   signal lock : std_logic;
+  signal c : std_logic;
 begin
 -- DCM_ADV: Digital Clock Manager Circuit
 -- Virtex-4/5
@@ -39,13 +41,18 @@ begin
   roc_inst : roc port map (O => rocrst);
   rst <= rocrst or (not globalrst);
   reset <= rst or (not lock);
+  
+  clock66 <= c;
+  clock <= c;
 	Inst_clockgen: clockgen PORT MAP(
 		CLKIN_IN => globalclk,
 		RST_IN => rst,
 		CLKIN_IBUFG_OUT => open,
-		CLK0_OUT => clock66,
-		CLKFX_OUT => clock,
-		CLKFX180_OUT => clock_180,
+--		CLK0_OUT => clock66,
+--		CLKFX_OUT => clock,
+--		CLKFX180_OUT => clock_180,
+		CLK0_OUT => c,
+		CLK180_OUT => clock_180,
 		LOCKED_OUT => lock
 	);
 end Behavioral;

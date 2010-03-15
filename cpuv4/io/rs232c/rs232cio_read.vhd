@@ -29,6 +29,7 @@ entity rs232cio_read is
     RSIO_OVERRUN : out STD_LOGIC;    -- OVERRUNéû1
     -- RS232CÉ|Å[Ég ë§Ç…Ç¬Ç»ÇÆ
     RSRXD : in STD_LOGIC
+    ;rp,wp: out STD_LOGIC_VECTOR(READBUFLENLOG - 1 downto 0)
     );
 end rs232cio_read;
 
@@ -70,6 +71,8 @@ architecture Behavioral of rs232cio_read is
   --signal totalreadbyte : integer := 0;
   
 begin
+	rp <= bufreadpos;
+	wp <= bufwritepos;
   bitbuf(0)<=RSRXD;
   readbit<=(bitbuf(2) and bitbuf(3)) or (bitbuf(3) and bitbuf(4)) or (bitbuf(2) and bitbuf(4));
   bitbufmlt(0)<=readbit;

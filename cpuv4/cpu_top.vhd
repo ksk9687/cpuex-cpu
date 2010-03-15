@@ -112,10 +112,19 @@ architecture arch of cpu_top is
 	signal rslsu_inA,rslsu_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal lsuA,lsuB,lsuO,ioO :std_logic_vector(31 downto 0) := (others=>'0');
 	signal rslsuim,rslsuim_p :std_logic_vector(13 downto 0) := (others=>'0');
+	--FPU
+	signal rsfpu_write,rsfpu_ok,fpu_ready,fpu_issue :std_logic := '0';
+	signal fpu_ready_tag,rsfpudtag,fpu_in_tag,fpu_tag,fpu_out_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal fpu_ready_op,rsfpuop,rsfpu_in_op :std_logic_vector(4 downto 0) := (others=>'0');
+	signal rsfpu_inA,rsfpu_inB :std_logic_vector(32 downto 0) := (others=>'0');
+	signal fpuA,fpuB,fpuO :std_logic_vector(31 downto 0) := (others=>'0');
    --LS
    signal ls_f : std_logic_vector(2 downto 0) := (others=>'0');
    signal lsu_out,store_data,load_data :std_logic_vector(31 downto 0) := (others=>'0');
    signal ls_address :std_logic_vector(19 downto 0) := (others=>'0');
+   signal leddata :std_logic_vector(15 downto 0) := (others=>'0');
+   signal ledddata :std_logic_vector(7 downto 0) := (others=>'0');
+   
    signal lsu_read,lsu_write,load_hit,lsu_full,lsu_ok,io_ok,store_ok,io_end,load_ok,ioexec,load_end,storeexec : std_logic := '0';
 	--FPU
 	signal fpu_out,fpu_out_buf1 : std_logic_vector(31 downto 0) := (others=>'0');
@@ -127,8 +136,8 @@ architecture arch of cpu_top is
 	signal pc_next,jmp_stop,jmp,predict_taken_hist,predict_taken,bp_miss : std_logic :='0';
 
    
-   signal pi_valid,pl_valid,pl_validi,pl_validf,pf_valid,pb_valid : std_logic := '0';   
-   signal pi_dtag,pl_dtag,pl_dtagi,pl_dtagf,pf_dtag,pb_dtagi,pb_dtagf : std_logic_vector(3 downto 0) := (others=>'0');
+   signal pi_valid,pl_valid,pl_validi,pl_validf,pf_valid,pb_valid,fpu_next_valid : std_logic := '0';   
+   signal pi_dtag,pl_dtag,pl_dtagi,pl_dtagf,pf_dtag,pf_dtagf,pb_dtagi,pb_dtagf,fpu_next_out_tag : std_logic_vector(3 downto 0) := (others=>'0');
    signal pi_value,pl_value,pf_value,pb_value,pb_valuef : std_logic_vector(31 downto 0) := (others=>'0');
    signal pi_0,pi_1,pi_0_write,pi_1_write :std_logic_vector(9 downto 0) := (others=>'0');
    signal pb_0,pb_1,pb_0_write,pb_1_write :std_logic_vector(9 downto 0) := (others=>'0');
@@ -145,8 +154,8 @@ architecture arch of cpu_top is
    --pc + counter + hist
 	signal jmp_commit :std_logic:= '0';
    signal jmp_info1,jmp_info2,jmp_info1_p,jmp_info2_p,jmp_info,jmp_info_p :std_logic_vector(14 + 2 + 8 - 1 downto 0) := (others=>'0');
-	signal bpc1,bpc2 ,jmp_commit_counter,newcounter :std_logic_vector(1 downto 0) := (others=>'0');
-	signal bph1,bph2 ,jmp_commit_hist,newhist :std_logic_vector(7 downto 0) := (others=>'0');
+	signal bpc1,bpc2, bpc12,jmp_commit_counter,newcounter :std_logic_vector(1 downto 0) := (others=>'0');
+	signal bph1,bph2,bph12 ,jmp_commit_hist,newhist :std_logic_vector(7 downto 0) := (others=>'0');
 	signal bpk1,bpk2 ,jmp_commit_key,newkey :std_logic_vector(12 downto 0) := (others=>'0');
 
 begin
@@ -156,14 +165,12 @@ begin
 --	clock66 => clk66,
 --	clock => clk,
 --	clock_180 => clk180,
---    reset => rst0);
+--    reset => rst);
  CLOCK0 : CLOCK port map (
     clkin => CLK_66M,
     clkout0 => clk,
     clkout180 => clk180,
-    locked =>locked0);
-    
-  
+    locked =>locked0); 
   	ROC0 : ROC port map (O => rst);
   
   
@@ -173,7 +180,8 @@ begin
    inst1(21 downto 18)&inst1(9 downto 0) when ((jmp1 = '1') and (bpc1(1) = '1')) else
    inst1(13 downto 0) when (jal1 = '1') else
    jr_addr when (jr1 = '1') else
-   inst2(21 downto 18)&inst2(9 downto 0) when ((jmp2 = '1') and (bpc2(1) = '1')) else
+   inst2(21 downto 18)&inst2(9 downto 0) when ((jmp1 = '1') and (jmp2 = '1') and (bpc12(1) = '1')) else
+   inst2(21 downto 18)&inst2(9 downto 0) when ((jmp1 = '0') and (jmp2 = '1') and (bpc2(1) = '1')) else
    inst2(13 downto 0) when (jal2 = '1') else
    jr_addr when (jr2 = '1') else
    pc_p1;
@@ -182,6 +190,8 @@ begin
 	-- IF
 	-- 
 	----------------------------------
+	
+	
 	
 	jmp1 <= inst1(35) and inst1(34) and (not inst1(33)) and (not (inst1(32) and inst1(31))) and (not pc(0));
 	jmp2 <= inst2(35) and inst2(34) and (not inst2(33)) and (not (inst2(32) and inst2(31)));
@@ -206,7 +216,7 @@ begin
 	
   	MEMORY0 : memory port map (
    	clk,clk,clk180,clk180,
-   	next_pc(13 downto 1),inst1,inst2,
+   	next_pc(12 downto 1),inst1,inst2,
    	ls_f,ls_address,store_data,load_data,load_hit,
       XE1,E2A,XE3,ZZA,XGA,XZCKE,ADVA,XLBO,ZCLKMA,XFT,XWA,XZBE,ZA,ZDP,ZD
    );
@@ -215,8 +225,8 @@ begin
   	clk,flush,stall_fetch,next_pc(13 downto 0),
   	jmp1,jmp2,
   	jmp_commit,jmp_commit_counter,jmp_commit_key,jmp_commit_hist,
-  	bpc1,bpc2,
-  	bph1,bph2
+  	bpc1,bpc2,bpc12,
+  	bph1,bph2,bph12
   );
   	
 	RAS0 : returnAddressStack port map (
@@ -240,7 +250,9 @@ begin
    stall_fetch <= stall_first or stall_second or stall_id2;
    
    jmp_info1_p <= jr_addr&x"00"&"00" when jr1 = '1' else pc&bph1&bpc1;
-   jmp_info2_p <= jr_addr&x"00"&"00" when jr2 = '1' else pc(13 downto 1)&'1'&bph2&bpc2;
+   jmp_info2_p <= jr_addr&x"00"&"00" when jr2 = '1' else 
+   pc(13 downto 1)&'1'&bph2&bpc2 when jmp1 = '0' else 
+   pc(13 downto 1)&'1'&bph12&bpc12;
    
    	process(clk,rst)
 	begin
@@ -298,7 +310,7 @@ begin
 				r22 <= (others => '0');
 				d1 <= d2p;
 				d2 <= (others => '0');
-				jmp_info1 <= jmp_info1_p;
+				jmp_info1 <= jmp_info2_p;
 				jmp_info2 <= (others => '0');
 			elsif ((jmp1 = '1') and (bpc1(1) = '1')) or (jal1 = '1') or (jr1 = '1') then--1のみデコード
 				inst1_buf <= inst1;
@@ -334,7 +346,7 @@ begin
 	----------------------------------
 	
 	--実行ユニットが重なったらストール
-	stall_id2 <= '1' when (inst1_buf(35 downto 34) = inst2_buf(35 downto 34)) and ((inst1_buf(35 downto 33) /= "101") or (inst2_buf(35 downto 33) /= "101"))else
+	stall_id2 <= '1' when (inst1_buf(35 downto 34) = inst2_buf(35 downto 34)) and ((inst1_buf(35 downto 33) /= "101") and (inst2_buf(35 downto 33) /= "101"))else
 	'0';
 	
 	alu_inst_p <= inst1_buf when inst1_buf(35 downto 33) = unit_alu else
@@ -349,13 +361,18 @@ begin
 	inst2_buf when (inst2_buf(35 downto 34) = unit_lsiou) and (stall_id2 = '0') else
 	nop_inst;
 	
+	fpu_inst_p <= inst1_buf when inst1_buf(35 downto 33) = unit_fpu else
+	inst2_buf when (inst2_buf(35 downto 33) = unit_fpu) and (stall_id2 = '0') else
+	nop_inst;
+	
 	rsalu0im_p <= (jmp_info1(23 downto 10) + '1') when (inst1_buf(35 downto 33) = unit_alu) and (inst1_buf(31 downto 30)= "11") else
+	inst1_buf(13 downto 0) when (inst1_buf(35 downto 33) = unit_alu) else
 	(jmp_info2(23 downto 10)+ '1') when (inst2_buf(35 downto 33) = unit_alu) and (inst2_buf(31 downto 30)= "11") else
-	 alu_inst_p(13 downto 0);
+	 inst2_buf(13 downto 0);
 	 
 	jmp_info_p <= jmp_info1 when inst1_buf(35 downto 33) = unit_bru else jmp_info2;
 	
-	rslsuim_p <= lsu_inst_p(13 downto 0) when alu_inst_p(31 downto 28) = "0000" else
+	rslsuim_p <= lsu_inst_p(13 downto 0) when lsu_inst_p(31 downto 28) = "0000" else
 	lsu_inst_p(21 downto 18)&lsu_inst_p(9 downto 0);
 	
 	s1_unit_p <= inst1_buf(35 downto 33) when r11 = "01" else unit_nop;
@@ -398,6 +415,7 @@ begin
 				alu_inst <= nop_inst;
 				bru_inst <= nop_inst;
 				lsu_inst <= nop_inst;
+				fpu_inst <= nop_inst;
 				
 				firstunit <= unit_nop;
 				secondunit <= unit_nop;
@@ -419,6 +437,7 @@ begin
 				alu_inst <= nop_inst;
 				bru_inst <= nop_inst;
 				lsu_inst <= nop_inst;
+				fpu_inst <= nop_inst;
 				
 				firstunit <= unit_nop;
 				secondunit <= unit_nop;
@@ -437,19 +456,22 @@ begin
 				sf4_unit <= unit_nop;
 				
 				jmp_info <= (others => '0');
-			elsif stall_first = '1' then
+			elsif stall_first = '1' then--完全ストール
 				
-			elsif stall_second = '1' then
+			elsif stall_second = '1' then--第二命令のみストール
 				if firstunit = unit_alu then
 					alu_inst <= nop_inst;
 				elsif firstunit = unit_bru then
 					bru_inst <= nop_inst;
 				elsif firstunit(2 downto 1) = unit_lsiou then
 					lsu_inst <= nop_inst;
+				elsif firstunit = unit_fpu then
+					fpu_inst <= nop_inst;
 				else
 					bru_inst <= nop_inst;
 					alu_inst <= nop_inst;
 					lsu_inst <= nop_inst;
+					fpu_inst <= nop_inst;
 				end if;
 				firstunit <= secondunit;
 				s1 <= s3;
@@ -499,6 +521,8 @@ begin
 				alu_inst <= alu_inst_p;
 				bru_inst <= bru_inst_p;
 				lsu_inst <= lsu_inst_p;
+				fpu_inst <= fpu_inst_p;
+				
 				firstunit <= inst1_buf(35 downto 33);
 				s1 <= inst1_buf(27 downto 22);
 				s2 <= inst1_buf(15 downto 10);
@@ -556,6 +580,7 @@ begin
 	-- 
 	----------------------------------
     
+
     
     stall_first <= (firstregmsk(0) and (not rob_ok1)) or (firstregmsk(2) and (not frob_ok1)) or (not canUseFirstUnit);
     stall_second <= stall_first or (secondregmsk(0) and (not rob_ok1)) or (secondregmsk(1) and (not rob_ok2)) or 
@@ -566,6 +591,7 @@ begin
      rsbru_ok when unit_bru,
      rslsu_ok when unit_lsu,
      rslsu_ok when unit_iou,
+     rsfpu_ok when unit_fpu,
      '1' when others;
      
     with secondunit select
@@ -573,6 +599,7 @@ begin
      rsbru_ok when unit_bru,
      rslsu_ok when unit_lsu,
      rslsu_ok when unit_iou,
+     rsfpu_ok when unit_fpu,
      '1' when others;
     
     rob_alloc1 <= (not stall_first) and (firstregmsk(0) or ((not stall_second) and secondregmsk(0)));
@@ -595,12 +622,15 @@ begin
      rslsu_write <= not stall_first when firstunit(2 downto 1) = unit_lsiou else
      not stall_second when secondunit(2 downto 1) = unit_lsiou else
      '0';
+     rsfpu_write <= not stall_first when firstunit = unit_fpu else
+     not stall_second when secondunit = unit_fpu else
+     '0';
      
     rsalu0_inA <= '1'&data_s1_reg_p when (s1_unit = unit_alu) and (reg_s1_ok = '1') else
     '1'&data_s1_rob_p when  (s1_unit = unit_alu) and (rob_s1_ok = '1') else
     '0'&x"0000000"&'0'&s1tag when (s1_unit = unit_alu) else
     '1'&data_s3_reg_p when (s3_unit = unit_alu) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit = unit_alu) and (rob_s3_ok = '1') else
+    '1'&data_s3_rob_p when  (s3_unit = unit_alu) and (rob_s3_ok = '1') and (tf1 = '0') else
     '0'&x"0000000"&'0'&s3tag when (s3_unit = unit_alu) else
     '1'&x"0000"&"00"&rsalu0im;
 
@@ -608,7 +638,7 @@ begin
     '1'&data_s2_rob_p when  (s2_unit = unit_alu) and (rob_s2_ok = '1') else
     '0'&x"0000000"&'0'&s2tag when (s2_unit = unit_alu) else
     '1'&data_s4_reg_p when (s4_unit = unit_alu) and (reg_s4_ok = '1') and (tf2 = '0')else
-    '1'&data_s4_rob_p when  (s4_unit = unit_alu) and (rob_s4_ok = '1') else
+    '1'&data_s4_rob_p when  (s4_unit = unit_alu) and (rob_s4_ok = '1') and (tf2 = '0') else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_alu) else
     '1'&x"0000"&"00"&rsalu0im;
     
@@ -623,10 +653,10 @@ begin
     '1'&data_s1_frob_p when  (sf1_unit = unit_bru) and (frob_s1_ok = '1') else
     '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_bru) else
     '1'&data_s3_reg_p when (s3_unit = unit_bru) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit = unit_bru) and (rob_s3_ok = '1') else
+    '1'&data_s3_rob_p when  (s3_unit = unit_bru) and (rob_s3_ok = '1') and (tf1 = '0') else
     '0'&x"0000000"&'0'&s3tag when (s3_unit = unit_bru) else
     '1'&data_s3_freg_p when (sf3_unit = unit_bru) and (freg_s3_ok = '1') and (ftf1 = '0') else
-    '1'&data_s3_frob_p when  (sf3_unit = unit_bru) and (frob_s3_ok = '1') else
+    '1'&data_s3_frob_p when  (sf3_unit = unit_bru) and (frob_s3_ok = '1') and (ftf1 = '0') else
     '0'&x"0000000"&'1'&sf3tag;
 
     rsbru_inB <= '1'&data_s2_reg_p when ((s2_unit = unit_bru) and (reg_s2_ok = '1')) else
@@ -636,23 +666,24 @@ begin
     '1'&data_s2_frob_p when  ((sf2_unit = unit_bru) and (frob_s2_ok = '1')) else
     '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_bru) else
     '1'&data_s4_reg_p when ((s4_unit = unit_bru) and (reg_s4_ok = '1')) and (tf2 = '0') else
-    '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) else
+    '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) and (tf2 = '0') else
     '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_bru) else
-    '1'&data_s4_freg_p when ((sf4_unit = unit_bru) and (freg_s4_ok = '1')) and (ftf1 = '0') else
-    '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) else
+    '1'&data_s4_freg_p when ((sf4_unit = unit_bru) and (freg_s4_ok = '1')) and (ftf2 = '0') else
+    '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) and (ftf2 = '0') else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_bru) else
     '1'&sign_extention(ci);
-    --jmp先,mask
     ci <= bru_inst(17 downto 10);
     rsbrudtag <= "0"&rob_tag1 when (firstunit = unit_bru) or (secondregmsk(0) = '1') else "0"&rob_tag2;
     rsbrudtagf <= "0"&frob_tag1 when (firstunit = unit_bru) or (secondregmsk(2) = '1') else "0"&frob_tag2;
+    
+    --jmp先,mask
     rsbruop <= rsbrudtagf&jmp_info&bru_inst(21 downto 18)&bru_inst(9 downto 0)&bru_inst(33 downto 28);
     
     rslsu_inA <= '1'&data_s1_reg_p when (s1_unit(2 downto 1) = unit_lsiou) and (reg_s1_ok = '1') else
     '1'&data_s1_rob_p when  (s1_unit(2 downto 1) = unit_lsiou) and (rob_s1_ok = '1') else
     '0'&x"0000000"&'0'&s1tag when (s1_unit(2 downto 1) = unit_lsiou) else
     '1'&data_s3_reg_p when (s3_unit(2 downto 1) = unit_lsiou) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit(2 downto 1) = unit_lsiou) and (rob_s3_ok = '1') else
+    '1'&data_s3_rob_p when  (s3_unit(2 downto 1) = unit_lsiou) and (rob_s3_ok = '1') and (tf1 = '0') else
     '0'&x"0000000"&'0'&s3tag when (s3_unit(2 downto 1) = unit_lsiou) else
     '1'&x"00000000";
 
@@ -663,10 +694,10 @@ begin
     '1'&data_s2_frob_p when  ((sf2_unit(2 downto 1) = unit_lsiou) and (frob_s2_ok = '1')) else
     '0'&x"0000000"&'1'&sf2tag when (sf2_unit(2 downto 1) = unit_lsiou) else
     '1'&data_s4_reg_p when ((s4_unit(2 downto 1) = unit_lsiou) and (reg_s4_ok = '1')) and (tf2 = '0') else
-    '1'&data_s4_rob_p when  ((s4_unit(2 downto 1) = unit_lsiou) and (rob_s4_ok = '1')) else
+    '1'&data_s4_rob_p when  ((s4_unit(2 downto 1) = unit_lsiou) and (rob_s4_ok = '1')) and (tf2 = '0') else
     '0'&x"0000000"&'0'&s4tag when (s4_unit(2 downto 1) = unit_lsiou) else
     '1'&data_s4_freg_p when ((sf4_unit(2 downto 1) = unit_lsiou) and (freg_s4_ok = '1')) and (ftf2 = '0') else
-    '1'&data_s4_frob_p when  ((sf4_unit(2 downto 1) = unit_lsiou) and (frob_s4_ok = '1')) else
+    '1'&data_s4_frob_p when  ((sf4_unit(2 downto 1) = unit_lsiou) and (frob_s4_ok = '1')) and (ftf2 = '0') else
     '0'&x"0000000"&'1'&sf4tag when (sf4_unit(2 downto 1) = unit_lsiou) else
     '1'&x"00000000";
     
@@ -675,6 +706,25 @@ begin
     "0"&rob_tag2 when ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(1) = '1')) else
     "1"&frob_tag2;
     rslsuop <= rslsuim&lsu_inst(33 downto 28);
+     
+    rsfpu_inA <= '1'&data_s1_freg_p when (sf1_unit = unit_fpu) and (freg_s1_ok = '1') else
+    '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
+    '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_fpu) else
+    '1'&data_s3_freg_p when (sf3_unit = unit_fpu) and (freg_s3_ok = '1') and (ftf1 = '0') else
+    '1'&data_s3_frob_p when  (sf3_unit = unit_fpu) and (frob_s3_ok = '1') and (ftf1 = '0') else
+    '0'&x"0000000"&'1'&sf3tag;
+
+    rsfpu_inB <= '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s2_ok = '1') else
+    '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s2_ok = '1') else
+    '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_fpu) else
+    '1'&data_s4_freg_p when (sf4_unit = unit_fpu) and (freg_s4_ok = '1') and (ftf2 = '0') else
+    '1'&data_s4_frob_p when (sf4_unit = unit_fpu) and (frob_s4_ok = '1') and (ftf2 = '0') else
+    '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_fpu) else
+    '1'&x"00000000";
+   
+    
+    rsfpudtag <= "1"&frob_tag1 when (firstunit = unit_fpu) or (secondregmsk(2) = '1') else "1"&frob_tag2;
+    rsfpuop <= fpu_inst(32 downto 28);
     
     
 	IREG0 : reg port map (
@@ -716,7 +766,9 @@ begin
 	
 	flush <= rob_reg_ok and frob_reg_ok when (write_reg_data(0) = '1') and (rob_op = "01") and (write_freg_data(0) = '1') and (frob_op = "01") else '0';
 	flush_jr <= flush and write_reg_data(25);
-	jmp_commit <= ((not write_reg_data(0)) and (not write_reg_data(25)) and rob_reg_ok) or flush when (rob_op = "01") else
+	
+	jmp_commit <= ((not write_reg_data(0)) and (not write_reg_data(25)) and rob_reg_ok) or
+	 (flush and (not write_reg_data(25))) when (rob_op = "01") else
 	'0';
 	ioexec <= io_ok and (not rob_reg_ok) when rob_op = "11" else '0';
 	storeexec <= store_ok when rob_op = "10" else '0';
@@ -725,21 +777,23 @@ begin
 	jmp_commit_counter <= write_reg_data(16 downto 15);
 	jmp_commit_hist <= write_reg_data(24 downto 17);
 	jmp_commit_key <= write_freg_data(13 downto 1);
+	
 	rob_next <=
-	rob_reg_ok and ((not write_reg_data(0)) or write_freg_data(0)) when rob_op = "01"and frob_op = "01" else--jmp
+	rob_reg_ok and ((not write_reg_data(0)) or write_freg_data(0)) when (rob_op = "01") and (frob_op = "01") else--jmp
 	rob_reg_ok and (not write_reg_data(0)) when rob_op = "01" else--jmp
 	store_ok when rob_op = "10" else--store
 	rob_reg_ok when rob_op = "11" else--io
 	rob_reg_ok;
+	
+	
 	frob_next <= 
-	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when rob_op = "01" and frob_op = "01" else--jmp
-	frob_reg_ok and (not write_freg_data(0)) when frob_op = "01" else--jmp
-	frob_reg_ok when frob_op = "11" else--io
+	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when (rob_op = "01") and (frob_op = "01") else--jmp miss
+	frob_reg_ok and (not write_freg_data(0)) when frob_op = "01" else--jmp hit
 	frob_reg_ok;
 	
 	FREG0 : reg port map (
 		clk,flush,freg_alloc1,freg_alloc2,
-		dr1,dr2,
+		df1,df2,
 		s1,s2,s3,s4,
 		write_freg,write_freg_num,write_freg_data,
 		data_s1_freg_p,data_s2_freg_p,data_s3_freg_p,data_s4_freg_p,
@@ -767,7 +821,7 @@ begin
 		frob_op,
 		
 		pf_valid,pl_validf,pb_valid,
-		pf_dtag,pl_dtagf,pb_dtagf,
+		pf_dtagf,pl_dtagf,pb_dtagf,
 		pf_value,pl_value,pb_valuef
 	);
 	
@@ -779,11 +833,27 @@ begin
 		rsalu0op,rsalu0dtag,rsalu0_inA,rsalu0_inB,
 		alu0_ready_op,alu0_ready_tag,alu0A,alu0B,
 		
-		pi_valid,pl_validi,
-		pi_dtag,pl_dtagi,
+		pi_valid,pl_validi,alu0_issue,
+		pi_dtag,pl_dtagi,alu0_ready_tag,
 		pi_value,pl_value
 	);
 	alu0_issue <= alu0_ready;
+	
+	RSFPU : reservationStation
+	generic map (
+		opbits => 5
+	)
+	port map (
+		clk,flush,rsfpu_write,rsfpu_ok,
+		fpu_issue,fpu_ready,
+		rsfpuop,rsfpudtag,rsfpu_inA,rsfpu_inB,
+		fpu_ready_op,fpu_ready_tag,fpuA,fpuB,
+		
+		pf_valid,pl_validf,fpu_next_valid,
+		pf_dtag,pl_dtag,fpu_next_out_tag,
+		pf_value,pl_value
+	);
+	
 	
 	RSBRU0 : reservationStationBru
 	generic map (
@@ -822,6 +892,8 @@ begin
 	-- 
 	----------------------------------
 	
+
+	
 	ALU0 : ALU port map(
 	clk,alu0_ready_op,alu0A,alu0B,alu0O
 	);
@@ -834,7 +906,7 @@ begin
 	);
 	
 	LSU0 : LSU port map (
-		clk,flush,lsu_issue,
+		clk,flush,jmp_commit,lsu_issue,
 		load_end,store_ok,io_ok,io_end,lsu_full,
 		storeexec,ioexec,
 		pc,
@@ -842,12 +914,21 @@ begin
 		lsuA,lsuB,lsuO,
 		lsu_ready_tag,lsu_out_tag,
 		
-		ls_f,load_hit,load_data,ls_address,store_data,
+		ls_f,load_hit,load_data,ls_address,store_data,leddata,ledddata,
     	RS_RX,RS_TX,
       	outdata0,outdata1,outdata2,outdata3,outdata4,outdata5,outdata6,outdata7
 	);
+	FPU0 : fpu port map (
+	    clk,flush,fpu_ready,
+	    fpu_ready_op,fpu_ready_tag,
+	    fpuA, fpuB, pf_value,fpu_out_tag,fpu_next_out_tag,
+	    pf_valid,fpu_next_valid,fpu_issue
+    );
+    ledddata <= stall_first & stall_second & stall_id2 & rsbru_ok & rsalu0_ok & rsfpu_ok & rslsu_ok & lsu_full;
 	
-		
+	leddata <= flush & stall_first & stall_second & stall_id2 & 
+   rob_ok1 & rob_ok2 & frob_ok1 & frob_ok2& 
+   "00"&rob_op & "00"&frob_op;
 	----------------------------------
 	-- 
 	-- WR
@@ -860,6 +941,11 @@ begin
 	pl_valid <= io_end or load_end;
 	pl_validf <= pl_valid and lsu_out_tag(3);
 	pl_validi <= pl_valid and (not lsu_out_tag(3));
+	
+	--pf_value <= fpuO;
+	pf_dtag <= fpu_out_tag;
+	pf_dtagf <= '0'&fpu_out_tag(2 downto 0);
+	--pf_valid <= pf_0(4);
 	
 	pi_value <= alu0O;
 	pi_dtag <= pi_0(3 downto 0);

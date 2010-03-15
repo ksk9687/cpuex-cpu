@@ -1,0 +1,9 @@
+# Output products list for <cache_72x4096>
+cache_72x4096.mif
+cache_72x4096.ngc
+cache_72x4096.vhd
+cache_72x4096.vho
+cache_72x4096.xco
+cache_72x4096_blk_mem_gen_v2_8_xst_1.ngc_xst.xrpt
+cache_72x4096_flist.txt
+cache_72x4096_xmdf.tcl

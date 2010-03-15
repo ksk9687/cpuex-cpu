@@ -4,7 +4,7 @@ use ieee.std_logic_unsigned.all;
 
 library UNISIM;
 use UNISIM.VComponents.all;
-entity reservationStationLsu is
+entity reservationStationBru is
 	generic (
 		opbits : integer := 3 + 3 + 14 + 1
 	);
@@ -29,9 +29,9 @@ entity reservationStationLsu is
 		dtag1,dtag2,dtag3 : in std_logic_vector(3 downto 0);
 		value1,value2,value3 : in std_logic_vector(31 downto 0)
 	);
-end reservationStationLsu;
+end reservationStationBru;
 
-architecture arch of reservationStationLsu is
+architecture arch of reservationStationBru is
 	signal rst :std_logic := '0';
 	
 	constant op_valid : integer := 0;
@@ -74,6 +74,8 @@ begin
 	newline(1) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '0') else '0';
 	newline(2) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '1') and (op(2)(op_valid) = '0') else '0';
 	newline(3) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '1') and (op(2)(op_valid) = '1')and (op(3)(op_valid) = '0') else '0';
+--	newline(4) <= '1' when (op(0)(op_valid) = '1') and (op(1)(op_valid) = '1') and (op(2)(op_valid) = '1')and (op(3)(op_valid) = '1') else '0';
+
 	--V‚µ‚­“ü‚ê‚é‚È‚ç‚Ç‚±‚©
 	insert(0) <= newline(1) when (go(0) = '1') else newline(0);
 	insert(1) <= newline(2) when (go(0) = '1') or (go(1) = '1') else newline(1);
