@@ -41,6 +41,15 @@ static void make_table(int n, float *a, float *b, float *o) {
     b[j] = -b[j];
     j++;
   }
+
+  // w”•”‚ª“¯‚¶
+  rep (i, n / 2) {
+    int e = 1 + rand() % 254;
+    a[j] = make_float((rand() >> 20) & 1, e, rand() & ((1 << 23) - 1));
+    b[j] = make_float((rand() >> 20) & 1, e, rand() & ((1 << 23) - 1));
+    fprintf(stderr, "%.10e\n%.10e\n", a[j], b[j]);
+    j++;
+  }
   
   // A + B = ???
   while (j < n) {
@@ -55,6 +64,10 @@ static void make_table(int n, float *a, float *b, float *o) {
   rep (i, n) {
     //fprintf(stderr, "%d : %f + %f (%d)\n", i, a[i], b[i], fadd(a[i], b[i], o[i]));
     fadd(a[i], b[i], o[i]);
+
+    // print_float(a[i]);
+    // print_float(b[i]);
+           
     check(a[i] + b[i], o[i]);
   }
 }

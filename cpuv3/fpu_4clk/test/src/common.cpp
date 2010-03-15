@@ -36,10 +36,10 @@ void print_bits(char *p, int b) {
 
 void print_float(float f) {
   print_bits((char*)&f, 4);
-  printf(" : %e", f);
+  fprintf(stderr, " : %.10e", f);
   myfloat mf;
   mf.f = f;
-  printf(" (%d %d %d)\n", mf.s, mf.e, mf.m);
+  fprintf(stderr, " (%d %d %d)\n", mf.s, mf.e, mf.m);
 }
 
 
