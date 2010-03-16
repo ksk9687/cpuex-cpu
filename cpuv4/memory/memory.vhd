@@ -29,7 +29,7 @@ entity memory is
     ls_addr : in std_logic_vector(19 downto 0);
     store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
-    ls_ok : out std_logic;
+    ls_ok,filling : out std_logic;
 
 		--SRAM
     XE1 : out STD_LOGIC; -- 0
@@ -74,12 +74,14 @@ architecture synth of memory is
 	
 	signal ls_buf0 : std_logic_vector(1 downto 0) := "00";
 	signal i_mem_req,i_halt : std_logic := '0';
-	signal fillstage : std_logic_vector(2 downto 0) := "000";
+	signal fillstage : std_logic_vector(3 downto 0) := "1111";
 	
 	signal i_d_out,i_d_in : std_logic_vector(0 downto 0) := "0";
 begin
 
   	ROC0 : ROC port map (O => rst);
+	
+	filling <= not fillstage(3);
 
 	inst1 <= cache_out1;
 	inst2 <= cache_out2;
@@ -104,7 +106,7 @@ begin
 	dcache_set <= i_d_out(0) or (ls_flg(0));
 	
 	--SRAMアドレス
-	ADDR <= --fill_addr when (ls_flg(1 downto 0) = "00") else
+	ADDR <= fill_addr when (ls_flg(1 downto 0) = "00") else
 	ls_addr;
 	
 	--SRAM書き込みデータ
@@ -115,8 +117,7 @@ begin
 	
 	--DCACHE FILL
 	---DmissLoad
-	i_d_in(0) <= (ls_buf0(1) and (not dcache_hit_tag)) ;
-	--or dac;
+	i_d_in(0) <= (ls_buf0(1) and (not dcache_hit_tag))or dac;
 	
 	
 	DMEM : process(clk,rst)
@@ -124,6 +125,7 @@ begin
 		if rst = '1' then
 			ls_buf0 <= "00";
 			dhit_check <= '0';
+			fillstage <= "1111";
 		elsif rising_edge(clk) then
 			dhit_check <= ls_flg(1);
 			ls_buf0 <= ls_flg(1 downto 0);
@@ -131,11 +133,11 @@ begin
 			ls_addr_buf <= ls_addr;
 			
 			if (ls_buf0(1) = '1') and (dcache_hit_tag = '0') then
-				fill_addr <= ls_addr_buf(19 downto 2)&(ls_addr_buf(1 downto 0) + '1');
-				fillstage <= "001";
+				fill_addr <= ls_addr_buf(19 downto 3)&(ls_addr_buf(2 downto 0) + '1');
+				fillstage <= "0001";
 				dac <= '0';
-			elsif (ls_flg(1 downto 0) = "00") and (fillstage(2) = '0') then
-				fill_addr <= fill_addr(19 downto 2)&(fill_addr(1 downto 0) + '1');
+			elsif (ls_flg(1 downto 0) = "00") and (fillstage(3) = '0') then
+				fill_addr <= fill_addr(19 downto 3)&(fill_addr(2 downto 0) + '1');
 				fillstage <= fillstage + '1';
 				dac <= '1';
 			else

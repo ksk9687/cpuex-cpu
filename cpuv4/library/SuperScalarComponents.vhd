@@ -20,7 +20,7 @@ component branchPredictor is
 	port  (
 		clk,flush,stall :in std_logic;
 		pc : in std_logic_vector(13 downto 0);
-		j1,j2 : in std_logic;
+		n1,j1,j2 : in std_logic;
 		jmp_commit : in std_logic;
 		jmp_commit_counter : in std_logic_vector(1 downto 0);
 		jmp_commit_pc : in std_logic_vector(12 downto 0);
@@ -286,7 +286,7 @@ component memory is
     ls_addr : in std_logic_vector(19 downto 0);
     store_data : in std_logic_vector(31 downto 0);
     load_data : out std_logic_vector(31 downto 0);
-    ls_ok : out std_logic;
+    ls_ok,filling : out std_logic;
 
 		--SRAM
     XE1 : out STD_LOGIC; -- 0

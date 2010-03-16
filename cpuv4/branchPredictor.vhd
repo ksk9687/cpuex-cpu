@@ -13,7 +13,7 @@ entity branchPredictor is
 	port  (
 		clk,flush,stall :in std_logic;
 		pc : in std_logic_vector(13 downto 0);
-		j1,j2 : in std_logic;
+		n1,j1,j2 : in std_logic;
 		jmp_commit : in std_logic;
 		jmp_commit_counter : in std_logic_vector(1 downto 0);
 		jmp_commit_pc : in std_logic_vector(12 downto 0);
@@ -47,7 +47,9 @@ begin
 	--h1 <= branch_hist_buf(ghistlength - 2 downto 0)&(not t1(1));
 	--h2 <= branch_hist_buf(ghistlength - 3 downto 0)&'0'&(not t2(1));
 	-- 
-	bht1 <= branch_hist_buf(ghistlength - 2 downto 0)&t2(1)when (j2 = '1') and (j1 = '0') else
+	bht1 <= 
+	branch_hist_buf when n1 = '1' else
+	branch_hist_buf(ghistlength - 2 downto 0)&t2(1)when (j2 = '1') and (j1 = '0') else
 	branch_hist_buf(ghistlength - 3 downto 0)&'0'&t12(1) when (j2 = '1') and (j1 = '1') and (t1(1) = '0') else
 	branch_hist_buf(ghistlength - 2 downto 0)&t1(1) when (j1 = '1') else
 	branch_hist_buf;

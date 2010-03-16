@@ -118,17 +118,23 @@ begin
       old1RW <= old0RW;
       old1addr <= old0addr;
       old1writedata <= old0writedata;
-      old1i_d <= i_d;
+		if RW = '0' then
+			old1i_d <= "0";
+			old2i_d <= "0";
+			old3i_d <= "0";
+		else
+			old1i_d <= i_d;
+			old2i_d <= old1i_d;
+			old3i_d <= old2i_d;
+		end if;
       
       
       old2RW <= old1RW;
       old2addr <= old1addr;
       old2writedata <= old1writedata;
-      old2i_d <= old1i_d;
 
       old3RW <= old2RW;
       old3addr <= old2addr;
-      old3i_d <= old2i_d;
       
       DATAOUT <= busreaddata;
     end if;

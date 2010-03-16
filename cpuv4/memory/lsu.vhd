@@ -199,8 +199,6 @@ process(clk)
 		if (pc(12 downto 8) /= "00000") and (jmp_commit = '1') then
 			jmp_counter <= jmp_counter + '1';
 		end if;
-		
-		
 	end if;
   end process;
 	

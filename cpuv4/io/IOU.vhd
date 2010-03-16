@@ -82,7 +82,7 @@ begin
 
     WRITEBITLEN => 578,      -- 1bitにかかるクロックより少し小さい値
     NULLAFTSTOP => 100,       -- STOPを送った後に念のために送る余白
-    WRITEBUFLENLOG => 10      -- バッファの大きさ
+    WRITEBUFLENLOG => 11      -- バッファの大きさ
     )
 --    generic map( -- 115200,100MHz
 --    READBITLEN    => 880,    -- 1bitにかかるクロックより少し大きい値

@@ -107,7 +107,7 @@ architecture arch of cpu_top is
 	signal newpc :std_logic_vector(13 downto 0) := (others=>'0');
 	--LSU
 	signal rslsu_write,rslsu_ok,lsu_ready,lsu_issue :std_logic := '0';
-	signal lsu_ready_tag,rslsudtag,lsu_in_tag,lsu_out_tag :std_logic_vector(3 downto 0) := (others=>'0');
+	signal lsu_ready_tag,rslsudtag,rslsudtagp,lsu_in_tag,lsu_out_tag :std_logic_vector(3 downto 0) := (others=>'0');
 	signal lsu_ready_op,rslsuop,rslsu_in_op :std_logic_vector(19 downto 0) := (others=>'0');
 	signal rslsu_inA,rslsu_inB :std_logic_vector(32 downto 0) := (others=>'0');
 	signal lsuA,lsuB,lsuO,ioO :std_logic_vector(31 downto 0) := (others=>'0');
@@ -125,6 +125,20 @@ architecture arch of cpu_top is
    signal leddata :std_logic_vector(15 downto 0) := (others=>'0');
    signal ledddata :std_logic_vector(7 downto 0) := (others=>'0');
    
+   type opr_alu is array (0 to 4) of std_logic_vector (32 downto 0);
+   signal alu_in_a,alu_in_b : opr_alu := (others=>(others=>'0'));
+   type opr_fpu is array (0 to 4) of std_logic_vector (32 downto 0);
+   signal fpu_in_a,fpu_in_b : opr_fpu := (others=>(others=>'0'));
+   type opr_lsu is array (0 to 8) of std_logic_vector (32 downto 0);
+   signal lsu_in_a,lsu_in_b : opr_lsu := (others=>(others=>'0'));
+   type opr_bru is array (0 to 8) of std_logic_vector (32 downto 0);
+   signal bru_in_a,bru_in_b : opr_bru := (others=>(others=>'0'));
+   
+   signal alu_a_select,alu_b_select,alu_a_selectp,alu_b_selectp : std_logic_vector (2 downto 0) := (others=>'0');
+   signal fpu_a_select,fpu_b_select,fpu_a_selectp,fpu_b_selectp : std_logic_vector (2 downto 0) := (others=>'0');
+   signal bru_a_select,bru_b_select,bru_a_selectp,bru_b_selectp : std_logic_vector (3 downto 0) := (others=>'0');
+   signal lsu_a_select,lsu_b_select,lsu_a_selectp,lsu_b_selectp : std_logic_vector (3 downto 0) := (others=>'0');
+   signal alu_in_a_w,alu_in_b_w,fpu_in_a_w,fpu_in_b_w,lsu_in_a_w,lsu_in_b_w,bru_in_a_w,bru_in_b_w: std_logic_vector (32 downto 0) := (others=>'0');
    signal lsu_read,lsu_write,load_hit,lsu_full,lsu_ok,io_ok,store_ok,io_end,load_ok,ioexec,load_end,storeexec : std_logic := '0';
 	--FPU
 	signal fpu_out,fpu_out_buf1 : std_logic_vector(31 downto 0) := (others=>'0');
@@ -152,7 +166,7 @@ architecture arch of cpu_top is
    
    --BRANCH
    --pc + counter + hist
-	signal jmp_commit :std_logic:= '0';
+	signal jmp_commit,n1 :std_logic:= '0';
    signal jmp_info1,jmp_info2,jmp_info1_p,jmp_info2_p,jmp_info,jmp_info_p :std_logic_vector(14 + 2 + 8 - 1 downto 0) := (others=>'0');
 	signal bpc1,bpc2, bpc12,jmp_commit_counter,newcounter :std_logic_vector(1 downto 0) := (others=>'0');
 	signal bph1,bph2,bph12 ,jmp_commit_hist,newhist :std_logic_vector(7 downto 0) := (others=>'0');
@@ -199,7 +213,7 @@ begin
 	jal2 <= (not inst2(35)) and (not inst2(34)) and inst2(31) and inst2(30);
 	jr1 <= inst1(35) and inst1(34) and inst1(32) and inst1(31) and (not pc(0));
 	jr2 <= inst2(35) and inst2(34) and inst2(32) and inst2(31);
-	
+	n1 <= jr1 or jal1;
    PC0:process(clk,rst)
    begin
 	   if (rst = '1')then
@@ -223,7 +237,7 @@ begin
 
   BP0 : branchPredictor port map (
   	clk,flush,stall_fetch,next_pc(13 downto 0),
-  	jmp1,jmp2,
+  	n1,jmp1,jmp2,
   	jmp_commit,jmp_commit_counter,jmp_commit_key,jmp_commit_hist,
   	bpc1,bpc2,bpc12,
   	bph1,bph2,bph12
@@ -579,9 +593,7 @@ begin
 	-- ID3
 	-- 
 	----------------------------------
-    
 
-    
     stall_first <= (firstregmsk(0) and (not rob_ok1)) or (firstregmsk(2) and (not frob_ok1)) or (not canUseFirstUnit);
     stall_second <= stall_first or (secondregmsk(0) and (not rob_ok1)) or (secondregmsk(1) and (not rob_ok2)) or 
     (secondregmsk(2) and (not frob_ok1)) or (secondregmsk(3) and (not frob_ok2)) or (not canUseSecondUnit);
@@ -601,7 +613,7 @@ begin
      rslsu_ok when unit_iou,
      rsfpu_ok when unit_fpu,
      '1' when others;
-    
+     
     rob_alloc1 <= (not stall_first) and (firstregmsk(0) or ((not stall_second) and secondregmsk(0)));
     rob_alloc2 <= (not stall_second) and secondregmsk(1);
     frob_alloc1 <= (not stall_first) and (firstregmsk(2) or ((not stall_second) and secondregmsk(2)));
@@ -611,123 +623,8 @@ begin
     reg_alloc2 <= (secondregmsk(4) and secondregmsk(1)) and rob_alloc2;
     freg_alloc1 <= ((firstregmsk(4) and firstregmsk(2)) or (secondregmsk(4) and secondregmsk(2))) and frob_alloc1;
     freg_alloc2 <= (secondregmsk(4) and secondregmsk(3)) and frob_alloc2;
-    
-    
-     rsalu0_write <=  not stall_first when firstunit = unit_alu else
-     not stall_second when secondunit = unit_alu else
-     '0';
-     rsbru_write <= not stall_first when firstunit = unit_bru else
-     not stall_second when secondunit = unit_bru else
-     '0';
-     rslsu_write <= not stall_first when firstunit(2 downto 1) = unit_lsiou else
-     not stall_second when secondunit(2 downto 1) = unit_lsiou else
-     '0';
-     rsfpu_write <= not stall_first when firstunit = unit_fpu else
-     not stall_second when secondunit = unit_fpu else
-     '0';
-     
-    rsalu0_inA <= '1'&data_s1_reg_p when (s1_unit = unit_alu) and (reg_s1_ok = '1') else
-    '1'&data_s1_rob_p when  (s1_unit = unit_alu) and (rob_s1_ok = '1') else
-    '0'&x"0000000"&'0'&s1tag when (s1_unit = unit_alu) else
-    '1'&data_s3_reg_p when (s3_unit = unit_alu) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit = unit_alu) and (rob_s3_ok = '1') and (tf1 = '0') else
-    '0'&x"0000000"&'0'&s3tag when (s3_unit = unit_alu) else
-    '1'&x"0000"&"00"&rsalu0im;
-
-    rsalu0_inB <= '1'&data_s2_reg_p when (s2_unit = unit_alu) and (reg_s2_ok = '1') else
-    '1'&data_s2_rob_p when  (s2_unit = unit_alu) and (rob_s2_ok = '1') else
-    '0'&x"0000000"&'0'&s2tag when (s2_unit = unit_alu) else
-    '1'&data_s4_reg_p when (s4_unit = unit_alu) and (reg_s4_ok = '1') and (tf2 = '0')else
-    '1'&data_s4_rob_p when  (s4_unit = unit_alu) and (rob_s4_ok = '1') and (tf2 = '0') else
-    '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_alu) else
-    '1'&x"0000"&"00"&rsalu0im;
-    
-    rsalu0dtag <= "0"&rob_tag1 when (firstunit = unit_alu) or (secondregmsk(0) = '1') else "0"&rob_tag2;
-    rsalu0op <= alu_inst(31 downto 30);
-    
-    
-    rsbru_inA <= '1'&data_s1_reg_p when (s1_unit = unit_bru) and (reg_s1_ok = '1') else
-    '1'&data_s1_rob_p when  (s1_unit = unit_bru) and (rob_s1_ok = '1') else
-    '0'&x"0000000"&'0'&s1tag when (s1_unit = unit_bru) else
-    '1'&data_s1_freg_p when (sf1_unit = unit_bru) and (freg_s1_ok = '1') else
-    '1'&data_s1_frob_p when  (sf1_unit = unit_bru) and (frob_s1_ok = '1') else
-    '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_bru) else
-    '1'&data_s3_reg_p when (s3_unit = unit_bru) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit = unit_bru) and (rob_s3_ok = '1') and (tf1 = '0') else
-    '0'&x"0000000"&'0'&s3tag when (s3_unit = unit_bru) else
-    '1'&data_s3_freg_p when (sf3_unit = unit_bru) and (freg_s3_ok = '1') and (ftf1 = '0') else
-    '1'&data_s3_frob_p when  (sf3_unit = unit_bru) and (frob_s3_ok = '1') and (ftf1 = '0') else
-    '0'&x"0000000"&'1'&sf3tag;
-
-    rsbru_inB <= '1'&data_s2_reg_p when ((s2_unit = unit_bru) and (reg_s2_ok = '1')) else
-    '1'&data_s2_rob_p when  ((s2_unit = unit_bru) and (rob_s2_ok = '1')) else
-    '0'&x"0000000"&'0'&s2tag when (s2_unit = unit_bru) else
-    '1'&data_s2_freg_p when ((sf2_unit = unit_bru) and (freg_s2_ok = '1')) else
-    '1'&data_s2_frob_p when  ((sf2_unit = unit_bru) and (frob_s2_ok = '1')) else
-    '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_bru) else
-    '1'&data_s4_reg_p when ((s4_unit = unit_bru) and (reg_s4_ok = '1')) and (tf2 = '0') else
-    '1'&data_s4_rob_p when  ((s4_unit = unit_bru) and (rob_s4_ok = '1')) and (tf2 = '0') else
-    '0'&x"0000000"&'0'&s4tag when (s4_unit = unit_bru) else
-    '1'&data_s4_freg_p when ((sf4_unit = unit_bru) and (freg_s4_ok = '1')) and (ftf2 = '0') else
-    '1'&data_s4_frob_p when  ((sf4_unit = unit_bru) and (frob_s4_ok = '1')) and (ftf2 = '0') else
-    '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_bru) else
-    '1'&sign_extention(ci);
-    ci <= bru_inst(17 downto 10);
-    rsbrudtag <= "0"&rob_tag1 when (firstunit = unit_bru) or (secondregmsk(0) = '1') else "0"&rob_tag2;
-    rsbrudtagf <= "0"&frob_tag1 when (firstunit = unit_bru) or (secondregmsk(2) = '1') else "0"&frob_tag2;
-    
-    --jmpæ,mask
-    rsbruop <= rsbrudtagf&jmp_info&bru_inst(21 downto 18)&bru_inst(9 downto 0)&bru_inst(33 downto 28);
-    
-    rslsu_inA <= '1'&data_s1_reg_p when (s1_unit(2 downto 1) = unit_lsiou) and (reg_s1_ok = '1') else
-    '1'&data_s1_rob_p when  (s1_unit(2 downto 1) = unit_lsiou) and (rob_s1_ok = '1') else
-    '0'&x"0000000"&'0'&s1tag when (s1_unit(2 downto 1) = unit_lsiou) else
-    '1'&data_s3_reg_p when (s3_unit(2 downto 1) = unit_lsiou) and (reg_s3_ok = '1') and (tf1 = '0') else
-    '1'&data_s3_rob_p when  (s3_unit(2 downto 1) = unit_lsiou) and (rob_s3_ok = '1') and (tf1 = '0') else
-    '0'&x"0000000"&'0'&s3tag when (s3_unit(2 downto 1) = unit_lsiou) else
-    '1'&x"00000000";
-
-    rslsu_inB <= '1'&data_s2_reg_p when ((s2_unit(2 downto 1) = unit_lsiou) and (reg_s2_ok = '1')) else
-    '1'&data_s2_rob_p when  ((s2_unit(2 downto 1) = unit_lsiou) and (rob_s2_ok = '1')) else
-    '0'&x"0000000"&'0'&s2tag when (s2_unit(2 downto 1) = unit_lsiou) else
-    '1'&data_s2_freg_p when ((sf2_unit(2 downto 1) = unit_lsiou) and (freg_s2_ok = '1')) else
-    '1'&data_s2_frob_p when  ((sf2_unit(2 downto 1) = unit_lsiou) and (frob_s2_ok = '1')) else
-    '0'&x"0000000"&'1'&sf2tag when (sf2_unit(2 downto 1) = unit_lsiou) else
-    '1'&data_s4_reg_p when ((s4_unit(2 downto 1) = unit_lsiou) and (reg_s4_ok = '1')) and (tf2 = '0') else
-    '1'&data_s4_rob_p when  ((s4_unit(2 downto 1) = unit_lsiou) and (rob_s4_ok = '1')) and (tf2 = '0') else
-    '0'&x"0000000"&'0'&s4tag when (s4_unit(2 downto 1) = unit_lsiou) else
-    '1'&data_s4_freg_p when ((sf4_unit(2 downto 1) = unit_lsiou) and (freg_s4_ok = '1')) and (ftf2 = '0') else
-    '1'&data_s4_frob_p when  ((sf4_unit(2 downto 1) = unit_lsiou) and (frob_s4_ok = '1')) and (ftf2 = '0') else
-    '0'&x"0000000"&'1'&sf4tag when (sf4_unit(2 downto 1) = unit_lsiou) else
-    '1'&x"00000000";
-    
-    rslsudtag <= "0"&rob_tag1 when ((firstunit(2 downto 1) = unit_lsiou) and (firstregmsk(0) = '1')) or ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(0) = '1')) else
-    "1"&frob_tag1 when ((firstunit(2 downto 1) = unit_lsiou) and (firstregmsk(2) = '1')) or ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(2) = '1')) else
-    "0"&rob_tag2 when ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(1) = '1')) else
-    "1"&frob_tag2;
-    rslsuop <= rslsuim&lsu_inst(33 downto 28);
-     
-    rsfpu_inA <= '1'&data_s1_freg_p when (sf1_unit = unit_fpu) and (freg_s1_ok = '1') else
-    '1'&data_s1_frob_p when  (sf1_unit = unit_fpu) and (frob_s1_ok = '1') else
-    '0'&x"0000000"&'1'&sf1tag when (sf1_unit = unit_fpu) else
-    '1'&data_s3_freg_p when (sf3_unit = unit_fpu) and (freg_s3_ok = '1') and (ftf1 = '0') else
-    '1'&data_s3_frob_p when  (sf3_unit = unit_fpu) and (frob_s3_ok = '1') and (ftf1 = '0') else
-    '0'&x"0000000"&'1'&sf3tag;
-
-    rsfpu_inB <= '1'&data_s2_freg_p when (sf2_unit = unit_fpu) and (freg_s2_ok = '1') else
-    '1'&data_s2_frob_p when  (sf2_unit = unit_fpu) and (frob_s2_ok = '1') else
-    '0'&x"0000000"&'1'&sf2tag when (sf2_unit = unit_fpu) else
-    '1'&data_s4_freg_p when (sf4_unit = unit_fpu) and (freg_s4_ok = '1') and (ftf2 = '0') else
-    '1'&data_s4_frob_p when (sf4_unit = unit_fpu) and (frob_s4_ok = '1') and (ftf2 = '0') else
-    '0'&x"0000000"&'1'&sf4tag when (sf4_unit = unit_fpu) else
-    '1'&x"00000000";
-   
-    
-    rsfpudtag <= "1"&frob_tag1 when (firstunit = unit_fpu) or (secondregmsk(2) = '1') else "1"&frob_tag2;
-    rsfpuop <= fpu_inst(32 downto 28);
-    
-    
-	IREG0 : reg port map (
+       
+    IREG0 : reg port map (
 		clk,flush,reg_alloc1,reg_alloc2,
 		dr1,dr2,
 		s1,s2,s3,s4,
@@ -785,7 +682,6 @@ begin
 	rob_reg_ok when rob_op = "11" else--io
 	rob_reg_ok;
 	
-	
 	frob_next <= 
 	frob_reg_ok and ((not write_freg_data(0)) or write_reg_data(0)) when (rob_op = "01") and (frob_op = "01") else--jmp miss
 	frob_reg_ok and (not write_freg_data(0)) when frob_op = "01" else--jmp hit
@@ -824,7 +720,417 @@ begin
 		pf_dtagf,pl_dtagf,pb_dtagf,
 		pf_value,pl_value,pb_valuef
 	);
+    
+
+   	----------------------------------
+	-- 
+	-- ID4
+	-- 
+	----------------------------------
 	
+ 	alu_a_selectp <= "001" when (s1_unit = unit_alu) and reg_s1_ok = '1' else
+	"010" when (s1_unit = unit_alu) and rob_s1_ok = '1' else
+	"011" when (s3_unit = unit_alu) and (reg_s3_ok = '1') and (tf1 = '0') else
+	"100" when (s3_unit = unit_alu) and (rob_s3_ok = '1') and (tf1 = '0') else
+	"000";
+	
+	alu_b_selectp <= "001" when (s2_unit = unit_alu) and reg_s2_ok = '1' else
+	"010" when (s2_unit = unit_alu) and rob_s2_ok = '1' else
+	"011" when (s4_unit = unit_alu) and (reg_s4_ok = '1') and (tf2 = '0') else
+	"100" when (s4_unit = unit_alu) and (rob_s4_ok = '1') and (tf2 = '0') else
+	"000";
+    ALUPRE:process(clk)
+    begin
+    	if rising_edge(clk) then
+    	if flush = '1' then
+    		rsalu0_write <= '0';
+    	elsif rsalu0_ok = '1' then
+    		if (s1_unit = unit_alu) then
+    			alu_in_a(0) <= '0'&x"0000000"&'0'&s1tag;
+    		elsif (s3_unit = unit_alu) then
+    			alu_in_a(0) <= '0'&x"0000000"&'0'&s3tag;
+    		else
+    			alu_in_a(0) <= '1'&x"0000"&"00"&rsalu0im;
+    		end if;
+    		alu_in_a(1) <= '1'&data_s1_reg_p;
+    		alu_in_a(2) <= '1'&data_s1_rob_p;
+    		alu_in_a(3) <= '1'&data_s3_reg_p;
+    		alu_in_a(4) <= '1'&data_s3_rob_p;
+    		
+    		if (s2_unit = unit_alu) then
+    			alu_in_b(0) <= '0'&x"0000000"&'0'&s2tag;
+    		elsif (s4_unit = unit_alu) then
+    			alu_in_b(0) <= '0'&x"0000000"&'0'&s4tag;
+    		else
+    			alu_in_b(0) <= '1'&x"0000"&"00"&rsalu0im;
+    		end if;
+    		alu_in_b(1) <= '1'&data_s2_reg_p;
+    		alu_in_b(2) <= '1'&data_s2_rob_p;
+    		alu_in_b(3) <= '1'&data_s4_reg_p;
+    		alu_in_b(4) <= '1'&data_s4_rob_p;
+    		
+			alu_a_select <= alu_a_selectp;
+			alu_b_select <= alu_b_selectp;
+    		
+    		if (firstunit = unit_alu) or (secondregmsk(0) = '1') then
+    			rsalu0dtag <= "0"&rob_tag1;
+    		else
+    			rsalu0dtag <= "0"&rob_tag2;
+    		end if;
+
+				rsalu0op <= alu_inst(31 downto 30);
+    		
+    		if firstunit = unit_alu then
+    			rsalu0_write <=  not stall_first;
+    		elsif secondunit = unit_alu then
+    			rsalu0_write <=  not stall_second;
+    		else
+    			rsalu0_write <= '0';
+    		end if;
+    	end if;
+    	end if;
+    end process; 
+    
+    with alu_a_select select
+     rsalu0_inA <= alu_in_a(1) when "001",
+      alu_in_a(2) when "010",
+      alu_in_a(3) when "011",
+      alu_in_a(4) when "100",
+      alu_in_a_w when others;
+    alu_in_a_w <= '1'&pi_value when (alu_in_a(0)(32) = '0') and (pl_valid = '1') and (alu_in_a(0)(3 downto 0) = pi_dtag) else
+    '1'&pl_value when (alu_in_a(0)(32) = '0') and (pl_validi = '1') and (alu_in_a(0)(3 downto 0) = pl_dtagi) else
+    alu_in_a(0);
+
+    with alu_b_select select
+     rsalu0_inB <= alu_in_b(1) when "001",
+      alu_in_b(2) when "010",
+      alu_in_b(3) when "011",
+      alu_in_b(4) when "100",
+      alu_in_b_w when others;
+    alu_in_b_w <= '1'&pi_value when (alu_in_b(0)(32) = '0') and (pi_valid = '1') and (alu_in_b(0)(3 downto 0) = pi_dtag) else
+	'1'&pl_value when (alu_in_b(0)(32) = '0') and (pl_validi = '1') and (alu_in_b(0)(3 downto 0) = pl_dtagi) else
+    alu_in_b(0);
+
+     ci <= bru_inst(17 downto 10);
+     
+    rsbrudtagf <= "0"&frob_tag1 when (firstunit = unit_bru) or (secondregmsk(2) = '1') else "0"&frob_tag2;
+    
+	bru_a_selectp <= "0001" when (s1_unit = unit_bru) and reg_s1_ok = '1' else
+	"0010" when (s1_unit = unit_bru) and rob_s1_ok = '1' else
+	"0011" when (sf1_unit = unit_bru) and freg_s1_ok = '1' else
+	"0100" when (sf1_unit = unit_bru) and frob_s1_ok = '1' else
+	"0101" when (s3_unit = unit_bru) and (reg_s3_ok = '1') and (tf1 = '0') else
+	"0110" when (s3_unit = unit_bru) and (rob_s3_ok = '1') and (tf1 = '0') else
+	"0111" when (sf3_unit = unit_bru) and (frob_s3_ok = '1') and (ftf1 = '0') else
+	"1000" when (sf3_unit = unit_bru) and (frob_s3_ok = '1') and (ftf1 = '0') else
+	"0000";
+		
+		
+	bru_b_selectp <= "0001" when (s2_unit = unit_bru) and reg_s2_ok = '1' else
+	"0010" when (s2_unit = unit_bru) and rob_s2_ok = '1' else
+	"0011" when (sf2_unit = unit_bru) and freg_s2_ok = '1' else
+	"0100" when (sf2_unit = unit_bru) and frob_s2_ok = '1' else
+	"0101" when (s4_unit = unit_bru) and (reg_s4_ok = '1') and (tf2 = '0') else
+	"0110" when (s4_unit = unit_bru) and (rob_s4_ok = '1') and (tf2 = '0') else
+	"0111" when (sf4_unit = unit_bru) and (frob_s4_ok = '1') and (ftf2 = '0') else
+	"1000" when (sf4_unit = unit_bru) and (frob_s4_ok = '1') and (ftf2 = '0') else
+	"0000";
+    
+    BRUPRE:process(clk)
+    begin
+    	if rising_edge(clk) then
+    	if flush = '1' then
+    		rsbru_write <= '0';
+    	elsif rsbru_ok = '1' then
+    		if (s1_unit = unit_bru) then
+    			bru_in_a(0) <= '0'&x"0000000"&'0'&s1tag;
+    		elsif (sf1_unit = unit_bru) then
+    			bru_in_a(0) <= '0'&x"0000000"&'1'&sf1tag;
+    		elsif (s3_unit = unit_bru) then
+    			bru_in_a(0) <= '0'&x"0000000"&'0'&s3tag;
+    		elsif (sf3_unit = unit_bru) then
+    			bru_in_a(0) <= '0'&x"0000000"&'1'&sf3tag;
+    		else
+    			bru_in_a(0) <= '1'&sign_extention(ci);
+    		end if;
+    		bru_in_a(1) <= '1'&data_s1_reg_p;
+    		bru_in_a(2) <= '1'&data_s1_rob_p;
+    		bru_in_a(3) <= '1'&data_s1_freg_p;
+    		bru_in_a(4) <= '1'&data_s1_frob_p;
+
+    		bru_in_a(5) <= '1'&data_s3_reg_p;
+    		bru_in_a(6) <= '1'&data_s3_rob_p;
+    		bru_in_a(7) <= '1'&data_s3_freg_p;
+    		bru_in_a(8) <= '1'&data_s3_frob_p;
+    		
+    		if (s2_unit = unit_bru) then
+    			bru_in_b(0) <= '0'&x"0000000"&'0'&s2tag;
+    		elsif (sf2_unit = unit_bru) then
+    			bru_in_b(0) <= '0'&x"0000000"&'1'&sf2tag;
+    		elsif (s4_unit = unit_bru) then
+    			bru_in_b(0) <= '0'&x"0000000"&'0'&s4tag;
+    		elsif (sf4_unit = unit_bru) then
+    			bru_in_b(0) <= '0'&x"0000000"&'1'&sf4tag;
+    		else
+    			bru_in_b(0) <= '1'&sign_extention(ci);
+    		end if;
+    		bru_in_b(1) <= '1'&data_s2_reg_p;
+    		bru_in_b(2) <= '1'&data_s2_rob_p;
+    		bru_in_b(3) <= '1'&data_s2_freg_p;
+    		bru_in_b(4) <= '1'&data_s2_frob_p;
+    		
+    		bru_in_b(5) <= '1'&data_s4_reg_p;
+    		bru_in_b(6) <= '1'&data_s4_rob_p;
+    		bru_in_b(7) <= '1'&data_s4_freg_p;
+    		bru_in_b(8) <= '1'&data_s4_frob_p;
+    		
+    		bru_a_select <= bru_a_selectp;	
+    		bru_b_select <= bru_b_selectp;
+
+    		
+    		if (firstunit = unit_bru) or (secondregmsk(0) = '1') then
+    			rsbrudtag <= "0"&rob_tag1;
+    		else
+    			rsbrudtag <= "0"&rob_tag2;
+    		end if;
+    		
+    		if firstunit = unit_bru then
+    			rsbru_write <=  not stall_first;
+    		elsif secondunit = unit_bru then
+    			rsbru_write <=  not stall_second;
+    		else
+    			rsbru_write <= '0';
+    		end if;
+    		
+    		rsbruop <= rsbrudtagf&jmp_info&bru_inst(21 downto 18)&bru_inst(9 downto 0)&bru_inst(33 downto 28);
+    	end if;
+    	end if;
+    end process; 
+    
+    with bru_a_select select
+     rsbru_inA <= bru_in_a(1) when "0001",
+      bru_in_a(2) when "0010",
+      bru_in_a(3) when "0011",
+      bru_in_a(4) when "0100",
+      bru_in_a(5) when "0101",
+      bru_in_a(6) when "0110",
+      bru_in_a(7) when "0111",
+      bru_in_a(8) when "1000",
+      bru_in_a_w when others;
+    bru_in_a_w <= '1'&pi_value when (bru_in_a(0)(32) = '0') and (pi_valid = '1') and (bru_in_a(0)(3 downto 0) = pi_dtag) else
+    '1'&pl_value when (bru_in_a(0)(32) = '0') and (pl_valid = '1') and (bru_in_a(0)(3 downto 0) = pl_dtag) else
+    '1'&pf_value when (bru_in_a(0)(32) = '0') and (pf_valid = '1') and (bru_in_a(0)(3 downto 0) = pf_dtag) else
+    bru_in_a(0);
+    
+    with bru_b_select select
+     rsbru_inB <= bru_in_b(1) when "0001",
+      bru_in_b(2) when "0010",
+      bru_in_b(3) when "0011",
+      bru_in_b(4) when "0100",
+      bru_in_b(5) when "0101",
+      bru_in_b(6) when "0110",
+      bru_in_b(7) when "0111",
+      bru_in_b(8) when "1000",
+      bru_in_b_w when others;
+    bru_in_b_w <= '1'&pi_value when (bru_in_b(0)(32) = '0') and (pi_valid = '1') and (bru_in_b(0)(3 downto 0) = pi_dtag) else
+    '1'&pl_value when (bru_in_b(0)(32) = '0') and (pl_valid = '1') and (bru_in_b(0)(3 downto 0) = pl_dtag) else
+    '1'&pf_value when (bru_in_b(0)(32) = '0') and (pf_valid = '1') and (bru_in_b(0)(3 downto 0) = pf_dtag) else
+    bru_in_b(0);
+    
+    
+    
+    rslsudtagp <= "0"&rob_tag1 when ((firstunit(2 downto 1) = unit_lsiou) and (firstregmsk(0) = '1')) or ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(0) = '1')) else
+    "1"&frob_tag1 when ((firstunit(2 downto 1) = unit_lsiou) and (firstregmsk(2) = '1')) or ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(2) = '1')) else
+    "0"&rob_tag2 when ((secondunit(2 downto 1) = unit_lsiou) and (secondregmsk(1) = '1')) else
+    "1"&frob_tag2;
+    
+	lsu_a_selectp <= "0001" when (s1_unit(2 downto 1) = unit_lsiou) and reg_s1_ok = '1' else
+	"0010" when (s1_unit(2 downto 1) = unit_lsiou) and rob_s1_ok = '1' else
+	"0011" when (s3_unit(2 downto 1) = unit_lsiou) and (reg_s3_ok = '1') and (tf1 = '0') else
+	"0100" when (s3_unit(2 downto 1) = unit_lsiou) and (rob_s3_ok = '1') and (tf1 = '0') else
+	"0000";
+	
+	lsu_b_selectp <= "0001" when (s2_unit(2 downto 1) = unit_lsiou) and reg_s2_ok = '1' else
+	"0010" when (s2_unit(2 downto 1) = unit_lsiou) and rob_s2_ok = '1' else
+	"0011" when (sf2_unit(2 downto 1) = unit_lsiou) and freg_s2_ok = '1' else
+	"0100" when (sf2_unit(2 downto 1) = unit_lsiou) and frob_s2_ok = '1' else
+	"0101" when (s4_unit(2 downto 1) = unit_lsiou) and (reg_s4_ok = '1') and (tf2 = '0') else
+	"0110" when (s4_unit(2 downto 1) = unit_lsiou) and (rob_s4_ok = '1') and (tf2 = '0') else
+	"0111" when (sf4_unit(2 downto 1) = unit_lsiou) and (frob_s4_ok = '1') and (ftf2 = '0') else
+	"1000" when (sf4_unit(2 downto 1) = unit_lsiou) and (frob_s4_ok = '1') and (ftf2 = '0') else
+	"0000";
+    
+	LSUPRE:process(clk)
+    begin
+    	if rising_edge(clk) then
+    	if flush = '1' then
+    		rslsu_write <= '0';
+    	elsif rsbru_ok = '1' then
+    		if (s1_unit(2 downto 1) = unit_lsiou) then
+    			lsu_in_a(0) <= '0'&x"0000000"&'0'&s1tag;
+    		elsif (s3_unit(2 downto 1) = unit_lsiou) then
+    			lsu_in_a(0) <= '0'&x"0000000"&'0'&s3tag;
+    		else
+    			lsu_in_a(0) <= '1'&x"00000000";
+    		end if;
+    		lsu_in_a(1) <= '1'&data_s1_reg_p;
+    		lsu_in_a(2) <= '1'&data_s1_rob_p;
+    		lsu_in_a(3) <= '1'&data_s3_reg_p;
+    		lsu_in_a(4) <= '1'&data_s3_rob_p;
+    		
+    	
+    		if (s2_unit(2 downto 1) = unit_lsiou) then
+    			lsu_in_b(0) <= '0'&x"0000000"&'0'&s2tag;
+    		elsif (sf2_unit(2 downto 1) = unit_lsiou) then
+    			lsu_in_b(0) <= '0'&x"0000000"&'1'&sf2tag;
+    		elsif (s4_unit(2 downto 1) = unit_lsiou) then
+    			lsu_in_b(0) <= '0'&x"0000000"&'0'&s4tag;
+    		elsif (sf4_unit(2 downto 1) = unit_lsiou) then
+    			lsu_in_b(0) <= '0'&x"0000000"&'1'&sf4tag;
+    		else
+    			lsu_in_b(0) <= '1'&x"00000000";
+    		end if;
+    		lsu_in_b(1) <= '1'&data_s2_reg_p;
+    		lsu_in_b(2) <= '1'&data_s2_rob_p;
+    		lsu_in_b(3) <= '1'&data_s2_freg_p;
+    		lsu_in_b(4) <= '1'&data_s2_frob_p;
+    		
+    		lsu_in_b(5) <= '1'&data_s4_reg_p;
+    		lsu_in_b(6) <= '1'&data_s4_rob_p;
+    		lsu_in_b(7) <= '1'&data_s4_freg_p;
+    		lsu_in_b(8) <= '1'&data_s4_frob_p;
+    		
+			lsu_a_select <= lsu_a_selectp;
+			lsu_b_select <= lsu_b_selectp;
+    		
+    		if firstunit(2 downto 1) = unit_lsiou then
+    			rslsu_write <=  not stall_first;
+    		elsif secondunit(2 downto 1) = unit_lsiou then
+    			rslsu_write <=  not stall_second;
+    		else
+    			rslsu_write <= '0';
+    		end if;
+
+    		rslsudtag <= rslsudtagp;
+		    rslsuop <= rslsuim&lsu_inst(33 downto 28);
+        end if;
+        end if;
+    end process; 
+    
+    with lsu_a_select select
+     rslsu_inA <= lsu_in_a(1) when "0001",
+      lsu_in_a(2) when "0010",
+      lsu_in_a(3) when "0011",
+      lsu_in_a(4) when "0100",
+      lsu_in_a_w when others;
+    lsu_in_a_w <= '1'&pi_value when (lsu_in_a(0)(32) = '0') and (pi_valid = '1') and (lsu_in_a(0)(3 downto 0) = pi_dtag) else
+    '1'&pl_value when (lsu_in_a(0)(32) = '0') and (pl_valid = '1') and (lsu_in_a(0)(3 downto 0) = pl_dtag) else
+    lsu_in_a(0);
+    
+    with lsu_b_select select
+     rslsu_inB <= lsu_in_b(1) when "0001",
+      lsu_in_b(2) when "0010",
+      lsu_in_b(3) when "0011",
+      lsu_in_b(4) when "0100",
+      lsu_in_b(5) when "0101",
+      lsu_in_b(6) when "0110",
+      lsu_in_b(7) when "0111",
+      lsu_in_b(8) when "1000",
+      lsu_in_b_w when others;
+    lsu_in_b_w <= '1'&pi_value when (lsu_in_b(0)(32) = '0') and (pi_valid = '1') and (lsu_in_b(0)(3 downto 0) = pi_dtag) else
+    '1'&pl_value when (lsu_in_b(0)(32) = '0') and (pl_valid = '1') and (lsu_in_b(0)(3 downto 0) = pl_dtag) else
+    '1'&pf_value when (lsu_in_b(0)(32) = '0') and (pf_valid = '1') and (lsu_in_b(0)(3 downto 0) = pf_dtag) else
+  	lsu_in_b(0);
+      
+	fpu_a_selectp <= "001" when (sf1_unit = unit_fpu) and freg_s1_ok = '1' else
+	"010" when (sf1_unit = unit_fpu) and frob_s1_ok = '1' else
+	"011" when (sf3_unit = unit_fpu) and (freg_s3_ok = '1') and (ftf1 = '0') else
+	"100" when (sf3_unit = unit_fpu) and (frob_s3_ok = '1') and (ftf1 = '0') else
+	"000";
+	
+	fpu_b_selectp <= "001" when (sf2_unit = unit_fpu) and freg_s2_ok = '1' else
+	"010" when (sf2_unit = unit_fpu) and frob_s2_ok = '1' else
+	"011" when (sf4_unit = unit_fpu) and (freg_s4_ok = '1') and (ftf2 = '0') else
+	"100" when (sf4_unit = unit_fpu) and (frob_s4_ok = '1') and (ftf2 = '0') else
+	"000";
+    		
+     FPUPRE:process(clk)
+    begin
+    	if rising_edge(clk) then
+    	if flush = '1' then
+    		rsfpu_write <= '0';
+    	elsif rsfpu_ok = '1' then
+    		if (sf1_unit = unit_fpu) then
+    			fpu_in_a(0) <= '0'&x"0000000"&'1'&sf1tag;
+    		elsif (sf3_unit = unit_fpu) then
+    			fpu_in_a(0) <= '0'&x"0000000"&'1'&sf3tag;
+    		else
+    			fpu_in_a(0) <= '1'&x"00000000";
+    		end if;
+    		fpu_in_a(1) <= '1'&data_s1_freg_p;
+    		fpu_in_a(2) <= '1'&data_s1_frob_p;
+    		fpu_in_a(3) <= '1'&data_s3_freg_p;
+    		fpu_in_a(4) <= '1'&data_s3_frob_p;
+    		
+    		if (s2_unit = unit_fpu) then
+    			fpu_in_b(0) <= '0'&x"0000000"&'1'&sf2tag;
+    		elsif (s4_unit = unit_fpu) then
+    			fpu_in_b(0) <= '0'&x"0000000"&'1'&sf4tag;
+    		else
+    			fpu_in_b(0) <= '1'&x"00000000";
+    		end if;
+    		fpu_in_b(1) <= '1'&data_s2_freg_p;
+    		fpu_in_b(2) <= '1'&data_s2_frob_p;
+    		fpu_in_b(3) <= '1'&data_s4_freg_p;
+    		fpu_in_b(4) <= '1'&data_s4_frob_p;
+    		
+    		fpu_a_select <= fpu_a_selectp;
+    		fpu_b_select <= fpu_b_selectp;
+
+    		if firstunit = unit_fpu then
+    			rsfpu_write <=  not stall_first;
+    		elsif  secondunit = unit_fpu then
+    			rsfpu_write <=  not stall_second;
+    		else
+    			rsfpu_write <=  '0';
+    		end if;
+    		
+    		if (firstunit = unit_fpu) or (secondregmsk(2) = '1') then
+    			rsfpudtag <= "1"&frob_tag1;
+    		else
+    			rsfpudtag <= "1"&frob_tag2;
+    		end if;
+    		rsfpuop <= fpu_inst(32 downto 28);
+    	end if;
+    	end if;
+    end process; 
+    with fpu_a_select select
+     rsfpu_inA <= fpu_in_a(1) when "001",
+      fpu_in_a(2) when "010",
+      fpu_in_a(3) when "011",
+      fpu_in_a(4) when "100",
+      fpu_in_a_w when others;
+      
+    fpu_in_a_w <= 
+    '1'&pl_value when (fpu_in_a(0)(32) = '0') and (pl_validf = '1') and (fpu_in_a(0)(3 downto 0) = pl_dtag) else
+    '1'&pf_value when (fpu_in_a(0)(32) = '0') and (pf_valid = '1') and (fpu_in_a(0)(3 downto 0) = pf_dtag) else
+    fpu_in_a(0);
+    
+    with fpu_b_select select
+     rsfpu_inB <= fpu_in_b(1) when "001",
+      fpu_in_b(2) when "010",
+      fpu_in_b(3) when "011",
+      fpu_in_b(4) when "100",
+      fpu_in_b_w when others;
+    fpu_in_b_w <= 
+    '1'&pl_value when (fpu_in_b(0)(32) = '0') and (pl_validf = '1') and (fpu_in_b(0)(3 downto 0) = pl_dtag) else
+    '1'&pf_value when (fpu_in_b(0)(32) = '0') and (pf_valid = '1') and (fpu_in_b(0)(3 downto 0) = pf_dtag) else
+  	fpu_in_b(0);
+	----------------------------------
+	-- 
+	-- RS
+	-- 
+	----------------------------------
 	
 	RSALU0 : reservationStation
 	port map (
