@@ -24,8 +24,8 @@ architecture Behavioral of clockgenerator is
 		RST_IN : IN std_logic;          
 		CLKIN_IBUFG_OUT : OUT std_logic;
 		CLK0_OUT : OUT std_logic;
-		CLKFX_OUT : OUT std_logic;
-		CLKFX180_OUT : OUT std_logic;
+		CLK2X_OUT : OUT std_logic;
+		CLK2X180_OUT : OUT std_logic;
 		LOCKED_OUT : OUT std_logic
 		);
 	END COMPONENT;
@@ -44,8 +44,8 @@ begin
 		RST_IN => rst,
 		CLKIN_IBUFG_OUT => open,
 		CLK0_OUT => clock66,
-		CLKFX_OUT => clock,
-		CLKFX180_OUT => clock_180,
+		CLK2X_OUT => clock,
+		CLK2X180_OUT => clock_180,
 		LOCKED_OUT => lock
 	);
 end Behavioral;

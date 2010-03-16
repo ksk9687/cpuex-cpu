@@ -125,14 +125,25 @@ begin
 --    NULLAFTSTOP => 100,       -- STOPを送った後に念のために送る余白
 --    WRITEBUFLENLOG => 10      -- バッファの大きさ
 --    )
-    generic map( -- 460800,150MHz
-    READBITLEN    => 330,    -- 1bitにかかるクロックより少し大きい値
+--    generic map( -- 460800,150MHz
+--    READBITLEN    => 330,    -- 1bitにかかるクロックより少し大きい値
+--    READPADBITLEN => 50,     -- データの採取間隔
+--    MERGINLEN     => 10,      -- データの読み込み開始の余白
+--    STOPBACK      => 70,     -- STOPBITをどれぐらい待たないか
+--    READBUFLENLOG => 8,      -- バッファの大きさ
+--
+--    WRITEBITLEN => 325,      -- 1bitにかかるクロックより少し小さい値
+--    NULLAFTSTOP => 50,       -- STOPを送った後に念のために送る余白
+--    WRITEBUFLENLOG => 10      -- バッファの大きさ
+--    )
+    generic map( -- 460800,133MHz
+    READBITLEN    => 295,    -- 1bitにかかるクロックより少し大きい値
     READPADBITLEN => 50,     -- データの採取間隔
     MERGINLEN     => 10,      -- データの読み込み開始の余白
     STOPBACK      => 70,     -- STOPBITをどれぐらい待たないか
     READBUFLENLOG => 8,      -- バッファの大きさ
 
-    WRITEBITLEN => 325,      -- 1bitにかかるクロックより少し小さい値
+    WRITEBITLEN => 289,      -- 1bitにかかるクロックより少し小さい値
     NULLAFTSTOP => 50,       -- STOPを送った後に念のために送る余白
     WRITEBUFLENLOG => 10      -- バッファの大きさ
     )
