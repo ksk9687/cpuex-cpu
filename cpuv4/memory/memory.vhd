@@ -81,7 +81,7 @@ begin
 
   	ROC0 : ROC port map (O => rst);
 	
-	filling <= not fillstage(3);
+	filling <= '1' when fillstage /= "1111" else '0';
 
 	inst1 <= cache_out1;
 	inst2 <= cache_out2;
@@ -140,6 +140,9 @@ begin
 				fill_addr <= fill_addr(19 downto 3)&(fill_addr(2 downto 0) + '1');
 				fillstage <= fillstage + '1';
 				dac <= '1';
+			elsif (fillstage /= "1111")then
+				fillstage <= fillstage + '1';
+				dac <= '0';
 			else
 				dac <= '0';
 			end if;
