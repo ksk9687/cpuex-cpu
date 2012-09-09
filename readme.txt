@@ -1,3 +1,1 @@
-mercurial
-
-日本語のファイル名は使用しないでください。
+is2009CPU実験 Team ksk
